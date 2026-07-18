@@ -1,0 +1,1144 @@
+{
+  "overview": [
+    {
+      "metric": "Quant Questions",
+      "weekly": 125,
+      "monthly": 500,
+      "grand": 3160
+    },
+    {
+      "metric": "LRDI Sets",
+      "weekly": 25,
+      "monthly": 100,
+      "grand": 650
+    },
+    {
+      "metric": "Reading Comprehensions (RCs)",
+      "weekly": 25,
+      "monthly": 100,
+      "grand": 620
+    },
+    {
+      "metric": "Full-Length Mock Tests",
+      "weekly": "-",
+      "monthly": "-",
+      "grand": 30
+    }
+  ],
+  "studyPlan": [
+    {
+      "phase": "PHASE 1: FOUNDATION & CONCEPT BUILDING",
+      "week": "Month 1: Week 1",
+      "quant": "Percentages, Profit & Loss",
+      "lrdi": "Linear & Circular Arrangements",
+      "varc": "RC: Science & Tech / Intro to Parajumbles",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 1: FOUNDATION & CONCEPT BUILDING",
+      "week": "Month 1: Week 2",
+      "quant": "Ratios, Averages, Mixtures & Alligations",
+      "lrdi": "Matrix Grids & Complex Puzzles",
+      "varc": "RC: Economics & Business / Para Summary",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 1: FOUNDATION & CONCEPT BUILDING",
+      "week": "Month 1: Week 3",
+      "quant": "Time, Speed & Distance (Linear, Circular, Races)",
+      "lrdi": "Tables & Core Bar/Line Graphs",
+      "varc": "RC: Philosophy & Psychology / Odd One Out",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 1: FOUNDATION & CONCEPT BUILDING",
+      "week": "Month 1: Week 4",
+      "quant": "Time & Work, Pipes & Cisterns, SI & CI",
+      "lrdi": "Pie Charts & Caselets",
+      "varc": "RC: History & Sociology / Critical Reasoning",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 1: FOUNDATION & CONCEPT BUILDING",
+      "week": "Month 2: Week 5",
+      "quant": "Linear & Quadratic Equations, Polynomials",
+      "lrdi": "Games & Tournaments (Basics & Knockouts)",
+      "varc": "RC: Art & Literature / Sentence Completion",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 1: FOUNDATION & CONCEPT BUILDING",
+      "week": "Month 2: Week 6",
+      "quant": "Logarithms, Surds & Indices, Inequalities",
+      "lrdi": "Venn Diagrams (2 & 3 Variables, Max/Min)",
+      "varc": "RC: Diverse Topics / Parajumbles Practice",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 1: FOUNDATION & CONCEPT BUILDING",
+      "week": "Month 2: Week 7",
+      "quant": "Sequences, Series & Functions",
+      "lrdi": "Binary Logic & Cubes",
+      "varc": "RC: Complex Inference Passages / Para Summary",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 1: FOUNDATION & CONCEPT BUILDING",
+      "week": "Month 2: Week 8",
+      "quant": "Triangles, Circles & Polygons",
+      "lrdi": "Maxima/Minima & Network Flows",
+      "varc": "RC: Speed Reading / Full VA Practice",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 2: SYLLABUS COMPLETION & SECTIONALS",
+      "week": "Month 3: Week 9",
+      "quant": "Coordinate Geometry & Mensuration 2D/3D",
+      "lrdi": "Quant-Based DI & Missing Data Sets",
+      "varc": "RC: High-difficulty abstract passages",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 2: SYLLABUS COMPLETION & SECTIONALS",
+      "week": "Month 3: Week 10",
+      "quant": "Number Systems, Divisibility & Remainders",
+      "lrdi": "Advanced Games & Tournaments (Seeding)",
+      "varc": "RC: Tone & Main Idea optimization",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 2: SYLLABUS COMPLETION & SECTIONALS",
+      "week": "Month 3: Week 11",
+      "quant": "Modern Maths: Permutations & Combinations",
+      "lrdi": "Mixed Hybrid Sets & Complex Logic Grids",
+      "varc": "Full Sectional Test Practice",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 2: SYLLABUS COMPLETION & SECTIONALS",
+      "week": "Month 3: Week 12",
+      "quant": "Modern Maths: Probability & Set Theory",
+      "lrdi": "Missing Data Tables & Complex Routes",
+      "varc": "Full Sectional Test Practice",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 3: THE MOCK MARATHON (30 MOCKS total)",
+      "week": "Month 4: Week 13",
+      "quant": "Comprehensive Formula Revision (7 Mocks)",
+      "lrdi": "Mock Marathon - Set Selection Focus",
+      "varc": "Mock Marathon - Accuracy Optimization",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 3: THE MOCK MARATHON (30 MOCKS total)",
+      "week": "Month 4: Week 14",
+      "quant": "Weak Area Drill & Error Log Analysis (8 Mocks)",
+      "lrdi": "Mock Marathon - Time Allocation Strategy",
+      "varc": "Mock Marathon - Speed & TITA Strategy",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 3: THE MOCK MARATHON (30 MOCKS total)",
+      "week": "Month 4: Week 15",
+      "quant": "High-Yield Concepts Revision (8 Mocks)",
+      "lrdi": "Mock Marathon - Performance Analysis",
+      "varc": "Mock Marathon - Strategy Refinement",
+      "status": "Not Started"
+    },
+    {
+      "phase": "PHASE 3: THE MOCK MARATHON (30 MOCKS total)",
+      "week": "Month 4: Week 16",
+      "quant": "Formula Flashcards & Light Review (7 Mocks)",
+      "lrdi": "Relax & Finalize Mentality",
+      "varc": "Relax & Finalize Strategy",
+      "status": "Not Started"
+    }
+  ],
+  "dailyTracker": {
+    "Month 1": [
+      {
+        "week": "Week 1",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      },
+      {
+        "week": "Week 2",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      },
+      {
+        "week": "Week 3",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      },
+      {
+        "week": "Week 4",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      }
+    ],
+    "Month 2": [
+      {
+        "week": "Week 1",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      },
+      {
+        "week": "Week 2",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      },
+      {
+        "week": "Week 3",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      },
+      {
+        "week": "Week 4",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      }
+    ],
+    "Month 3": [
+      {
+        "week": "Week 1",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      },
+      {
+        "week": "Week 2",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      },
+      {
+        "week": "Week 3",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      },
+      {
+        "week": "Week 4",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      }
+    ],
+    "Month 4": [
+      {
+        "week": "Week 1",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      },
+      {
+        "week": "Week 2",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      },
+      {
+        "week": "Week 3",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      },
+      {
+        "week": "Week 4",
+        "days": [
+          {
+            "day": "Monday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Tuesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Wednesday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Thursday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Friday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Saturday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          },
+          {
+            "day": "Sunday",
+            "quant": "Solve 18 Quant Questions",
+            "lrdi": "Solve 4 LRDI Sets",
+            "varc": "Solve 4 Reading Comprehensions",
+            "completed": false,
+            "notes": ""
+          }
+        ]
+      }
+    ]
+  }
+}
