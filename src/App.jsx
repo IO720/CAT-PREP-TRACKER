@@ -17,10 +17,71 @@ import MockTrackerView from './components/MockTrackerView';
 import ErrorLogView from './components/ErrorLogView';
 import ProfileView from './components/ProfileView';
 
+const Icons = {
+  Home: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
+      <rect x="3" y="3" width="7" height="9"></rect>
+      <rect x="14" y="3" width="7" height="5"></rect>
+      <rect x="14" y="12" width="7" height="9"></rect>
+      <rect x="3" y="16" width="7" height="5"></rect>
+    </svg>
+  ),
+  Plan: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+      <line x1="16" y1="2" x2="16" y2="6"></line>
+      <line x1="8" y1="2" x2="8" y2="6"></line>
+      <line x1="3" y1="10" x2="21" y2="10"></line>
+    </svg>
+  ),
+  Drills: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
+      <path d="M12 20h9"></path>
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+    </svg>
+  ),
+  Mocks: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <polyline points="14 2 14 8 20 8"></polyline>
+      <line x1="16" y1="13" x2="8" y2="13"></line>
+      <line x1="16" y1="17" x2="8" y2="17"></line>
+      <polyline points="10 9 9 9 8 9"></polyline>
+    </svg>
+  ),
+  Errors: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      <line x1="11" y1="8" x2="11" y2="14"></line>
+      <line x1="8" y1="11" x2="14" y2="11"></line>
+    </svg>
+  ),
+  Cloud: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
+      <path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"></path>
+      <line x1="8" y1="16" x2="8.01" y2="16"></line>
+      <line x1="8" y1="20" x2="8.01" y2="20"></line>
+      <line x1="12" y1="18" x2="12.01" y2="18"></line>
+      <line x1="12" y1="22" x2="12.01" y2="22"></line>
+      <line x1="16" y1="16" x2="16.01" y2="16"></line>
+      <line x1="16" y1="20" x2="16.01" y2="20"></line>
+    </svg>
+  )
+};
+
 export default function App() {
   const [state, setState] = useState(() => loadState());
   const [activeTab, setActiveTab] = useState('dashboard');
   const [theme, setTheme] = useState(state.settings?.theme || 'dark');
+  const [appLoading, setAppLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAppLoading(false);
+    }, 750);
+    return () => clearTimeout(timer);
+  }, []);
   
   // Daily tracker active selectors
   const [activeMonth, setActiveMonth] = useState('Month 1');
@@ -423,6 +484,18 @@ export default function App() {
     }
   };
 
+  if (appLoading) {
+    return (
+      <div className="minimal-loader-screen">
+        <div className="loader-logo">C</div>
+        <div className="loader-bar-container">
+          <div className="loader-bar-fill"></div>
+        </div>
+        <span className="loader-text">Loading Aspirant Tracker...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
       {/* Sidebar Navigation (Hidden on mobile) */}
@@ -594,27 +667,27 @@ export default function App() {
       {/* Mobile Sticky Bottom Menu */}
       <nav className="mobile-bottom-nav">
         <button className={`mobile-nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-          <span className="mobile-nav-icon">📊</span>
+          <span className="mobile-nav-icon"><Icons.Home /></span>
           <span>Home</span>
         </button>
         <button className={`mobile-nav-btn ${activeTab === 'timeline' ? 'active' : ''}`} onClick={() => setActiveTab('timeline')}>
-          <span className="mobile-nav-icon">📅</span>
+          <span className="mobile-nav-icon"><Icons.Plan /></span>
           <span>Plan</span>
         </button>
         <button className={`mobile-nav-btn ${activeTab === 'daily' ? 'active' : ''}`} onClick={() => setActiveTab('daily')}>
-          <span className="mobile-nav-icon">✏️</span>
+          <span className="mobile-nav-icon"><Icons.Drills /></span>
           <span>Drills</span>
         </button>
         <button className={`mobile-nav-btn ${activeTab === 'mocks' ? 'active' : ''}`} onClick={() => setActiveTab('mocks')}>
-          <span className="mobile-nav-icon">📝</span>
+          <span className="mobile-nav-icon"><Icons.Mocks /></span>
           <span>Mocks</span>
         </button>
         <button className={`mobile-nav-btn ${activeTab === 'errors' ? 'active' : ''}`} onClick={() => setActiveTab('errors')}>
-          <span className="mobile-nav-icon">🔍</span>
+          <span className="mobile-nav-icon"><Icons.Errors /></span>
           <span>Errors</span>
         </button>
         <button className={`mobile-nav-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
-          <span className="mobile-nav-icon">☁️</span>
+          <span className="mobile-nav-icon"><Icons.Cloud /></span>
           <span>Cloud</span>
         </button>
       </nav>

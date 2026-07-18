@@ -1167,6 +1167,29 @@ button, input, select, textarea {
   /* Make mock table scrollable on mobile */
   .mocks-list-panel {
     padding: 10px;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mocks-overview-row {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+
+  .mock-averages-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+  }
+
+  .app-container {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .main-content {
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 }
 
@@ -1264,5 +1287,113 @@ button, input, select, textarea {
   margin-bottom: 8px;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 4px;
+}
+
+/* Global Scroll Optimizations */
+html, body {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Tab Switching Fade & Slide Animation */
+@keyframes tabSlideFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.main-content > * {
+  animation: tabSlideFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Minimalist Loading Screen Overlay */
+.minimal-loader-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.loader-logo {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 24px;
+  letter-spacing: -2px;
+  animation: pulseLogo 1.5s infinite ease-in-out;
+}
+
+.loader-bar-container {
+  width: 120px;
+  height: 2px;
+  background-color: var(--border-color);
+  border-radius: 1px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.loader-bar-fill {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background-color: var(--text-primary);
+  animation: loadProgress 1.2s infinite ease-in-out;
+}
+
+.loader-text {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+@keyframes pulseLogo {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes loadProgress {
+  0% {
+    left: -100%;
+  }
+  50% {
+    left: 0;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Bottom Bar SVG Monochromatic styling */
+.nav-svg {
+  transition: transform 0.2s ease, stroke 0.2s ease;
+}
+
+.mobile-nav-btn:hover .nav-svg {
+  transform: scale(1.1);
 }
 
