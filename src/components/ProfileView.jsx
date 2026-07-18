@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { signUpUser, logInUser, logOutUser, addFriendByEmail, isFirebaseConfigured } from '../utils/firebase';
 
-export default function ProfileView({ user, onAuthSuccess, friends = [], onAddFriendSuccess }) {
+export default function ProfileView({ user, onAuthSuccess, friends = [], onAddFriendSuccess, onInspectFriend }) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -173,7 +173,12 @@ export default function ProfileView({ user, onAuthSuccess, friends = [], onAddFr
               {friends.length > 0 ? (
                 <div className="friend-feed-list" style={{ marginTop: '10px' }}>
                   {friends.map(f => (
-                    <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', border: '1px solid var(--border-color)', borderRadius: '4px', backgroundColor: 'var(--bg-primary)' }}>
+                    <div 
+                      key={f.id} 
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', border: '1px solid var(--border-color)', borderRadius: '4px', backgroundColor: 'var(--bg-primary)', cursor: 'pointer' }}
+                      onClick={() => onInspectFriend && onInspectFriend(f)}
+                      title="Click to inspect peer study progress details"
+                    >
                       <span style={{ fontSize: '13px', fontWeight: 600 }}>{f.name}</span>
                       <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>⚡ {f.streak} streak</span>
                     </div>

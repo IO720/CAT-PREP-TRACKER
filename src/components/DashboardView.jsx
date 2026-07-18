@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function DashboardView({ state, setActiveTab, friends = [] }) {
+export default function DashboardView({ state, setActiveTab, friends = [], onInspectFriend }) {
   const { tracker, studyPlan, mocks } = state;
 
   // Calculate totals
@@ -235,7 +235,13 @@ export default function DashboardView({ state, setActiveTab, friends = [] }) {
             <h2 className="panel-title" style={{ margin: 0 }}>Friend Activity (Sync Feed)</h2>
             <div className="friend-feed-list">
               {friends.map(friend => (
-                <div key={friend.id} className="friend-feed-item">
+                <div 
+                  key={friend.id} 
+                  className="friend-feed-item"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => onInspectFriend && onInspectFriend(friend)}
+                  title="Click to inspect peer study progress details"
+                >
                   <div className="friend-avatar">{friend.avatar}</div>
                   <div className="friend-info">
                     <div className="friend-name-row">

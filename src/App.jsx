@@ -8,6 +8,7 @@ import {
   fetchFriendsProgress 
 } from './utils/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import PeerInspectorModal from './components/PeerInspectorModal';
 
 import DashboardView from './components/DashboardView';
 import TimelineView from './components/TimelineView';
@@ -27,6 +28,27 @@ export default function App() {
 
   // User state
   const [user, setUser] = useState(null);
+
+  // Selected friend inspect state
+  const [selectedFriend, setSelectedFriend] = useState(null);
+  const [selectedFriendTracker, setSelectedFriendTracker] = useState(null);
+  const [loadingFriendTracker, setLoadingFriendTracker] = useState(false);
+
+  // Inspect a study peer's detailed metrics
+  const handleInspectFriend = async (friendProfile) => {
+    setSelectedFriend(friendProfile);
+    setSelectedFriendTracker(null);
+    setLoadingFriendTracker(true);
+
+    try {
+      const data = await loadTrackerFromCloud(friendProfile.id);
+      setSelectedFriendTracker(data);
+    } catch (err) {
+      console.error("Failed to load friend tracker details:", err);
+    } finally {
+      setLoadingFriendTracker(false);
+    }
+  };
 
   // Friends peer-sync state
   const [friends, setFriends] = useState([
@@ -524,6 +546,7 @@ export default function App() {
               state={state} 
               setActiveTab={setActiveTab} 
               friends={friends}
+              onInspectFriend={handleInspectFriend}
             />
           )}
           {activeTab === 'timeline' && (
@@ -562,6 +585,7 @@ export default function App() {
               onAuthSuccess={setUser}
               friends={friends}
               onAddFriendSuccess={refreshFriendsList}
+              onInspectFriend={handleInspectFriend}
             />
           )}
         </main>
@@ -594,6 +618,14 @@ export default function App() {
           <span>Cloud</span>
         </button>
       </nav>
+
+      {/* Peer Progress Modal Overlay */}
+      <PeerInspectorModal
+        friend={selectedFriend}
+        trackerData={selectedFriendTracker}
+        loading={loadingFriendTracker}
+        onClose={() => setSelectedFriend(null)}
+      />
     </div>
   );
 }
