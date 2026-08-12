@@ -1823,3 +1823,159 @@ html, body {
   text-align: center;
 }
 
+/* Full Mobile Responsive Layout Engine (Targeting 430px - 932px and below) */
+@media (max-width: 768px) {
+  :root, .app-container, .app-container.sidebar-collapsed {
+    --sidebar-width: 0px !important;
+  }
+
+  .sidebar {
+    display: none !important;
+  }
+
+  .app-main-wrapper {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  .global-header {
+    padding: 0 12px !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+    justify-content: space-between;
+    height: 56px !important;
+  }
+
+  .header-progress-container {
+    max-width: 150px !important;
+  }
+
+  .header-progress-label {
+    font-size: 9px !important;
+  }
+
+  .header-progress-val {
+    font-size: 9px !important;
+    padding: 0 5px !important;
+  }
+
+  .header-stats {
+    gap: 4px !important;
+  }
+
+  .header-stat-item {
+    padding: 3px 8px !important;
+    font-size: 10px !important;
+  }
+
+  .date-header-item {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 16px 12px 80px 12px !important;
+    box-sizing: border-box !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 60px !important;
+    background-color: var(--bg-secondary) !important;
+    border-top: 1px solid var(--border-color) !important;
+    z-index: 1000 !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    padding: 0 4px !important;
+  }
+
+  .header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .header-title-row {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .page-title {
+    font-size: 22px !important;
+  }
+
+  .header-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .header-actions button {
+    width: 100% !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .dashboard-details-row {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .inspector-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .data-maintenance-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .day-drills-row {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .tracker-tabs-row, .tracker-subtabs-row {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    padding-bottom: 6px !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .tracker-tab, .tracker-subtab {
+    flex-shrink: 0 !important;
+    font-size: 12px !important;
+    padding: 6px 12px !important;
+  }
+
+  .mock-card-row.three-cols {
+    grid-template-columns: 1fr !important;
+  }
+
+  .modal-card {
+    width: 95% !important;
+    max-height: 90vh !important;
+    padding: 16px !important;
+  }
+
+  .day-panel {
+    padding: 14px !important;
+  }
+}
+
