@@ -1656,11 +1656,17 @@ html, body {
   transform: scale(1.1);
 }
 
-/* Responsive Card helper classes */
+/* Responsive Card & Inline helper classes */
 .desktop-only {
   display: block;
 }
 .mobile-only {
+  display: none;
+}
+.desktop-inline {
+  display: inline;
+}
+.mobile-inline {
   display: none;
 }
 
@@ -1670,6 +1676,12 @@ html, body {
   }
   .mobile-only {
     display: block !important;
+  }
+  .desktop-inline {
+    display: none !important;
+  }
+  .mobile-inline {
+    display: inline !important;
   }
 }
 
@@ -1841,33 +1853,50 @@ html, body {
   }
 
   .global-header {
-    padding: 0 12px !important;
+    padding: 8px 16px !important;
     margin-left: 0 !important;
     width: 100% !important;
-    justify-content: space-between;
-    height: 56px !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    height: 60px !important;
+    box-sizing: border-box !important;
+    gap: 12px !important;
   }
 
   .header-progress-container {
-    max-width: 150px !important;
-  }
-
-  .header-progress-label {
-    font-size: 9px !important;
-  }
-
-  .header-progress-val {
-    font-size: 9px !important;
-    padding: 0 5px !important;
-  }
-
-  .header-stats {
+    max-width: 140px !important;
+    flex-shrink: 1 !important;
     gap: 4px !important;
   }
 
-  .header-stat-item {
-    padding: 3px 8px !important;
+  .header-progress-label {
     font-size: 10px !important;
+    white-space: nowrap !important;
+    letter-spacing: 0.25px !important;
+  }
+
+  .header-progress-val {
+    font-size: 10px !important;
+    padding: 1px 6px !important;
+    border-radius: 8px !important;
+  }
+
+  .header-progress-bar {
+    height: 5px !important;
+  }
+
+  .header-stats {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .header-stat-item {
+    padding: 4px 10px !important;
+    font-size: 11px !important;
+    border-radius: 16px !important;
+    white-space: nowrap !important;
   }
 
   .date-header-item {

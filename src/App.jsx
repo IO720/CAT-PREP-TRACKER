@@ -704,11 +704,11 @@ export default function App() {
             </div>
             <div className="header-stat-item" title="Consecutive active days">
               <Icons.Zap size={14} />
-              <span>{activeStreak} Days</span>
+              <span>{activeStreak}<span className="desktop-inline"> Days</span><span className="mobile-inline">d</span></span>
             </div>
             <div className="header-stat-item" title="Practice questions solved">
               <Icons.Target size={14} />
-              <span>{totalSolved.toLocaleString()} / {grandTargetTotal.toLocaleString()}</span>
+              <span>{totalSolved.toLocaleString()}<span className="desktop-inline"> / {grandTargetTotal.toLocaleString()}</span></span>
             </div>
             
             {/* Minimal Circular Theme Toggle in Header */}
