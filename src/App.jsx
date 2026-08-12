@@ -8,6 +8,11 @@ import {
   fetchFriendsProgress 
 } from './utils/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import { 
+  getTodayTrackerPosition, 
+  fetchWebOrOsDate, 
+  formatDateShort 
+} from './utils/dateUtils';
 import PeerInspectorModal from './components/PeerInspectorModal';
 
 import DashboardView from './components/DashboardView';
@@ -67,6 +72,53 @@ const Icons = {
       <line x1="16" y1="16" x2="16.01" y2="16"></line>
       <line x1="16" y1="20" x2="16.01" y2="20"></line>
     </svg>
+  ),
+  Calendar: ({ size = 15 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+      <line x1="16" y1="2" x2="16" y2="6"></line>
+      <line x1="8" y1="2" x2="8" y2="6"></line>
+      <line x1="3" y1="10" x2="21" y2="10"></line>
+    </svg>
+  ),
+  Zap: ({ size = 15 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+    </svg>
+  ),
+  Target: ({ size = 15 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+    </svg>
+  ),
+  Sun: ({ size = 15 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  ),
+  Moon: ({ size = 15 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+    </svg>
+  ),
+  ChevronLeft: ({ size = 16 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+  ),
+  ChevronRight: ({ size = 16 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
   )
 };
 
@@ -76,16 +128,52 @@ export default function App() {
   const [theme, setTheme] = useState(state.settings?.theme || 'dark');
   const [appLoading, setAppLoading] = useState(true);
 
+  // Collapsible sidebar state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('sidebar_collapsed') === 'true';
+  });
+
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('sidebar_collapsed', String(next));
+      return next;
+    });
+  };
+
+  // Live OS / Web Date state
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+
+  // Compute today's position based on start date
+  const todayPos = getTodayTrackerPosition(state.settings?.startDate);
+
+  // Daily tracker active selectors - initialized to TODAY's month & week
+  const [activeMonth, setActiveMonth] = useState(todayPos.activeMonth);
+  const [activeWeek, setActiveWeek] = useState(todayPos.activeWeek);
+
+  // Sync web network date on mount and set live clock tick
+  useEffect(() => {
+    let mounted = true;
+    fetchWebOrOsDate().then(date => {
+      if (mounted) setCurrentDate(date);
+    });
+
+    const clockInterval = setInterval(() => {
+      setCurrentDate(new Date());
+    }, 1000);
+
+    return () => {
+      mounted = false;
+      clearInterval(clockInterval);
+    };
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setAppLoading(false);
     }, 750);
     return () => clearTimeout(timer);
   }, []);
-  
-  // Daily tracker active selectors
-  const [activeMonth, setActiveMonth] = useState('Month 1');
-  const [activeWeek, setActiveWeek] = useState('Week 1');
 
   // User state
   const [user, setUser] = useState(null);
@@ -438,6 +526,17 @@ export default function App() {
     }
   };
 
+  // Update Prep Schedule Start Date setting
+  const handleUpdateStartDate = (newStartDate) => {
+    setState(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        startDate: newStartDate
+      }
+    }));
+  };
+
   // Edit specific day from error logs
   const handleJumpToDay = (monthKey, weekKey) => {
     setActiveMonth(monthKey);
@@ -487,7 +586,11 @@ export default function App() {
   if (appLoading) {
     return (
       <div className="minimal-loader-screen">
-        <div className="loader-logo">C</div>
+        <div className="brand-logo-badge" style={{ width: '56px', height: '56px', fontSize: '24px', marginBottom: '24px' }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+          </svg>
+        </div>
         <div className="loader-bar-container">
           <div className="loader-bar-fill"></div>
         </div>
@@ -497,11 +600,15 @@ export default function App() {
   }
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       {/* Sidebar Navigation (Hidden on mobile) */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="brand-section">
-          <div className="brand-logo">C</div>
+          <div className="brand-logo-badge" title="Aspirant Tracker Logo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+            </svg>
+          </div>
           <span className="brand-name">Aspirant Tracker</span>
         </div>
 
@@ -509,58 +616,63 @@ export default function App() {
           <button 
             className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`}
             onClick={() => setActiveTab('dashboard')}
+            title="Dashboard"
           >
-            Dashboard
+            <span className="nav-icon"><Icons.Home /></span>
+            <span className="nav-link-text">Dashboard</span>
           </button>
           <button 
             className={`nav-link ${activeTab === 'timeline' ? 'active' : ''}`}
             onClick={() => setActiveTab('timeline')}
+            title="Study Plan"
           >
-            Study Plan
+            <span className="nav-icon"><Icons.Plan /></span>
+            <span className="nav-link-text">Study Plan</span>
           </button>
           <button 
             className={`nav-link ${activeTab === 'daily' ? 'active' : ''}`}
             onClick={() => setActiveTab('daily')}
+            title="Daily Drills"
           >
-            Daily Drills
+            <span className="nav-icon"><Icons.Drills /></span>
+            <span className="nav-link-text">Daily Drills</span>
           </button>
           <button 
             className={`nav-link ${activeTab === 'mocks' ? 'active' : ''}`}
             onClick={() => setActiveTab('mocks')}
+            title="Mock Tests"
           >
-            Mock Tests
+            <span className="nav-icon"><Icons.Mocks /></span>
+            <span className="nav-link-text">Mock Tests</span>
           </button>
           <button 
             className={`nav-link ${activeTab === 'errors' ? 'active' : ''}`}
             onClick={() => setActiveTab('errors')}
+            title="Error Log"
           >
-            Error Log
+            <span className="nav-icon"><Icons.Errors /></span>
+            <span className="nav-link-text">Error Log</span>
           </button>
           <button 
             className={`nav-link ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setActiveTab('profile')}
+            title="Cloud Sync & Maintenance"
           >
-            Cloud Sync
+            <span className="nav-icon"><Icons.Cloud /></span>
+            <span className="nav-link-text">Cloud Sync</span>
           </button>
         </nav>
 
         <div className="sidebar-footer">
-          <button className="theme-toggle-btn" style={{ fontSize: '11px' }} onClick={triggerDemoNotification}>
-            🔔 Test Reminder
+          <button 
+            className="sidebar-toggle-btn" 
+            onClick={toggleSidebarCollapse}
+            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {isSidebarCollapsed ? <Icons.ChevronRight size={16} /> : <Icons.ChevronLeft size={16} />}
+            <span className="sidebar-toggle-text">{isSidebarCollapsed ? "Expand" : "Collapse Bar"}</span>
           </button>
           
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn-secondary" style={{ flex: 1, padding: '6px', fontSize: '11px' }} onClick={handleExport}>
-              Export
-            </button>
-            <button 
-              className="btn-secondary" 
-              style={{ flex: 1, padding: '6px', fontSize: '11px' }} 
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Import
-            </button>
-          </div>
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -568,35 +680,34 @@ export default function App() {
             accept=".json" 
             onChange={handleImport} 
           />
-
-          <button 
-            className="btn-secondary" 
-            style={{ color: '#ff4444', borderColor: '#ff444422', fontSize: '11px', padding: '6px' }} 
-            onClick={handleReset}
-          >
-            Reset All Data
-          </button>
         </div>
       </aside>
 
-      {/* Main Layout Area */}
-      <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+      {/* Main Layout Wrapper (Dynamically fills space on PC) */}
+      <div className="app-main-wrapper">
         {/* Global Header Progress Bar */}
         <header className="global-header">
           <div className="header-progress-container">
-            <span className="header-progress-label">Prep Progress: {globalPercent}%</span>
+            <div className="header-progress-label-group">
+              <span className="header-progress-label">Prep Progress</span>
+              <span className="header-progress-val">{globalPercent}%</span>
+            </div>
             <div className="header-progress-bar" title="Overall completed percentage of prep questions">
               <div className="header-progress-fill" style={{ width: `${globalPercent}%` }}></div>
             </div>
           </div>
 
           <div className="header-stats">
+            <div className="header-stat-item date-header-item" title="Current Live Date (OS/Web synced)">
+              <Icons.Calendar size={14} />
+              <span>{formatDateShort(currentDate)}</span>
+            </div>
             <div className="header-stat-item" title="Consecutive active days">
-              <span>⚡</span>
+              <Icons.Zap size={14} />
               <span>{activeStreak} Days</span>
             </div>
             <div className="header-stat-item" title="Practice questions solved">
-              <span>📚</span>
+              <Icons.Target size={14} />
               <span>{totalSolved.toLocaleString()} / {grandTargetTotal.toLocaleString()}</span>
             </div>
             
@@ -607,7 +718,7 @@ export default function App() {
               style={{ padding: '6px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 0 }}
               title="Toggle Light/Dark Theme"
             >
-              {theme === 'light' ? '🌙' : '☀️'}
+              {theme === 'light' ? <Icons.Moon size={15} /> : <Icons.Sun size={15} />}
             </button>
           </div>
         </header>
@@ -659,6 +770,13 @@ export default function App() {
               friends={friends}
               onAddFriendSuccess={refreshFriendsList}
               onInspectFriend={handleInspectFriend}
+              startDate={state.settings?.startDate}
+              onUpdateStartDate={handleUpdateStartDate}
+              onExport={handleExport}
+              onImport={() => fileInputRef.current?.click()}
+              onReset={handleReset}
+              onTriggerNotification={triggerDemoNotification}
+              fileInputRef={fileInputRef}
             />
           )}
         </main>

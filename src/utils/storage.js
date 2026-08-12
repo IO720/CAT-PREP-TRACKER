@@ -1,4 +1,5 @@
 import defaultData from '../data/unified_data.json';
+import { getMondayOfWeek, formatDateISO } from './dateUtils';
 
 const STORAGE_KEY = 'cat_prep_tracker_state_v1';
 
@@ -45,13 +46,15 @@ export const getInitialState = () => {
     status: "Not Started"
   }));
 
+  const defaultStartDate = formatDateISO(getMondayOfWeek(new Date()));
+
   return {
     tracker,
     studyPlan,
     mocks,
     settings: {
       theme: "dark", // default to dark mode for premium minimal feel
-      startDate: ""
+      startDate: defaultStartDate
     }
   };
 };
@@ -63,7 +66,12 @@ export const loadState = () => {
       return getInitialState();
     }
     const parsed = JSON.parse(serialized);
-    // Merge or validate if necessary
+    if (!parsed.settings) {
+      parsed.settings = {};
+    }
+    if (!parsed.settings.startDate) {
+      parsed.settings.startDate = formatDateISO(getMondayOfWeek(new Date()));
+    }
     return parsed;
   } catch (err) {
     console.error("Could not load state from localStorage:", err);

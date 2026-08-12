@@ -1,5 +1,34 @@
 import React from 'react';
 
+const ModalIcons = {
+  Zap: ({ size = 14 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+    </svg>
+  ),
+  Target: ({ size = 14 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+    </svg>
+  ),
+  FileText: ({ size = 14 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <polyline points="14 2 14 8 20 8"></polyline>
+      <line x1="16" y1="13" x2="8" y2="13"></line>
+      <line x1="16" y1="17" x2="8" y2="17"></line>
+      <polyline points="10 9 9 9 8 9"></polyline>
+    </svg>
+  ),
+  Close: ({ size = 18 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  )
+};
+
 export default function PeerInspectorModal({ friend, trackerData, loading, onClose }) {
   if (!friend) return null;
 
@@ -39,15 +68,27 @@ export default function PeerInspectorModal({ friend, trackerData, loading, onClo
 
   const grandTargets = { quant: 3160, lrdi: 650, varc: 620, mocks: 30 };
 
+  // Chronological order for months
+  const orderedMonths = ["Month 1", "Month 2", "Month 3", "Month 4"].filter(
+    m => trackerData?.tracker?.[m]
+  );
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <div>
-            <h2 className="modal-title">{friend.name}'s Prep Profile</h2>
-            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{friend.email || "Study Peer"}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="friend-avatar" style={{ width: '40px', height: '40px', fontSize: '15px' }}>
+              {friend.name ? friend.name.charAt(0).toUpperCase() : 'P'}
+            </div>
+            <div>
+              <h2 className="modal-title">{friend.name}'s Prep Profile</h2>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{friend.email || "Study Peer"}</span>
+            </div>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>&times;</button>
+          <button className="modal-close-btn" onClick={onClose} title="Close Inspector">
+            <ModalIcons.Close />
+          </button>
         </div>
 
         <div className="modal-content-scroll">
@@ -55,15 +96,24 @@ export default function PeerInspectorModal({ friend, trackerData, loading, onClo
           <div className="inspector-grid">
             <div className="inspector-card">
               <div className="stat-title" style={{ fontSize: '9px' }}>Current Streak</div>
-              <div className="inspector-val">⚡ {friend.streak || 0} Days</div>
+              <div className="inspector-val" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ModalIcons.Zap size={14} />
+                <span>{friend.streak || 0} Days</span>
+              </div>
             </div>
             <div className="inspector-card">
               <div className="stat-title" style={{ fontSize: '9px' }}>Solved Total</div>
-              <div className="inspector-val">📚 {(totalQuant + totalLrdi + totalVarc).toLocaleString()}</div>
+              <div className="inspector-val" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ModalIcons.Target size={14} />
+                <span>{(totalQuant + totalLrdi + totalVarc).toLocaleString()}</span>
+              </div>
             </div>
             <div className="inspector-card">
               <div className="stat-title" style={{ fontSize: '9px' }}>Mocks Taken</div>
-              <div className="inspector-val">📝 {completedMocks.length} / 30</div>
+              <div className="inspector-val" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ModalIcons.FileText size={14} />
+                <span>{completedMocks.length} / 30</span>
+              </div>
             </div>
           </div>
 
@@ -111,14 +161,14 @@ export default function PeerInspectorModal({ friend, trackerData, loading, onClo
                 </div>
               </div>
 
-              {/* Study Completion Matrix (GitHub Style Heatmap) */}
+              {/* Study Completion Matrix (Chronological Month 1 - 4) */}
               <h3 className="inspector-section-title">Consistency Matrix</h3>
               <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: '12px' }}>
                 Shows daily active status (checked at least one drill) from Week 1 to Week 16.
               </p>
               
-              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '24px', padding: '12px', border: '1px solid var(--border-color)', borderRadius: '4px', backgroundColor: 'var(--bg-primary)' }}>
-                {Object.keys(trackerData.tracker).map(monthKey => {
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '24px', padding: '12px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-primary)' }}>
+                {orderedMonths.map(monthKey => {
                   const weeksInMonth = trackerData.tracker[monthKey] || [];
                   return (
                     <div key={monthKey} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
