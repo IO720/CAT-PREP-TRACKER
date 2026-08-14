@@ -22,6 +22,7 @@ import MockTrackerView from './components/MockTrackerView';
 import ErrorLogView from './components/ErrorLogView';
 import ProfileView from './components/ProfileView';
 import StudyTimerView from './components/StudyTimerView';
+import DownloadAppView from './components/DownloadAppView';
 import FloatingTimerWidget from './components/FloatingTimerWidget';
 import ThemeSelectorDropdown from './components/ThemeSelectorDropdown';
 import ThemeSwitchToast from './components/ThemeSwitchToast';
@@ -83,6 +84,13 @@ const Icons = {
       <line x1="12" y1="22" x2="12.01" y2="22"></line>
       <line x1="16" y1="16" x2="16.01" y2="16"></line>
       <line x1="16" y1="20" x2="16.01" y2="20"></line>
+    </svg>
+  ),
+  Download: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+      <polyline points="7 10 12 15 17 10"></polyline>
+      <line x1="12" y1="15" x2="12" y2="3"></line>
     </svg>
   ),
   Calendar: ({ size = 15 }) => (
@@ -908,6 +916,14 @@ export default function App() {
             <span className="nav-icon"><Icons.Cloud /></span>
             <span className="nav-link-text">Cloud Sync</span>
           </button>
+          <button 
+            className={`nav-link ${activeTab === 'download' ? 'active' : ''}`}
+            onClick={() => setActiveTab('download')}
+            title="Download Android App"
+          >
+            <span className="nav-icon"><Icons.Download /></span>
+            <span className="nav-link-text">Get App</span>
+          </button>
         </nav>
 
         <div className="sidebar-footer">
@@ -937,7 +953,7 @@ export default function App() {
           <header className="global-header">
             <div className="header-brand-title">
               <span className="brand-dot"></span>
-              <span className="header-page-name">{activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'errors' ? 'Error Log' : 'Cloud Maintenance'}</span>
+              <span className="header-page-name">{activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'errors' ? 'Error Log' : activeTab === 'download' ? 'Download Mobile App' : 'Cloud Maintenance'}</span>
             </div>
 
             <div className="header-stats">
@@ -1034,6 +1050,9 @@ export default function App() {
               fileInputRef={fileInputRef}
             />
           )}
+          {activeTab === 'download' && (
+            <DownloadAppView />
+          )}
         </main>
       </div>
 
@@ -1066,6 +1085,10 @@ export default function App() {
         <button className={`mobile-nav-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
           <span className="mobile-nav-icon"><Icons.Cloud /></span>
           <span>Cloud</span>
+        </button>
+        <button className={`mobile-nav-btn ${activeTab === 'download' ? 'active' : ''}`} onClick={() => setActiveTab('download')}>
+          <span className="mobile-nav-icon"><Icons.Download /></span>
+          <span>Get App</span>
         </button>
       </nav>
 
