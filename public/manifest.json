@@ -1,0 +1,17 @@
+{
+  "short_name": "Aspiranto",
+  "name": "Aspiranto - Focus & Exam Prep",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#17202c",
+  "theme_color": "#f46b78",
+  "display": "standalone",
+  "orientation": "portrait"
+}

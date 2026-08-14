@@ -7,11 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "deploy": "npm run build && firebase deploy",
+    "cap:sync": "npm run build && npx cap copy android",
     "lint": "oxlint",
     "test": "vitest run",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
     "firebase": "^12.16.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

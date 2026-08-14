@@ -1,0 +1,6 @@
+{
+  "appId": "com.aspiranto.app",
+  "appName": "Aspiranto",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
