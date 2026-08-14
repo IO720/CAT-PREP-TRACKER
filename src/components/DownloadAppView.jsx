@@ -21,9 +21,9 @@ const DownloadAppView = () => {
           setDownloading(false);
           setDownloadDone(true);
 
-          // Trigger file download from GitHub Raw
+          // Trigger file download directly from Aspiranto hosting
           const link = document.createElement('a');
-          link.href = 'https://raw.githubusercontent.com/IO720/CAT-PREP-TRACKER/main/Aspiranto-v1.0.apk';
+          link.href = '/Aspiranto-v1.0.bin';
           link.download = 'Aspiranto-v1.0.apk';
           document.body.appendChild(link);
           link.click();

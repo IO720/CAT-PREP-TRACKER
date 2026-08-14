@@ -6,6 +6,21 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "headers": [
+      {
+        "source": "/Aspiranto-v1.0.bin",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/vnd.android.package-archive"
+          },
+          {
+            "key": "Content-Disposition",
+            "value": "attachment; filename=\"Aspiranto-v1.0.apk\""
+          }
+        ]
+      }
+    ],
     "rewrites": [
       {
         "source": "**",
