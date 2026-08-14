@@ -176,10 +176,31 @@ export default function DailyTrackerView({
                     <span>{dayDateFormatted}</span>
                   </div>
                 </div>
-                <span className="day-completions-badge">
-                  {completedCount} / 3 Tasks Done
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                  <span className="day-completions-badge">
+                    {completedCount} / 3 Tasks Done
+                  </span>
+                  {day.studyHours > 0 && (
+                    <span className="day-hours-badge" title="Total hours studied logged from Timer">
+                      ⏱️ {day.studyHours.toFixed(1)} hrs studied
+                    </span>
+                  )}
+                </div>
               </div>
+
+              {/* Logged Timer Sessions List */}
+              {day.sessions && day.sessions.length > 0 && (
+                <div className="day-sessions-summary-row">
+                  <span className="sessions-summary-title">Recorded Sessions:</span>
+                  <div className="sessions-chips-list">
+                    {day.sessions.map((s, sIdx) => (
+                      <span key={s.id || sIdx} className="day-session-chip">
+                        {s.startTime} - {s.endTime} ({s.durationMinutes}m {s.subject})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Drills Grid */}
               <div className="day-drills-row">

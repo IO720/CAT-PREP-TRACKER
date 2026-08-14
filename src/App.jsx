@@ -21,8 +21,20 @@ import DailyTrackerView from './components/DailyTrackerView';
 import MockTrackerView from './components/MockTrackerView';
 import ErrorLogView from './components/ErrorLogView';
 import ProfileView from './components/ProfileView';
+import StudyTimerView from './components/StudyTimerView';
+import FloatingTimerWidget from './components/FloatingTimerWidget';
+import ThemeSelectorDropdown from './components/ThemeSelectorDropdown';
+import ThemeSwitchToast from './components/ThemeSwitchToast';
+import { audioEngine } from './utils/audioUtils';
 
 const Icons = {
+  Logo: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <rect x="8" y="10" width="44" height="42" rx="10" fill="var(--accent-color)" stroke="currentColor" strokeWidth="3" />
+      <path d="M18 18 H42 M18 24 H34" stroke="var(--bg-primary)" strokeWidth="3" strokeLinecap="round" opacity="0.9" />
+      <path d="M32 26 L35 34 L43 35 L37 41 L39 49 L32 44 L25 49 L27 41 L21 35 L29 34 Z" fill="#fbbf24" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  ),
   Home: () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
       <rect x="3" y="3" width="7" height="9"></rect>
@@ -119,6 +131,12 @@ const Icons = {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="9 18 15 12 9 6"></polyline>
     </svg>
+  ),
+  Timer: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
   )
 };
 
@@ -126,6 +144,7 @@ export default function App() {
   const [state, setState] = useState(() => loadState());
   const [activeTab, setActiveTab] = useState('dashboard');
   const [theme, setTheme] = useState(state.settings?.theme || 'dark');
+  const [showThemeToast, setShowThemeToast] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
 
   // Collapsible sidebar state
@@ -150,6 +169,28 @@ export default function App() {
   // Daily tracker active selectors - initialized to TODAY's month & week
   const [activeMonth, setActiveMonth] = useState(todayPos.activeMonth);
   const [activeWeek, setActiveWeek] = useState(todayPos.activeWeek);
+
+  // Focus Timer State
+  const [timerState, setTimerState] = useState({
+    secondsLeft: 25 * 60,
+    totalSeconds: 25 * 60,
+    isRunning: false,
+    isPaused: false,
+    mode: 'pomodoro',
+    visualTheme: 'forest',
+    subject: 'Quant',
+    startTimeStr: null,
+    startTimeMs: null,
+    sessionNotes: ''
+  });
+
+  // Calculate Today's sessions and total hours
+  const todayPositionNow = getTodayTrackerPosition(state.settings?.startDate);
+  const todayMonthObj = state.tracker[todayPositionNow.activeMonth];
+  const todayWeekObj = todayMonthObj?.find(w => w.week === todayPositionNow.activeWeek);
+  const todayDayObj = todayWeekObj?.days?.find(d => d.day === todayPositionNow.dayName);
+  const todaySessions = todayDayObj?.sessions || [];
+  const todayTotalHours = todayDayObj?.studyHours || (todaySessions.reduce((acc, s) => acc + (s.durationMinutes || 0) / 60, 0));
 
   // Sync web network date on mount and set live clock tick
   useEffect(() => {
@@ -421,9 +462,21 @@ export default function App() {
     }
   };
 
-  // Toggle Theme
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  // Reset all tracker data to defaults
+  const handleReset = () => {
+    if (window.confirm("Are you sure you want to reset all tracker data to defaults? This action cannot be undone.")) {
+      const initial = getInitialState();
+      setState(initial);
+      saveState(initial);
+    }
+  };
+
+  // Handle Selecting a new theme
+  const handleSelectTheme = (newTheme) => {
+    if (newTheme !== theme) {
+      setTheme(newTheme);
+      setShowThemeToast(true);
+    }
   };
 
   // 1. Update week status in overall Study Plan
@@ -574,27 +627,215 @@ export default function App() {
     reader.readAsText(file);
   };
 
-  // Reset all state to defaults
-  const handleReset = () => {
-    if (window.confirm("Are you sure you want to RESET all your progress? This cannot be undone.")) {
-      const defaultState = getInitialState();
-      setState(defaultState);
-      alert("All progress reset to default.");
-    }
+  // Add recorded study session to today's tracker day
+  const addStudySession = (session) => {
+    setState(prev => {
+      const todayPosition = getTodayTrackerPosition(prev.settings?.startDate);
+      const updatedTracker = { ...prev.tracker };
+      const monthWeeks = updatedTracker[todayPosition.activeMonth] || [];
+
+      updatedTracker[todayPosition.activeMonth] = monthWeeks.map(week => {
+        if (week.week === todayPosition.activeWeek) {
+          const updatedDays = week.days.map(day => {
+            if (day.day === todayPosition.dayName) {
+              const prevSessions = day.sessions || [];
+              const newSessions = [session, ...prevSessions];
+              const prevHours = day.studyHours || 0;
+              const addedHours = (session.durationMinutes || 0) / 60;
+              return {
+                ...day,
+                studyHours: Math.round((prevHours + addedHours) * 10) / 10,
+                sessions: newSessions
+              };
+            }
+            return day;
+          });
+          return { ...week, days: updatedDays };
+        }
+        return week;
+      });
+
+      return { ...prev, tracker: updatedTracker };
+    });
   };
+
+  // Delete a recorded session
+  const handleDeleteSession = (sessionId) => {
+    setState(prev => {
+      const todayPosition = getTodayTrackerPosition(prev.settings?.startDate);
+      const updatedTracker = { ...prev.tracker };
+      const monthWeeks = updatedTracker[todayPosition.activeMonth] || [];
+
+      updatedTracker[todayPosition.activeMonth] = monthWeeks.map(week => {
+        if (week.week === todayPosition.activeWeek) {
+          const updatedDays = week.days.map(day => {
+            if (day.day === todayPosition.dayName) {
+              const targetSess = (day.sessions || []).find(s => s.id === sessionId);
+              const removedMins = targetSess ? targetSess.durationMinutes : 0;
+              const newSessions = (day.sessions || []).filter(s => s.id !== sessionId);
+              const newHours = Math.max(0, (day.studyHours || 0) - (removedMins / 60));
+              return {
+                ...day,
+                studyHours: Math.round(newHours * 10) / 10,
+                sessions: newSessions
+              };
+            }
+            return day;
+          });
+          return { ...week, days: updatedDays };
+        }
+        return week;
+      });
+
+      return { ...prev, tracker: updatedTracker };
+    });
+  };
+
+  // Timer Handlers
+  const handleStartTimer = ({ durationMinutes, mode, visualTheme, subject, notes }) => {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const targetSecs = durationMinutes * 60;
+
+    setTimerState({
+      secondsLeft: targetSecs > 0 ? targetSecs : 0,
+      totalSeconds: targetSecs > 0 ? targetSecs : 1,
+      isRunning: true,
+      isPaused: false,
+      mode,
+      visualTheme,
+      subject,
+      startTimeStr: timeStr,
+      startTimeMs: now.getTime(),
+      sessionNotes: notes || ''
+    });
+  };
+
+  const handlePauseTimer = () => {
+    setTimerState(prev => ({ ...prev, isRunning: false, isPaused: true }));
+  };
+
+  const handleResumeTimer = () => {
+    setTimerState(prev => ({ ...prev, isRunning: true, isPaused: false }));
+  };
+
+  const handleResetTimer = () => {
+    setTimerState(prev => ({
+      ...prev,
+      secondsLeft: prev.totalSeconds,
+      isRunning: false,
+      isPaused: false,
+      startTimeStr: null,
+      startTimeMs: null
+    }));
+  };
+
+  const handleFinishTimer = () => {
+    const now = new Date();
+    const endTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const startMs = timerState.startTimeMs || (now.getTime() - (timerState.totalSeconds - timerState.secondsLeft) * 1000);
+    const startObj = new Date(startMs);
+    const startTimeStr = startObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let elapsedMins = Math.max(1, Math.round((now.getTime() - startMs) / 60000));
+    if (timerState.mode !== 'stopwatch' && timerState.totalSeconds > 0) {
+      elapsedMins = Math.round((timerState.totalSeconds - timerState.secondsLeft) / 60);
+      if (elapsedMins <= 0) elapsedMins = Math.round(timerState.totalSeconds / 60);
+    }
+
+    const sessionObj = {
+      id: 'sess_' + Date.now(),
+      startTime: startTimeStr,
+      endTime: endTimeStr,
+      durationMinutes: elapsedMins,
+      subject: timerState.subject,
+      mode: timerState.mode,
+      visualTheme: timerState.visualTheme,
+      notes: timerState.sessionNotes,
+      timestamp: Date.now()
+    };
+
+    addStudySession(sessionObj);
+    audioEngine.playCompletionSound();
+
+    setTimerState(prev => ({
+      ...prev,
+      secondsLeft: prev.totalSeconds,
+      isRunning: false,
+      isPaused: false,
+      startTimeStr: null,
+      startTimeMs: null
+    }));
+  };
+
+  // Timer Tick Effect
+  useEffect(() => {
+    let interval = null;
+    if (timerState.isRunning) {
+      interval = setInterval(() => {
+        setTimerState(prev => {
+          if (prev.mode === 'stopwatch') {
+            return { ...prev, secondsLeft: prev.secondsLeft + 1 };
+          }
+          if (prev.secondsLeft <= 1) {
+            // Finished naturally
+            audioEngine.playCompletionSound();
+            const now = new Date();
+            const endTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const startMs = prev.startTimeMs || (now.getTime() - prev.totalSeconds * 1000);
+            const startObj = new Date(startMs);
+            const startTimeStr = startObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const elapsedMins = Math.round(prev.totalSeconds / 60);
+
+            const sessionObj = {
+              id: 'sess_' + Date.now(),
+              startTime: startTimeStr,
+              endTime: endTimeStr,
+              durationMinutes: elapsedMins,
+              subject: prev.subject,
+              mode: prev.mode,
+              visualTheme: prev.visualTheme,
+              notes: prev.sessionNotes,
+              timestamp: Date.now()
+            };
+
+            addStudySession(sessionObj);
+
+            if (Notification.permission === 'granted') {
+              new Notification("Focus Session Complete! 🎉", {
+                body: `Awesome! You studied ${prev.subject} for ${elapsedMins} mins. Time auto-recorded.`,
+                icon: "/favicon.svg"
+              });
+            }
+
+            return {
+              ...prev,
+              secondsLeft: 0,
+              isRunning: false,
+              isPaused: false,
+              startTimeStr: null,
+              startTimeMs: null
+            };
+          }
+          return { ...prev, secondsLeft: prev.secondsLeft - 1 };
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [timerState.isRunning]);
 
   if (appLoading) {
     return (
       <div className="minimal-loader-screen">
         <div className="brand-logo-badge" style={{ width: '56px', height: '56px', fontSize: '24px', marginBottom: '24px' }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-          </svg>
+          <Icons.Logo size={32} />
         </div>
         <div className="loader-bar-container">
           <div className="loader-bar-fill"></div>
         </div>
-        <span className="loader-text">Loading Aspirant Tracker...</span>
+        <span className="loader-text">Loading Aspiranto...</span>
       </div>
     );
   }
@@ -604,12 +845,10 @@ export default function App() {
       {/* Sidebar Navigation (Hidden on mobile) */}
       <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="brand-section">
-          <div className="brand-logo-badge" title="Aspirant Tracker Logo">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-            </svg>
+          <div className="brand-logo-badge" title="Aspiranto Logo">
+            <Icons.Logo size={22} />
           </div>
-          <span className="brand-name">Aspirant Tracker</span>
+          <span className="brand-name">Aspiranto</span>
         </div>
 
         <nav className="nav-links">
@@ -628,6 +867,14 @@ export default function App() {
           >
             <span className="nav-icon"><Icons.Plan /></span>
             <span className="nav-link-text">Study Plan</span>
+          </button>
+          <button 
+            className={`nav-link ${activeTab === 'timer' ? 'active' : ''}`}
+            onClick={() => setActiveTab('timer')}
+            title="Focus & Study Timer"
+          >
+            <span className="nav-icon"><Icons.Timer /></span>
+            <span className="nav-link-text">Study Timer</span>
           </button>
           <button 
             className={`nav-link ${activeTab === 'daily' ? 'active' : ''}`}
@@ -685,43 +932,36 @@ export default function App() {
 
       {/* Main Layout Wrapper (Dynamically fills space on PC) */}
       <div className="app-main-wrapper">
-        {/* Global Header Progress Bar */}
-        <header className="global-header">
-          <div className="header-progress-container">
-            <div className="header-progress-label-group">
-              <span className="header-progress-label">Prep Progress</span>
-              <span className="header-progress-val">{globalPercent}%</span>
+        {/* Clean Global Header (Hidden when inside Focus Timer) */}
+        {activeTab !== 'timer' && (
+          <header className="global-header">
+            <div className="header-brand-title">
+              <span className="brand-dot"></span>
+              <span className="header-page-name">{activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'errors' ? 'Error Log' : 'Cloud Maintenance'}</span>
             </div>
-            <div className="header-progress-bar" title="Overall completed percentage of prep questions">
-              <div className="header-progress-fill" style={{ width: `${globalPercent}%` }}></div>
-            </div>
-          </div>
 
-          <div className="header-stats">
-            <div className="header-stat-item date-header-item" title="Current Live Date (OS/Web synced)">
-              <Icons.Calendar size={14} />
-              <span>{formatDateShort(currentDate)}</span>
+            <div className="header-stats">
+              <div className="header-stat-item date-header-item" title="Current Live Date (OS/Web synced)">
+                <Icons.Calendar size={14} />
+                <span>{formatDateShort(currentDate)}</span>
+              </div>
+              <div className="header-stat-item" title="Consecutive active days">
+                <Icons.Zap size={14} />
+                <span>{activeStreak}<span className="desktop-inline"> Days</span><span className="mobile-inline">d</span></span>
+              </div>
+              <div className="header-stat-item" title="Practice questions solved">
+                <Icons.Target size={14} />
+                <span>{totalSolved.toLocaleString()}<span className="desktop-inline"> / {grandTargetTotal.toLocaleString()}</span></span>
+              </div>
+              
+              {/* Custom Animated Theme Popover Dropdown */}
+              <ThemeSelectorDropdown 
+                currentTheme={theme} 
+                onSelectTheme={handleSelectTheme} 
+              />
             </div>
-            <div className="header-stat-item" title="Consecutive active days">
-              <Icons.Zap size={14} />
-              <span>{activeStreak}<span className="desktop-inline"> Days</span><span className="mobile-inline">d</span></span>
-            </div>
-            <div className="header-stat-item" title="Practice questions solved">
-              <Icons.Target size={14} />
-              <span>{totalSolved.toLocaleString()}<span className="desktop-inline"> / {grandTargetTotal.toLocaleString()}</span></span>
-            </div>
-            
-            {/* Minimal Circular Theme Toggle in Header */}
-            <button 
-              onClick={toggleTheme} 
-              className="theme-toggle-btn" 
-              style={{ padding: '6px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 0 }}
-              title="Toggle Light/Dark Theme"
-            >
-              {theme === 'light' ? <Icons.Moon size={15} /> : <Icons.Sun size={15} />}
-            </button>
-          </div>
-        </header>
+          </header>
+        )}
 
         {/* Main Content Render */}
         <main className="main-content">
@@ -763,6 +1003,21 @@ export default function App() {
               onDayClick={handleJumpToDay} 
             />
           )}
+          {activeTab === 'timer' && (
+            <StudyTimerView
+              timerState={timerState}
+              onStartTimer={handleStartTimer}
+              onPauseTimer={handlePauseTimer}
+              onResumeTimer={handleResumeTimer}
+              onResetTimer={handleResetTimer}
+              onFinishTimer={handleFinishTimer}
+              todaySessions={todaySessions}
+              todayTotalHours={todayTotalHours}
+              onDeleteSession={handleDeleteSession}
+              theme={theme}
+              onSetTheme={handleSelectTheme}
+            />
+          )}
           {activeTab === 'profile' && (
             <ProfileView
               user={user}
@@ -792,6 +1047,10 @@ export default function App() {
           <span className="mobile-nav-icon"><Icons.Plan /></span>
           <span>Plan</span>
         </button>
+        <button className={`mobile-nav-btn ${activeTab === 'timer' ? 'active' : ''}`} onClick={() => setActiveTab('timer')}>
+          <span className="mobile-nav-icon"><Icons.Timer /></span>
+          <span>Timer</span>
+        </button>
         <button className={`mobile-nav-btn ${activeTab === 'daily' ? 'active' : ''}`} onClick={() => setActiveTab('daily')}>
           <span className="mobile-nav-icon"><Icons.Drills /></span>
           <span>Drills</span>
@@ -809,6 +1068,25 @@ export default function App() {
           <span>Cloud</span>
         </button>
       </nav>
+
+      {/* Floating Timer Mini Widget */}
+      {activeTab !== 'timer' && (
+        <FloatingTimerWidget
+          timerState={timerState}
+          onPause={handlePauseTimer}
+          onResume={handleResumeTimer}
+          onFinish={handleFinishTimer}
+          onOpenTimer={() => setActiveTab('timer')}
+        />
+      )}
+
+      {/* Animated Theme Switch Toast Banner */}
+      {showThemeToast && (
+        <ThemeSwitchToast 
+          activeTheme={theme} 
+          onClose={() => setShowThemeToast(false)} 
+        />
+      )}
 
       {/* Peer Progress Modal Overlay */}
       <PeerInspectorModal

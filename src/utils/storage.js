@@ -19,7 +19,9 @@ export const getInitialState = () => {
         quantCount: 0,
         lrdiCount: 0,
         varcCount: 0,
-        notes: day.notes || ""
+        notes: day.notes || "",
+        studyHours: day.studyHours || 0,
+        sessions: day.sessions || []
       }))
     }));
   }
