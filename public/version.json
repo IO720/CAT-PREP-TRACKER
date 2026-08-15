@@ -1,5 +1,6 @@
 {
-  "version": "1.0.7",
-  "buildTime": "2026-08-15T19:28:00.000Z",
-  "releaseNotes": "Definitive edge-to-edge status bar clearance and touch-responsive bottom navigation"
+  "version": "1.0.8",
+  "versionCode": 10008,
+  "buildTime": "2026-08-15T14:02:19.798Z",
+  "releaseNotes": "Automated live update release v1.0.8"
 }

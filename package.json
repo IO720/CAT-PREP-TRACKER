@@ -1,13 +1,14 @@
 {
   "name": "tracker",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.8",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "deploy": "npm run build && firebase deploy",
     "cap:sync": "npm run build && npx cap copy android",
+    "release": "node scripts/release.js",
     "lint": "oxlint",
     "test": "vitest run",
     "preview": "vite preview"
