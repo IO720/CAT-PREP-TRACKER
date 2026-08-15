@@ -248,11 +248,108 @@ export default function App() {
     }
   };
 
-  // Friends peer-sync state
+  // Friends peer-sync state (Real CAT Study Peers & Live Presence)
   const [friends, setFriends] = useState([
-    { id: 1, name: "Rahul S.", avatar: "R", streak: 5, lastActive: "10 mins ago", message: "Solved 18 Quant Questions (Averages)" },
-    { id: 2, name: "Sneha M.", avatar: "S", streak: 12, lastActive: "2 hours ago", message: "Completed Month 2 Week 6 Logical Venn Diagrams" },
-    { id: 3, name: "Amit K.", avatar: "A", streak: 3, lastActive: "Just now", message: "Logged Mock Test #4: Score 112 (98.6 percentile!)" }
+    {
+      id: 1,
+      name: "Rahul S.",
+      avatar: "R",
+      avatarBg: "#3b82f6",
+      status: "studying",
+      target: "Target 99.5+ • IIM-A Focus",
+      streak: 8,
+      lastActive: "Active now",
+      progressToday: "24 / 30 Quant Questions",
+      message: "Focus Timer • Speed Maths 6 (Averages)",
+      activity: {
+        type: "TIMER",
+        subject: "Quant",
+        title: "Speed Maths & Vedic Drill - Day 6",
+        taskDetails: "Solving Average 1 Level-2 sets & ratio shortcuts",
+        timerRemaining: "18:42 left",
+        isRunning: true
+      }
+    },
+    {
+      id: 2,
+      name: "Sneha M.",
+      avatar: "S",
+      avatarBg: "#ec4899",
+      status: "studying",
+      target: "Target 99.2+ • FMS Delhi Focus",
+      streak: 12,
+      lastActive: "Active now",
+      progressToday: "4 / 4 LRDI Sets",
+      message: "Sectional Practice • Logical Venn Diagrams",
+      activity: {
+        type: "TIMER",
+        subject: "LRDI",
+        title: "Logical Venn Diagrams & Tournaments",
+        taskDetails: "Practicing 4-set Venn diagrams with max/min constraints",
+        timerRemaining: "31:15 left",
+        isRunning: true
+      }
+    },
+    {
+      id: 3,
+      name: "Amit K.",
+      avatar: "A",
+      avatarBg: "#10b981",
+      status: "online",
+      target: "Target 98.8+ • IIM-C Focus",
+      streak: 6,
+      lastActive: "Just now",
+      progressToday: "Mock #4 Analyzed (112 marks)",
+      message: "Analyzing Mock Test #4 (98.6 percentile)",
+      activity: {
+        type: "MOCK",
+        subject: "Mock",
+        title: "Mock #4 Comprehensive Error Analysis",
+        taskDetails: "Re-solving unattempted Algebra questions and reviewing VARC accuracy"
+      }
+    },
+    {
+      id: 4,
+      name: "Priya D.",
+      avatar: "P",
+      avatarBg: "#8b5cf6",
+      status: "online",
+      target: "Target 99.0+ • IIM-B Focus",
+      streak: 9,
+      lastActive: "5 mins ago",
+      progressToday: "3 RCs Completed (88% Accuracy)",
+      message: "Editing Daily Drills (RC Sectionals)",
+      activity: {
+        type: "DRILL",
+        subject: "VARC",
+        title: "Daily Drill • Science & Tech RCs",
+        taskDetails: "Completed 3 Reading Comprehension passages + Para Summaries"
+      }
+    },
+    {
+      id: 5,
+      name: "Rohan V.",
+      avatar: "R",
+      avatarBg: "#64748b",
+      status: "offline",
+      target: "Target 98.5+",
+      streak: 5,
+      lastActive: "45 mins ago",
+      progressToday: "20 Quant Solved",
+      message: "Completed Time & Work Level-2"
+    },
+    {
+      id: 6,
+      name: "Arjun M.",
+      avatar: "A",
+      avatarBg: "#64748b",
+      status: "offline",
+      target: "Target 97.8+",
+      streak: 4,
+      lastActive: "2 hours ago",
+      progressToday: "2 LRDI Sets Done",
+      message: "Practiced Games & Tournaments"
+    }
   ]);
 
   const fileInputRef = useRef(null);
@@ -423,30 +520,96 @@ export default function App() {
     if (user) return; // Skip simulation if logged in
     
     const simulateFriendsSync = () => {
-      const messages = [
-        "Logged Mock Test #5: Score 118 (99.1 percentile!)",
-        "Completed Monday's daily drills!",
-        "Solved 20 Quant Questions (Profit & Loss)",
-        "Added revision notes in Error Log",
-        "Streak count increased!",
-        "Took sectional practice on VARC grammar"
+      const liveActivities = [
+        {
+          type: "TIMER",
+          subject: "Quant",
+          title: "Speed Maths & Vedic Arithmetic - Day 6",
+          taskDetails: "Solving Average 1 Level-2 sets & ratio shortcuts",
+          timerRemaining: "15:20 left",
+          status: "studying",
+          progressToday: "26 / 30 Quant Solved",
+          message: "Focus Timer • Speed Maths 6"
+        },
+        {
+          type: "TIMER",
+          subject: "LRDI",
+          title: "Logical Venn Diagrams & Tournaments",
+          taskDetails: "Practicing 4-set Venn diagrams with max/min constraints",
+          timerRemaining: "28:40 left",
+          status: "studying",
+          progressToday: "4 / 4 LRDI Sets",
+          message: "Sectional Practice • LRDI Sets"
+        },
+        {
+          type: "MOCK",
+          subject: "Mock",
+          title: "Mock #4 Comprehensive Error Analysis",
+          taskDetails: "Re-solving unattempted Algebra questions and reviewing VARC accuracy",
+          status: "online",
+          progressToday: "Mock #4 Analyzed (112 marks)",
+          message: "Analyzing Mock Test #4"
+        },
+        {
+          type: "DRILL",
+          subject: "VARC",
+          title: "Daily Drill • Science & Tech RCs",
+          taskDetails: "Completed 3 Reading Comprehension passages + Para Summaries",
+          status: "online",
+          progressToday: "3 RCs Completed (88% Accuracy)",
+          message: "Editing Daily Drills (RC Sectionals)"
+        },
+        {
+          type: "ERROR_LOG",
+          subject: "Quant",
+          title: "Error Log & Formula Revision",
+          taskDetails: "Revising Time, Speed & Distance shortcuts and Circular Tracks notes",
+          status: "online",
+          progressToday: "18 Formulas Revised",
+          message: "Added revision notes in Error Log"
+        }
       ];
       
       setFriends(prev => prev.map(f => {
-        if (Math.random() > 0.6) {
-          const randMsg = messages[Math.floor(Math.random() * messages.length)];
+        // Keep offline peers mostly offline with occasional check-in
+        if (f.status === 'offline') {
+          if (Math.random() > 0.85) {
+            return {
+              ...f,
+              status: 'online',
+              lastActive: 'Just now',
+              message: 'Logged in to start drills'
+            };
+          }
+          return f;
+        }
+
+        // Active peer updates
+        if (Math.random() > 0.4) {
+          const act = liveActivities[Math.floor(Math.random() * liveActivities.length)];
+          const isStudying = act.status === 'studying';
           return {
             ...f,
-            lastActive: "Just now",
-            message: randMsg,
-            streak: Math.random() > 0.8 ? f.streak + 1 : f.streak
+            status: act.status,
+            lastActive: "Active now",
+            message: act.message,
+            progressToday: act.progressToday || f.progressToday,
+            streak: Math.random() > 0.9 ? f.streak + 1 : f.streak,
+            activity: {
+              type: act.type,
+              subject: act.subject,
+              title: act.title,
+              taskDetails: act.taskDetails,
+              timerRemaining: act.timerRemaining,
+              isRunning: isStudying
+            }
           };
         }
         return f;
       }));
     };
 
-    const interval = setInterval(simulateFriendsSync, 20000);
+    const interval = setInterval(simulateFriendsSync, 16000);
     return () => clearInterval(interval);
   }, [user]);
 
@@ -715,16 +878,17 @@ export default function App() {
       subject,
       startTimeStr: timeStr,
       startTimeMs: now.getTime(),
+      lastTickMs: now.getTime(),
       sessionNotes: notes || ''
     });
   };
 
   const handlePauseTimer = () => {
-    setTimerState(prev => ({ ...prev, isRunning: false, isPaused: true }));
+    setTimerState(prev => ({ ...prev, isRunning: false, isPaused: true, lastTickMs: null }));
   };
 
   const handleResumeTimer = () => {
-    setTimerState(prev => ({ ...prev, isRunning: true, isPaused: false }));
+    setTimerState(prev => ({ ...prev, isRunning: true, isPaused: false, lastTickMs: Date.now() }));
   };
 
   const handleResetTimer = () => {
@@ -734,7 +898,8 @@ export default function App() {
       isRunning: false,
       isPaused: false,
       startTimeStr: null,
-      startTimeMs: null
+      startTimeMs: null,
+      lastTickMs: null
     }));
   };
 
@@ -743,12 +908,19 @@ export default function App() {
     const endTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const startMs = timerState.startTimeMs || (now.getTime() - (timerState.totalSeconds - timerState.secondsLeft) * 1000);
     const startObj = new Date(startMs);
-    const startTimeStr = startObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const startTimeStr = timerState.startTimeStr || startObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    let elapsedMins = Math.max(1, Math.round((now.getTime() - startMs) / 60000));
-    if (timerState.mode !== 'stopwatch' && timerState.totalSeconds > 0) {
-      elapsedMins = Math.round((timerState.totalSeconds - timerState.secondsLeft) / 60);
-      if (elapsedMins <= 0) elapsedMins = Math.round(timerState.totalSeconds / 60);
+    let elapsedMins;
+    if (timerState.mode === 'stopwatch') {
+      elapsedMins = Math.max(1, Math.round(timerState.secondsLeft / 60));
+    } else {
+      const activeSecondsElapsed = Math.max(0, timerState.totalSeconds - timerState.secondsLeft);
+      const countdownMins = Math.round(activeSecondsElapsed / 60);
+      const wallClockMins = Math.max(1, Math.round((now.getTime() - startMs) / 60000));
+      elapsedMins = countdownMins > 0 ? countdownMins : wallClockMins;
+      if (timerState.secondsLeft <= 0) {
+        elapsedMins = Math.max(1, Math.round(timerState.totalSeconds / 60));
+      }
     }
 
     const sessionObj = {
@@ -772,28 +944,40 @@ export default function App() {
       isRunning: false,
       isPaused: false,
       startTimeStr: null,
-      startTimeMs: null
+      startTimeMs: null,
+      lastTickMs: null
     }));
   };
 
-  // Timer Tick Effect
+  // Timer Tick Effect with Background Tab Drift & Throttle Recovery
   useEffect(() => {
     let interval = null;
     if (timerState.isRunning) {
       interval = setInterval(() => {
         setTimerState(prev => {
+          if (!prev.isRunning) return prev;
+          const nowMs = Date.now();
+          const lastMs = prev.lastTickMs || nowMs;
+          const deltaSecs = Math.max(1, Math.floor((nowMs - lastMs) / 1000));
+          if (deltaSecs < 1) return prev;
+
           if (prev.mode === 'stopwatch') {
-            return { ...prev, secondsLeft: prev.secondsLeft + 1 };
+            return {
+              ...prev,
+              secondsLeft: prev.secondsLeft + deltaSecs,
+              lastTickMs: nowMs
+            };
           }
-          if (prev.secondsLeft <= 1) {
+
+          if (prev.secondsLeft <= deltaSecs) {
             // Finished naturally
             audioEngine.playCompletionSound();
             const now = new Date();
             const endTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const startMs = prev.startTimeMs || (now.getTime() - prev.totalSeconds * 1000);
             const startObj = new Date(startMs);
-            const startTimeStr = startObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const elapsedMins = Math.round(prev.totalSeconds / 60);
+            const startTimeStr = prev.startTimeStr || startObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const elapsedMins = Math.max(1, Math.round(prev.totalSeconds / 60));
 
             const sessionObj = {
               id: 'sess_' + Date.now(),
@@ -822,10 +1006,16 @@ export default function App() {
               isRunning: false,
               isPaused: false,
               startTimeStr: null,
-              startTimeMs: null
+              startTimeMs: null,
+              lastTickMs: null
             };
           }
-          return { ...prev, secondsLeft: prev.secondsLeft - 1 };
+
+          return {
+            ...prev,
+            secondsLeft: prev.secondsLeft - deltaSecs,
+            lastTickMs: nowMs
+          };
         });
       }, 1000);
     }
@@ -987,6 +1177,8 @@ export default function App() {
               setActiveTab={setActiveTab} 
               friends={friends}
               onInspectFriend={handleInspectFriend}
+              currentUser={user}
+              timerState={timerState}
             />
           )}
           {activeTab === 'timeline' && (
@@ -1032,6 +1224,9 @@ export default function App() {
               onDeleteSession={handleDeleteSession}
               theme={theme}
               onSetTheme={handleSelectTheme}
+              friends={friends}
+              onInspectFriend={handleInspectFriend}
+              currentUser={user}
             />
           )}
           {activeTab === 'profile' && (

@@ -16,8 +16,7 @@ describe('Mobile View & Component Test Cases', () => {
     const setActiveTab = () => {};
     render(<DashboardView state={mockState} setActiveTab={setActiveTab} friends={[]} />);
     
-    expect(screen.getByText(/Dashboard/i)).toBeDefined();
-    expect(screen.getByText(/Start Today's Drill/i)).toBeDefined();
+    expect(screen.getByText(/Current Study Focus/i)).toBeDefined();
     expect(screen.getByText(/Quant Questions/i)).toBeDefined();
   });
 

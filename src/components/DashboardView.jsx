@@ -1,7 +1,15 @@
 import React from 'react';
 import { getTodayTrackerPosition } from '../utils/dateUtils';
+import DiscordStudyLounge from './DiscordStudyLounge';
 
-export default function DashboardView({ state, setActiveTab, friends = [], onInspectFriend }) {
+export default function DashboardView({ 
+  state, 
+  setActiveTab, 
+  friends = [], 
+  onInspectFriend,
+  currentUser = null,
+  timerState = null
+}) {
   const { tracker, studyPlan, mocks, settings } = state;
   const todayPos = getTodayTrackerPosition(settings?.startDate);
 
@@ -80,7 +88,7 @@ export default function DashboardView({ state, setActiveTab, friends = [], onIns
           <button className="btn-secondary hero-sub-btn" onClick={() => setActiveTab('timer')}>
             Focus Timer
           </button>
-          <button className="btn-secondary hero-sub-btn" onClick={() => setActiveTab('download')} style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--accent-color)', color: '#ffffff', border: 'none', fontWeight: '700' }}>
+          <button className="btn-secondary hero-sub-btn download-app-hero-btn" onClick={() => setActiveTab('download')}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
@@ -235,33 +243,13 @@ export default function DashboardView({ state, setActiveTab, friends = [], onIns
           )}
         </div>
 
-        {/* Peer Feed */}
-        <div className="dashboard-panel">
-          <div className="panel-header-row">
-            <h2 className="panel-title">Peer Study Feed</h2>
-            <span className="today-badge-chip">Live Activity</span>
-          </div>
-
-          <div className="friend-feed-list">
-            {friends.map(friend => (
-              <div 
-                key={friend.id} 
-                className="friend-feed-item"
-                onClick={() => onInspectFriend && onInspectFriend(friend)}
-                title="Inspect peer progress"
-              >
-                <div className="friend-avatar">{friend.avatar}</div>
-                <div className="friend-info">
-                  <div className="friend-name-row">
-                    <span className="friend-name">{friend.name}</span>
-                    <span className="friend-time">{friend.lastActive}</span>
-                  </div>
-                  <div className="friend-message">{friend.message}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Discord-Style Live Peer Study Lounge */}
+        <DiscordStudyLounge
+          friends={friends}
+          onInspectFriend={onInspectFriend}
+          currentUser={currentUser}
+          timerState={timerState}
+        />
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { audioEngine } from '../utils/audioUtils';
+import DiscordStudyLounge from './DiscordStudyLounge';
 
 export default function StudyTimerView({
   timerState,
@@ -13,7 +13,9 @@ export default function StudyTimerView({
   onDeleteSession,
   theme,
   onSetTheme,
-  themeOptions = []
+  friends = [],
+  onInspectFriend,
+  currentUser = null
 }) {
   const {
     secondsLeft,
@@ -31,7 +33,6 @@ export default function StudyTimerView({
   const [timerMode, setTimerMode] = useState(mode || 'pomodoro');
   const [currentSubject, setCurrentSubject] = useState(subject || 'Quant');
   const [notes, setNotes] = useState(sessionNotes || '');
-  const [ambience, setAmbience] = useState('off');
 
   useEffect(() => {
     if (!isRunning && !isPaused) {
@@ -39,17 +40,6 @@ export default function StudyTimerView({
       setCurrentSubject(subject);
     }
   }, [mode, subject, isRunning, isPaused]);
-
-  const handleAmbienceChange = (type) => {
-    setAmbience(type);
-    audioEngine.startAmbience(type);
-  };
-
-  useEffect(() => {
-    return () => {
-      audioEngine.stopAmbience();
-    };
-  }, []);
 
   const formatTime = (secs) => {
     const mins = Math.floor(secs / 60);
@@ -92,22 +82,6 @@ export default function StudyTimerView({
         </div>
 
         <div className="header-right">
-          {/* Tone Theme Switcher */}
-          {onSetTheme && (
-            <div className="timer-theme-selector">
-              <select
-                value={theme}
-                onChange={(e) => onSetTheme(e.target.value)}
-                className="theme-dropdown-select"
-                title="Change Color Theme"
-              >
-                {themeOptions.map(t => (
-                  <option key={t.id} value={t.id}>{t.label}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
           {/* Today's Focus Hours summary badge */}
           <div className="minimal-hours-badge">
             <span className="hours-label">Today's Focus:</span>
@@ -275,37 +249,6 @@ export default function StudyTimerView({
           </div>
         </div>
 
-        {/* Focus Ambience Selector */}
-        <div className="minimal-box">
-          <span className="minimal-box-label">Relaxing Ambience</span>
-          <div className="minimal-pills-group">
-            <button
-              className={`minimal-pill ${ambience === 'off' ? 'active' : ''}`}
-              onClick={() => handleAmbienceChange('off')}
-            >
-              Mute
-            </button>
-            <button
-              className={`minimal-pill ${ambience === 'rain' ? 'active' : ''}`}
-              onClick={() => handleAmbienceChange('rain')}
-            >
-              Rain
-            </button>
-            <button
-              className={`minimal-pill ${ambience === 'forest' ? 'active' : ''}`}
-              onClick={() => handleAmbienceChange('forest')}
-            >
-              Forest
-            </button>
-            <button
-              className={`minimal-pill ${ambience === 'cafe' ? 'active' : ''}`}
-              onClick={() => handleAmbienceChange('cafe')}
-            >
-              Cafe
-            </button>
-          </div>
-        </div>
-
         {/* Session Notes */}
         <div className="minimal-box wide-box">
           <span className="minimal-box-label">Session Focus Notes</span>
@@ -374,6 +317,17 @@ export default function StudyTimerView({
             ))}
           </div>
         )}
+      </div>
+
+      {/* Discord-Style Live Peer Study Lounge */}
+      <div className="timer-peers-lounge-section">
+        <DiscordStudyLounge
+          friends={friends}
+          onInspectFriend={onInspectFriend}
+          currentUser={currentUser}
+          timerState={timerState}
+          compact={true}
+        />
       </div>
 
     </div>
