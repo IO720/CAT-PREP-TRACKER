@@ -1466,10 +1466,10 @@ button, input, select, textarea {
 
   .global-header {
     padding: 0 16px !important;
-    padding-top: max(48px, env(safe-area-inset-top, 48px)) !important;
+    padding-top: 52px !important;
     padding-bottom: 14px !important;
     height: auto !important;
-    min-height: calc(56px + max(48px, env(safe-area-inset-top, 48px))) !important;
+    min-height: 98px !important;
     background: var(--bg-secondary) !important;
     border-bottom: 1px solid var(--border-color) !important;
     position: sticky !important;
@@ -1482,7 +1482,7 @@ button, input, select, textarea {
   }
 
   .study-timer-container {
-    padding-top: max(48px, env(safe-area-inset-top, 48px)) !important;
+    padding-top: 52px !important;
   }
 
   .header-progress-container {
@@ -1626,18 +1626,20 @@ button, input, select, textarea {
 
   .mobile-bottom-nav {
     display: flex !important;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: calc(58px + max(12px, env(safe-area-inset-bottom, 12px)));
-    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
-    background-color: var(--bg-secondary);
-    border-top: 1px solid var(--border-color);
-    z-index: 1000;
-    justify-content: space-around;
-    align-items: center;
-    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.35);
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 82px !important;
+    padding-top: 6px !important;
+    padding-bottom: 26px !important;
+    background-color: var(--bg-secondary) !important;
+    border-top: 1px solid var(--border-color) !important;
+    z-index: 1000 !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.45) !important;
+    box-sizing: border-box !important;
   }
 
   .mobile-nav-btn {
@@ -1655,7 +1657,7 @@ button, input, select, textarea {
     border: none;
     cursor: pointer;
     transition: all var(--transition-fast);
-    padding: 4px 0;
+    padding: 0;
   }
 
   .mobile-nav-btn.active {
@@ -1683,11 +1685,13 @@ button, input, select, textarea {
   }
 
   .main-content {
-    margin-left: 0;
-    padding: 16px 14px;
-    padding-bottom: calc(84px + max(12px, env(safe-area-inset-bottom, 12px))); /* Spacer for bottom sticky nav */
-    max-width: 100vw;
-    overflow-x: hidden;
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 16px 14px !important;
+    padding-bottom: 110px !important; /* Space for the 82px Instagram-style bottom nav */
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
   }
 
   .stats-grid {
