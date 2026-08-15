@@ -1532,20 +1532,22 @@ button, input, select, textarea {
   .hero-action-buttons {
     width: 100%;
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
   }
 
   .hero-action-buttons button {
-    flex: 1;
+    flex: 1 1 calc(50% - 8px);
+    min-width: 140px;
     justify-content: center;
     text-align: center;
-    padding: 9px 12px;
+    padding: 10px 12px;
     font-size: 12px;
   }
 
-  /* Hide APK download button in hero header on mobile */
   .download-app-hero-btn {
-    display: none !important;
+    display: inline-flex !important;
+    border-color: var(--accent-color);
   }
 
   .today-focus-card {

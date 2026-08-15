@@ -1165,6 +1165,20 @@ export default function App() {
                 <span>{totalSolved.toLocaleString()}<span className="desktop-inline"> / {grandTargetTotal.toLocaleString()}</span></span>
               </div>
               
+              {/* APK Download Shortcut for Web users */}
+              {!isNativeApp && (
+                <button 
+                  className="header-stat-item download-header-pill" 
+                  onClick={() => setActiveTab('download')}
+                  title="Download Android APK"
+                  style={{ cursor: 'pointer', border: '1px solid var(--accent-color)', fontWeight: '700' }}
+                >
+                  <Icons.Download size={14} />
+                  <span className="desktop-inline">Get APK</span>
+                  <span className="mobile-inline">APK</span>
+                </button>
+              )}
+
               {/* Custom Animated Theme Popover Dropdown */}
               <ThemeSelectorDropdown 
                 currentTheme={theme} 
