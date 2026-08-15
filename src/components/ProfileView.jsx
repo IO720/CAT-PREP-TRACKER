@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { signUpUser, logInUser, logOutUser, addFriendByEmail, isFirebaseConfigured } from '../utils/firebase';
+import { APP_VERSION, checkForAppUpdate, applyInstantUpdate } from '../utils/versionCheck';
 
 export default function ProfileView({ 
   user, 
@@ -21,6 +22,9 @@ export default function ProfileView({
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [friendEmail, setFriendEmail] = useState('');
+  
+  const [updateStatus, setUpdateStatus] = useState('');
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
   
   const [authError, setAuthError] = useState('');
   const [friendError, setFriendError] = useState('');
@@ -246,6 +250,60 @@ export default function ProfileView({
             <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '4px' }}>
               Aligns Month 1 Week 1 to your calendar start date and syncs TODAY's drills.
             </p>
+          </div>
+
+          {/* App Version & Over-The-Air Updates Setting */}
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '16px' }}>📱</span>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>App Version</span>
+              </div>
+              <span className="badge-pill" style={{ fontSize: '11px', padding: '2px 8px' }}>v{APP_VERSION} (Live OTA)</span>
+            </div>
+            
+            <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: '12px' }}>
+              Updates are synced live over the air without needing to download a new APK file.
+            </p>
+
+            {updateStatus && (
+              <div style={{ fontSize: '12px', color: updateStatus.includes('New') ? 'var(--accent-color)' : '#22c55e', fontWeight: 600, marginBottom: '10px' }}>
+                {updateStatus}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                type="button" 
+                className="btn-secondary"
+                style={{ flex: 1, fontSize: '12px', padding: '8px' }}
+                disabled={checkingUpdate}
+                onClick={async () => {
+                  setCheckingUpdate(true);
+                  setUpdateStatus('Checking for updates...');
+                  const update = await checkForAppUpdate();
+                  setCheckingUpdate(false);
+                  if (update) {
+                    setUpdateStatus(`New version v${update.version} found! Tap to apply.`);
+                    applyInstantUpdate(update.version);
+                  } else {
+                    setUpdateStatus('You are on the latest live version!');
+                  }
+                }}
+              >
+                {checkingUpdate ? 'Checking...' : 'Check Updates'}
+              </button>
+              
+              <button 
+                type="button" 
+                className="btn-secondary"
+                style={{ fontSize: '12px', padding: '8px' }}
+                title="Force clear cache and reload live assets"
+                onClick={() => applyInstantUpdate(APP_VERSION)}
+              >
+                ↻ Force Refresh
+              </button>
+            </div>
           </div>
         </div>
 

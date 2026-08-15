@@ -27,6 +27,8 @@ import MobileOnboardingAuth from './components/MobileOnboardingAuth';
 import FloatingTimerWidget from './components/FloatingTimerWidget';
 import ThemeSelectorDropdown from './components/ThemeSelectorDropdown';
 import ThemeSwitchToast from './components/ThemeSwitchToast';
+import UpdateNotificationToast from './components/UpdateNotificationToast';
+import { checkForAppUpdate } from './utils/versionCheck';
 import { audioEngine } from './utils/audioUtils';
 import { Capacitor } from '@capacitor/core';
 
@@ -181,6 +183,21 @@ export default function App() {
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const [availableUpdate, setAvailableUpdate] = useState(null);
+
+  // Auto-check for over-the-air updates on mount and periodically
+  useEffect(() => {
+    const runUpdateCheck = async () => {
+      const update = await checkForAppUpdate();
+      if (update) {
+        setAvailableUpdate(update);
+      }
+    };
+    runUpdateCheck();
+    const interval = setInterval(runUpdateCheck, 3 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   // Collapsible sidebar state
@@ -1377,6 +1394,14 @@ export default function App() {
         loading={loadingFriendTracker}
         onClose={() => setSelectedFriend(null)}
       />
+
+      {/* Live Over-The-Air Update Toast */}
+      {availableUpdate && (
+        <UpdateNotificationToast
+          updateData={availableUpdate}
+          onDismiss={() => setAvailableUpdate(null)}
+        />
+      )}
     </div>
   );
 }
