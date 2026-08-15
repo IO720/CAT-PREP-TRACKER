@@ -149,6 +149,13 @@ const Icons = {
       <circle cx="12" cy="12" r="10"></circle>
       <polyline points="12 6 12 12 16 14"></polyline>
     </svg>
+  ),
+  Menu: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
   )
 };
 
@@ -1311,6 +1318,7 @@ export default function App() {
               onReset={handleReset}
               onTriggerNotification={triggerDemoNotification}
               fileInputRef={fileInputRef}
+              setActiveTab={setActiveTab}
             />
           )}
           {activeTab === 'download' && (
@@ -1319,35 +1327,27 @@ export default function App() {
         </main>
       </div>
 
-      {/* Mobile Sticky Bottom Menu */}
+      {/* Streamlined Native Mobile Bottom Navigation (5 Core Tabs) */}
       <nav className="mobile-bottom-nav">
         <button className={`mobile-nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-          <span className="mobile-nav-icon"><Icons.Home /></span>
+          <span className="mobile-nav-icon"><Icons.Home size={20} /></span>
           <span>Home</span>
         </button>
-        <button className={`mobile-nav-btn ${activeTab === 'timeline' ? 'active' : ''}`} onClick={() => setActiveTab('timeline')}>
-          <span className="mobile-nav-icon"><Icons.Plan /></span>
-          <span>Plan</span>
-        </button>
-        <button className={`mobile-nav-btn ${activeTab === 'timer' ? 'active' : ''}`} onClick={() => setActiveTab('timer')}>
-          <span className="mobile-nav-icon"><Icons.Timer /></span>
-          <span>Timer</span>
-        </button>
         <button className={`mobile-nav-btn ${activeTab === 'daily' ? 'active' : ''}`} onClick={() => setActiveTab('daily')}>
-          <span className="mobile-nav-icon"><Icons.Drills /></span>
+          <span className="mobile-nav-icon"><Icons.Drills size={20} /></span>
           <span>Drills</span>
         </button>
+        <button className={`mobile-nav-btn timer-tab-btn ${activeTab === 'timer' ? 'active' : ''}`} onClick={() => setActiveTab('timer')}>
+          <span className="mobile-nav-icon timer-icon-bubble"><Icons.Timer size={22} /></span>
+          <span>Timer</span>
+        </button>
         <button className={`mobile-nav-btn ${activeTab === 'mocks' ? 'active' : ''}`} onClick={() => setActiveTab('mocks')}>
-          <span className="mobile-nav-icon"><Icons.Mocks /></span>
+          <span className="mobile-nav-icon"><Icons.Mocks size={20} /></span>
           <span>Mocks</span>
         </button>
-        <button className={`mobile-nav-btn ${activeTab === 'errors' ? 'active' : ''}`} onClick={() => setActiveTab('errors')}>
-          <span className="mobile-nav-icon"><Icons.Errors /></span>
-          <span>Errors</span>
-        </button>
-        <button className={`mobile-nav-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
-          <span className="mobile-nav-icon"><Icons.Cloud /></span>
-          <span>Cloud</span>
+        <button className={`mobile-nav-btn ${activeTab === 'profile' || activeTab === 'timeline' || activeTab === 'errors' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
+          <span className="mobile-nav-icon"><Icons.Menu size={20} /></span>
+          <span>More</span>
         </button>
       </nav>
 

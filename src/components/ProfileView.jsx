@@ -13,7 +13,8 @@ export default function ProfileView({
   onImport,
   onReset,
   onTriggerNotification,
-  fileInputRef
+  fileInputRef,
+  setActiveTab
 }) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
@@ -87,12 +88,43 @@ export default function ProfileView({
       {/* View Header */}
       <div className="header-row">
         <div>
-          <h1 className="page-title">Cloud Sync & Data Maintenance</h1>
+          <h1 className="page-title">More & Account Settings</h1>
           <p className="page-subtitle">
-            Synchronize progress with cloud backup, manage your prep start date, and coordinate with study peers.
+            Manage your cloud profile, review the full 6-month study plan, error logs, and data backups.
           </p>
         </div>
       </div>
+
+      {/* Quick Navigation Hub */}
+      {setActiveTab && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+          <button 
+            type="button" 
+            className="btn-secondary" 
+            onClick={() => setActiveTab('timeline')}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderRadius: 'var(--radius-md)', cursor: 'pointer', textAlign: 'left' }}
+          >
+            <span style={{ fontSize: '20px' }}>📖</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)' }}>6-Month Plan</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>View syllabus phases</div>
+            </div>
+          </button>
+
+          <button 
+            type="button" 
+            className="btn-secondary" 
+            onClick={() => setActiveTab('errors')}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderRadius: 'var(--radius-md)', cursor: 'pointer', textAlign: 'left' }}
+          >
+            <span style={{ fontSize: '20px' }}>📝</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)' }}>Error Log</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Review formulas & mistakes</div>
+            </div>
+          </button>
+        </div>
+      )}
 
       {!isFirebaseConfigured && (
         <div className="firebase-notice-banner" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
@@ -100,10 +132,10 @@ export default function ProfileView({
             <span style={{ fontSize: '24px' }}>☁️</span>
             <div>
               <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>Offline Local Mode Active</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>All data is saved locally in your browser. Link Firebase for multi-device cloud backup.</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>All data is saved locally in your device storage. Link Firebase for multi-device cloud backup.</div>
             </div>
           </div>
-          <button className="btn-secondary" onClick={() => alert("All data is automatically saved locally in LocalStorage. You can also export backups anytime below!")}>
+          <button className="btn-secondary" onClick={() => alert("All data is automatically saved locally on your device!")}>
             Local Mode Info
           </button>
         </div>
