@@ -5,5 +5,8 @@
   "server": {
     "url": "https://cat-tracker-1538d.web.app",
     "cleartext": false
+  },
+  "android": {
+    "adjustMarginsForEdgeToEdge": "force"
   }
 }
