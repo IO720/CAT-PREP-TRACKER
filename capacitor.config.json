@@ -2,5 +2,8 @@
   "appId": "com.aspiranto.app",
   "appName": "Aspiranto",
   "webDir": "dist",
-  "bundledWebRuntime": false
+  "server": {
+    "url": "https://cat-tracker-1538d.web.app",
+    "cleartext": false
+  }
 }
