@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const DownloadAppView = () => {
+const DownloadAppView = ({ onContinueToWeb, isMobileLanding = false }) => {
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadDone, setDownloadDone] = useState(false);
@@ -112,6 +112,19 @@ const DownloadAppView = () => {
             {downloading && (
               <div className="download-progress-bar-bg">
                 <div className="download-progress-bar-fill" style={{ width: `${downloadProgress}%` }}></div>
+              </div>
+            )}
+
+            {onContinueToWeb && (
+              <div style={{ textAlign: 'center', marginTop: '12px' }}>
+                <button 
+                  type="button"
+                  className="btn-secondary" 
+                  onClick={onContinueToWeb}
+                  style={{ width: '100%', fontSize: '12px', padding: '9px 16px', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
+                >
+                  Continue to Web Tracker →
+                </button>
               </div>
             )}
           </div>

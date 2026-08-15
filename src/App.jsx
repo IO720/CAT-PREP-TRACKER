@@ -23,6 +23,7 @@ import ErrorLogView from './components/ErrorLogView';
 import ProfileView from './components/ProfileView';
 import StudyTimerView from './components/StudyTimerView';
 import DownloadAppView from './components/DownloadAppView';
+import MobileOnboardingAuth from './components/MobileOnboardingAuth';
 import FloatingTimerWidget from './components/FloatingTimerWidget';
 import ThemeSelectorDropdown from './components/ThemeSelectorDropdown';
 import ThemeSwitchToast from './components/ThemeSwitchToast';
@@ -157,6 +158,23 @@ export default function App() {
   const [theme, setTheme] = useState(state.settings?.theme || 'dark');
   const [showThemeToast, setShowThemeToast] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
+  const [mobileWebBypass, setMobileWebBypass] = useState(() => {
+    return localStorage.getItem('aspiranto_mobile_web_bypass') === 'true';
+  });
+  const [guestMode, setGuestMode] = useState(() => {
+    return localStorage.getItem('aspiranto_guest_mode') === 'true';
+  });
+  const [isMobileScreen, setIsMobileScreen] = useState(() => {
+    return typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileScreen(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Collapsible sidebar state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
@@ -1038,6 +1056,37 @@ export default function App() {
         </div>
         <span className="loader-text">Loading Aspiranto...</span>
       </div>
+    );
+  }
+
+  // Scenario 1: Mobile Web Browser (user opened website on phone browser - show APK download landing)
+  if (!isNativeApp && isMobileScreen && !mobileWebBypass) {
+    return (
+      <div className="app-container" style={{ minHeight: '100vh', display: 'block', padding: 0 }}>
+        <DownloadAppView 
+          onContinueToWeb={() => {
+            localStorage.setItem('aspiranto_mobile_web_bypass', 'true');
+            setMobileWebBypass(true);
+          }}
+          isMobileLanding={true}
+        />
+      </div>
+    );
+  }
+
+  // Scenario 2: Inside Native APK, but user has not created account / logged in yet
+  if (isNativeApp && !user && !guestMode) {
+    return (
+      <MobileOnboardingAuth
+        onAuthSuccess={(u) => {
+          setUser(u);
+          refreshFriendsList();
+        }}
+        onContinueOffline={() => {
+          localStorage.setItem('aspiranto_guest_mode', 'true');
+          setGuestMode(true);
+        }}
+      />
     );
   }
 
