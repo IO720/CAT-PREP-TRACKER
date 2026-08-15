@@ -1439,31 +1439,38 @@ button, input, select, textarea {
 @media (max-width: 768px) {
   .app-container {
     flex-direction: column;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
   
   .sidebar {
-    display: none; /* Hide Sidebar completely on Mobile */
+    display: none !important; /* Hide Sidebar completely on Mobile */
   }
 
   .global-header {
-    padding: 0 16px;
+    padding: 0 14px;
     height: auto;
-    min-height: 56px;
-    padding-top: 8px;
-    padding-bottom: 8px;
+    min-height: 52px;
+    padding-top: 6px;
+    padding-bottom: 6px;
   }
 
   .header-progress-container {
-    max-width: 140px;
-    gap: 8px;
+    max-width: 120px;
+    gap: 6px;
   }
 
   .header-progress-label {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .header-stats {
-    gap: 8px;
+    gap: 6px;
+  }
+
+  .header-stat-item {
+    padding: 4px 8px;
+    font-size: 11px;
   }
 
   /* Hide header date widget on mobile header bar to prevent narrow multi-line wrapping */
@@ -1475,7 +1482,11 @@ button, input, select, textarea {
     flex-direction: column;
     align-items: stretch;
     gap: 14px;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
+  }
+
+  .page-title {
+    font-size: 22px;
   }
 
   .header-title-row {
@@ -1507,14 +1518,127 @@ button, input, select, textarea {
     margin-top: 2px;
   }
 
+  /* Dashboard Mobile Refinements */
+  .dashboard-hero-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .hero-greeting {
+    font-size: 20px;
+  }
+
+  .hero-action-buttons {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .hero-action-buttons button {
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+
+  /* Hide APK download button in hero header on mobile */
+  .download-app-hero-btn {
+    display: none !important;
+  }
+
+  .today-focus-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .focus-card-stats {
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .focus-stat-val {
+    font-size: 18px;
+  }
+
+  .focus-stat-lbl {
+    font-size: 10px;
+  }
+
+  .focus-card-right button {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .metrics-clean-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .metric-card {
+    padding: 12px;
+  }
+
+  .metric-card-value {
+    font-size: 18px;
+  }
+
+  .dashboard-double-panel {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
   .mobile-bottom-nav {
-    display: flex; /* Show Bottom Sticky Menu */
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    z-index: 1000;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  .mobile-nav-btn {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+  }
+
+  .mobile-nav-btn.active {
+    color: var(--accent-color);
+  }
+
+  .mobile-nav-btn.active .mobile-nav-icon {
+    transform: scale(1.1);
   }
 
   .main-content {
     margin-left: 0;
-    padding: 16px;
-    margin-bottom: 60px; /* Spacer for bottom sticky nav */
+    padding: 14px;
+    margin-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); /* Spacer for bottom sticky nav */
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   .stats-grid {
@@ -1529,7 +1653,7 @@ button, input, select, textarea {
 
   /* Responsive Timeline Lists for Mobile */
   .timeline-table, .timeline-table thead {
-    display: none; /* Hide table, show vertical card list */
+    display: none;
   }
   
   .phase-group::after {
@@ -1559,16 +1683,6 @@ button, input, select, textarea {
   .mock-averages-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px;
-  }
-
-  .app-container {
-    max-width: 100vw;
-    overflow-x: hidden;
-  }
-
-  .main-content {
-    max-width: 100vw;
-    overflow-x: hidden;
   }
 }
 

@@ -27,6 +27,9 @@ import FloatingTimerWidget from './components/FloatingTimerWidget';
 import ThemeSelectorDropdown from './components/ThemeSelectorDropdown';
 import ThemeSwitchToast from './components/ThemeSwitchToast';
 import { audioEngine } from './utils/audioUtils';
+import { Capacitor } from '@capacitor/core';
+
+const isNativeApp = Capacitor.isNativePlatform();
 
 const Icons = {
   Logo: ({ size = 20 }) => (
@@ -1106,14 +1109,16 @@ export default function App() {
             <span className="nav-icon"><Icons.Cloud /></span>
             <span className="nav-link-text">Cloud Sync</span>
           </button>
-          <button 
-            className={`nav-link ${activeTab === 'download' ? 'active' : ''}`}
-            onClick={() => setActiveTab('download')}
-            title="Download Android App"
-          >
-            <span className="nav-icon"><Icons.Download /></span>
-            <span className="nav-link-text">Get App</span>
-          </button>
+          {!isNativeApp && (
+            <button 
+              className={`nav-link ${activeTab === 'download' ? 'active' : ''}`}
+              onClick={() => setActiveTab('download')}
+              title="Download Android App"
+            >
+              <span className="nav-icon"><Icons.Download /></span>
+              <span className="nav-link-text">Get App</span>
+            </button>
+          )}
         </nav>
 
         <div className="sidebar-footer">
@@ -1280,10 +1285,6 @@ export default function App() {
         <button className={`mobile-nav-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
           <span className="mobile-nav-icon"><Icons.Cloud /></span>
           <span>Cloud</span>
-        </button>
-        <button className={`mobile-nav-btn ${activeTab === 'download' ? 'active' : ''}`} onClick={() => setActiveTab('download')}>
-          <span className="mobile-nav-icon"><Icons.Download /></span>
-          <span>Get App</span>
         </button>
       </nav>
 
