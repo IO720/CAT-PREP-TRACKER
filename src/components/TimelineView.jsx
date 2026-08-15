@@ -18,7 +18,7 @@ export default function TimelineView({ state, updateWeekStatus, onWeekClick }) {
   };
 
   return (
-    <div>
+    <div className="timeline-view-wrapper">
       <div className="header-row">
         <div>
           <h1 className="page-title">16-Week Study Plan</h1>
@@ -26,11 +26,16 @@ export default function TimelineView({ state, updateWeekStatus, onWeekClick }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
         {Object.entries(phases).map(([phaseName, weeks]) => (
           <div key={phaseName} className="phase-group">
-            <h2 className="phase-header">{phaseName}</h2>
-            <div style={{ overflowX: 'auto' }}>
+            <div className="phase-header-badge-row">
+              <h2 className="phase-header">{phaseName}</h2>
+              <span className="phase-count-pill">{weeks.length} Weeks</span>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="timeline-desktop-wrapper">
               <table className="timeline-table">
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
@@ -66,7 +71,7 @@ export default function TimelineView({ state, updateWeekStatus, onWeekClick }) {
                             fontWeight: 600,
                             borderRadius: '4px',
                             backgroundColor: week.status === 'Completed' ? 'var(--accent-color)' : week.status === 'In Progress' ? 'var(--bg-primary)' : 'var(--bg-tertiary)',
-                            color: week.status === 'Completed' ? 'var(--bg-primary)' : 'var(--text-primary)',
+                            color: week.status === 'Completed' ? 'var(--accent-text, #000)' : 'var(--text-primary)',
                             borderColor: week.status === 'In Progress' ? 'var(--accent-color)' : 'var(--border-color)',
                             cursor: 'pointer',
                             textTransform: 'uppercase'
@@ -81,6 +86,64 @@ export default function TimelineView({ state, updateWeekStatus, onWeekClick }) {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Native Cards View */}
+            <div className="timeline-mobile-cards">
+              {weeks.map((week, idx) => (
+                <div key={idx} className="timeline-week-card">
+                  <div className="week-card-top-row">
+                    <div 
+                      className="week-card-title-pill"
+                      onClick={() => onWeekClick(week.week)}
+                      title="Jump to daily drills"
+                    >
+                      <span>{week.week}</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </div>
+
+                    <select
+                      value={week.status}
+                      onChange={(e) => handleStatusChange(week.week, e)}
+                      className="week-card-select"
+                      style={{
+                        backgroundColor: week.status === 'Completed' ? 'var(--accent-color)' : week.status === 'In Progress' ? 'var(--bg-tertiary)' : 'transparent',
+                        color: week.status === 'Completed' ? 'var(--accent-text, #000)' : 'var(--text-primary)',
+                        borderColor: week.status === 'In Progress' ? 'var(--accent-color)' : 'var(--border-color)',
+                      }}
+                    >
+                      <option value="Not Started">Not Started</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                    </select>
+                  </div>
+
+                  <div className="week-card-subject-list">
+                    <div className="week-card-subject-item">
+                      <span className="subject-badge-pill quant">QUANT</span>
+                      <span className="subject-focus-desc">{week.quantFocus || "Topic drills"}</span>
+                    </div>
+                    <div className="week-card-subject-item">
+                      <span className="subject-badge-pill lrdi">LRDI</span>
+                      <span className="subject-focus-desc">{week.lrdiFocus || "Caselet sets"}</span>
+                    </div>
+                    <div className="week-card-subject-item">
+                      <span className="subject-badge-pill varc">VARC</span>
+                      <span className="subject-focus-desc">{week.varcFocus || "RC passages"}</span>
+                    </div>
+                  </div>
+
+                  <button 
+                    type="button" 
+                    className="week-card-jump-btn"
+                    onClick={() => onWeekClick(week.week)}
+                  >
+                    Open Daily Drills for {week.week} →
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         ))}
