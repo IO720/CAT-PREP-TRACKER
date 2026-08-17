@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { Icons } from './AspirantIcons';
 
 export default function MockTrackerView({ state, updateMockRow }) {
   const { mocks } = state;
   const [expandedMockId, setExpandedMockId] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleRowChange = (mockId, field, value) => {
     updateMockRow(mockId, field, value);
@@ -12,15 +15,19 @@ export default function MockTrackerView({ state, updateMockRow }) {
     setExpandedMockId(expandedMockId === id ? null : id);
   };
 
-  // Calculations
+  // Calculations & Analytics
   const takenMocks = mocks.filter(m => m.status === 'Taken');
+  const scheduledMocks = mocks.filter(m => m.status === 'Scheduled');
+  const notStartedMocks = mocks.filter(m => m.status === 'Not Started' || !m.status);
   const totalTaken = takenMocks.length;
+  const completionRate = Math.round((totalTaken / (mocks.length || 30)) * 100);
 
   let avgQuant = 0;
   let avgLrdi = 0;
   let avgVarc = 0;
   let avgTotal = 0;
   let maxPercentile = 0;
+  let highestScore = 0;
 
   if (totalTaken > 0) {
     let qSum = 0, lSum = 0, vSum = 0, tSum = 0;
@@ -35,9 +42,8 @@ export default function MockTrackerView({ state, updateMockRow }) {
       lSum += l;
       vSum += v;
       tSum += t;
-      if (p > 0) {
-        maxPercentile = Math.max(maxPercentile, p);
-      }
+      if (p > 0) maxPercentile = Math.max(maxPercentile, p);
+      if (t > 0) highestScore = Math.max(highestScore, t);
     });
 
     avgQuant = Math.round((qSum / totalTaken) * 10) / 10;
@@ -46,42 +52,70 @@ export default function MockTrackerView({ state, updateMockRow }) {
     avgTotal = Math.round((tSum / totalTaken) * 10) / 10;
   }
 
-  // Draw custom SVG chart showing performance trends
+  // Filtered Mocks List
+  const filteredMocks = mocks.filter(m => {
+    // Status filter
+    if (activeFilter !== 'ALL') {
+      if (activeFilter === 'Not Started') {
+        if (m.status && m.status !== 'Not Started') return false;
+      } else if (m.status !== activeFilter) {
+        return false;
+      }
+    }
+    // Search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const titleMatch = (m.title || `Mock Test ${m.id}`).toLowerCase().includes(q);
+      const notesMatch = (m.notes || '').toLowerCase().includes(q);
+      const numMatch = `#${m.id}`.includes(q) || `${m.id}` === q;
+      return titleMatch || notesMatch || numMatch;
+    }
+    return true;
+  });
+
+  // Render SVG Trend Progression Curve
   const renderTrendChart = () => {
     const chartData = takenMocks
-      .map((m, idx) => {
+      .map((m) => {
         const q = parseFloat(m.quantScore) || 0;
         const l = parseFloat(m.lrdiScore) || 0;
         const v = parseFloat(m.varcScore) || 0;
         const t = parseFloat(m.totalScore) || (q + l + v);
         return {
-          label: m.title || `M${m.id}`,
-          score: t
+          label: m.title || `M#${m.id}`,
+          score: t,
+          percentile: m.percentile
         };
       })
       .filter(d => d.score > 0);
 
     if (chartData.length < 2) {
       return (
-        <div style={{ color: 'var(--text-tertiary)', fontSize: '13px', textAlign: 'center' }}>
-          Add scores for at least 2 completed mocks to plot your performance trend.
+        <div className="mock-chart-empty-state">
+          <div className="empty-chart-icon-wrap">
+            <Icons.TrendingUp size={24} />
+          </div>
+          <div className="empty-chart-text">
+            <h4>No Score Progression Yet</h4>
+            <p>Log scores for at least 2 completed mocks to unlock performance trajectory & percentile trends.</p>
+          </div>
         </div>
       );
     }
 
-    const width = 500;
-    const height = 140;
-    const padding = 20;
+    const width = 560;
+    const height = 160;
+    const padding = 28;
 
     const scores = chartData.map(d => d.score);
     const minScore = Math.max(0, Math.min(...scores) - 10);
-    const maxScore = Math.max(...scores) + 10;
+    const maxScore = Math.max(...scores) + 12;
     const scoreRange = maxScore - minScore || 1;
 
     const points = chartData.map((d, idx) => {
       const x = padding + (idx / (chartData.length - 1)) * (width - padding * 2);
       const y = height - padding - ((d.score - minScore) / scoreRange) * (height - padding * 2);
-      return { x, y, score: d.score, label: d.label };
+      return { x, y, score: d.score, label: d.label, percentile: d.percentile };
     });
 
     let pathD = `M ${points[0].x} ${points[0].y}`;
@@ -89,8 +123,21 @@ export default function MockTrackerView({ state, updateMockRow }) {
       pathD += ` L ${points[i].x} ${points[i].y}`;
     }
 
+    const areaD = `${pathD} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
+
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" style={{ overflow: 'visible' }}>
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" className="mock-trend-svg">
+        <defs>
+          <linearGradient id="mockAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="var(--accent-color, #38bdf8)" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="var(--accent-color, #38bdf8)" stopOpacity="0.0" />
+          </linearGradient>
+          <filter id="pointGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+          </filter>
+        </defs>
+
+        {/* Grid reference lines */}
         {[0, 0.5, 1].map((ratio, i) => {
           const y = padding + ratio * (height - padding * 2);
           const val = Math.round(maxScore - ratio * scoreRange);
@@ -101,17 +148,17 @@ export default function MockTrackerView({ state, updateMockRow }) {
                 y1={y}
                 x2={width - padding}
                 y2={y}
-                stroke="var(--border-color)"
+                stroke="rgba(255, 255, 255, 0.08)"
                 strokeDasharray="4 4"
                 strokeWidth={1}
               />
               <text
-                x={padding - 5}
+                x={padding - 6}
                 y={y + 4}
                 textAnchor="end"
                 fontSize="10"
-                fill="var(--text-tertiary)"
-                fontFamily="var(--font-display)"
+                fontWeight="700"
+                fill="#64748b"
               >
                 {val}
               </text>
@@ -119,42 +166,47 @@ export default function MockTrackerView({ state, updateMockRow }) {
           );
         })}
 
+        {/* Shaded Area Under Curve */}
+        <path d={areaD} fill="url(#mockAreaGrad)" />
+
+        {/* Main Line Curve */}
         <path
           d={pathD}
           fill="none"
-          stroke="var(--accent-color)"
-          strokeWidth={2}
+          stroke="var(--accent-color, #38bdf8)"
+          strokeWidth={2.5}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
 
+        {/* Data Markers */}
         {points.map((p, idx) => (
-          <g key={idx}>
+          <g key={idx} className="chart-point-group">
             <circle
               cx={p.x}
               cy={p.y}
-              r={4}
-              fill="var(--bg-primary)"
-              stroke="var(--accent-color)"
+              r={4.5}
+              fill="var(--accent-color, #38bdf8)"
+              stroke="#0f172a"
               strokeWidth={2}
             />
             <text
               x={p.x}
-              y={p.y - 8}
+              y={p.y - 9}
               textAnchor="middle"
-              fontSize="10"
-              fontWeight="bold"
-              fill="var(--text-primary)"
-              fontFamily="var(--font-display)"
+              fontSize="11"
+              fontWeight="800"
+              fill="#ffffff"
             >
               {p.score}
             </text>
             <text
               x={p.x}
-              y={height - 2}
+              y={height - 8}
               textAnchor="middle"
-              fontSize="9"
-              fill="var(--text-tertiary)"
+              fontSize="10"
+              fontWeight="600"
+              fill="#94a3b8"
             >
               {p.label}
             </text>
@@ -165,153 +217,253 @@ export default function MockTrackerView({ state, updateMockRow }) {
   };
 
   return (
-    <div>
-      <div className="header-row">
-        <div>
-          <h1 className="page-title">Mock Tests Tracker</h1>
-          <p className="page-subtitle">Track and analyze your performance on 30 full-length mocks.</p>
-        </div>
-      </div>
+    <div className="mock-tracker-view-wrapper fade-in">
+      {/* Top Header Row */}
+      <div className="mock-header-hero-card">
+        <div className="mock-hero-top-row">
+          <div className="mock-hero-left">
+            <div className="mock-icon-badge">
+              <Icons.Trophy size={22} />
+            </div>
+            <div>
+              <h1 className="mock-main-title">Mock Tests Tracker</h1>
+              <p className="mock-sub-title">
+                Comprehensive 30 full-length mock exam series, sectional score telemetry, and percentile projection.
+              </p>
+            </div>
+          </div>
 
-      <div className="mocks-overview-row">
-        <div className="mock-analytics-card">
-          <span className="stat-title">Overall Performance</span>
-          <div className="mock-averages-grid">
-            <div className="mock-avg-item">
-              <div className="stat-title" style={{ fontSize: '10px' }}>Completed</div>
-              <div className="mock-avg-num">{totalTaken} / 30</div>
+          <div className="mock-rate-pill">
+            <span className="rate-num">{completionRate}%</span>
+            <span className="rate-lbl">Mocks Completed</span>
+          </div>
+        </div>
+
+        {/* Analytics Dual Grid */}
+        <div className="mock-analytics-hero-grid">
+          {/* Card 1: Metric Badges & Sectional Breakdown */}
+          <div className="mock-stat-panel-card">
+            <div className="panel-card-header">
+              <Icons.Activity size={14} />
+              <span>Series Performance Overview</span>
             </div>
-            <div className="mock-avg-item">
-              <div className="stat-title" style={{ fontSize: '10px' }}>Avg Total</div>
-              <div className="mock-avg-num">{avgTotal}</div>
-            </div>
-            <div className="mock-avg-item">
-              <div className="stat-title" style={{ fontSize: '10px' }}>Max %ile</div>
-              <div className="mock-avg-num">{maxPercentile > 0 ? `${maxPercentile}%` : '-'}</div>
-            </div>
-            <div className="mock-avg-item">
-              <div className="stat-title" style={{ fontSize: '10px' }}>Sectional Avgs</div>
-              <div style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: 600 }}>
-                Q: {avgQuant} | L: {avgLrdi} | V: {avgVarc}
+
+            <div className="mock-hero-stats-row">
+              <div className="mock-metric-box">
+                <span className="metric-box-lbl">Completed</span>
+                <span className="metric-box-val">{totalTaken} / {mocks.length || 30}</span>
+                <span className="metric-box-sub">Full Length Mocks</span>
               </div>
+
+              <div className="mock-metric-box">
+                <span className="metric-box-lbl">Avg Score</span>
+                <span className="metric-box-val accent">{avgTotal}</span>
+                <span className="metric-box-sub">Points / Test</span>
+              </div>
+
+              <div className="mock-metric-box">
+                <span className="metric-box-lbl">Peak Score</span>
+                <span className="metric-box-val">{highestScore || '-'}</span>
+                <span className="metric-box-sub">Max Achieved</span>
+              </div>
+
+              <div className="mock-metric-box">
+                <span className="metric-box-lbl">Max Percentile</span>
+                <span className="metric-box-val emerald">{maxPercentile > 0 ? `${maxPercentile}%` : '-'}</span>
+                <span className="metric-box-sub">Target: 99.5+%ile</span>
+              </div>
+            </div>
+
+            {/* Sectional Averages Strip */}
+            <div className="mock-sectionals-strip">
+              <span className="sectionals-label">Sectional Averages:</span>
+              <div className="sectional-chip quant">
+                <span className="chip-code">QUANT</span>
+                <span className="chip-val">{avgQuant}</span>
+              </div>
+              <div className="sectional-chip lrdi">
+                <span className="chip-code">LRDI</span>
+                <span className="chip-val">{avgLrdi}</span>
+              </div>
+              <div className="sectional-chip varc">
+                <span className="chip-code">VARC</span>
+                <span className="chip-val">{avgVarc}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Trend Line Graph */}
+          <div className="mock-stat-panel-card">
+            <div className="panel-card-header">
+              <Icons.TrendingUp size={14} />
+              <span>Score Progression Trajectory</span>
+            </div>
+            <div className="mock-chart-wrapper">
+              {renderTrendChart()}
             </div>
           </div>
         </div>
 
-        <div className="mock-analytics-card">
-          <span className="stat-title">Score Progression</span>
-          <div className="mock-chart-container">
-            {renderTrendChart()}
+        {/* Filter & Search Controls Bar */}
+        <div className="mock-controls-bar">
+          <div className="mock-filter-tabs">
+            <button
+              type="button"
+              className={`mock-filter-btn ${activeFilter === 'ALL' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('ALL')}
+            >
+              <span>All Mocks ({mocks.length || 30})</span>
+            </button>
+            <button
+              type="button"
+              className={`mock-filter-btn ${activeFilter === 'Taken' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('Taken')}
+            >
+              <span>Completed ({totalTaken})</span>
+            </button>
+            <button
+              type="button"
+              className={`mock-filter-btn ${activeFilter === 'Scheduled' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('Scheduled')}
+            >
+              <span>Scheduled ({scheduledMocks.length})</span>
+            </button>
+            <button
+              type="button"
+              className={`mock-filter-btn ${activeFilter === 'Not Started' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('Not Started')}
+            >
+              <span>Not Started ({notStartedMocks.length})</span>
+            </button>
+          </div>
+
+          <div className="mock-search-input-wrap">
+            <Icons.Target size={14} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search mock name, review notes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="mock-search-input"
+            />
           </div>
         </div>
       </div>
 
       {/* DESKTOP TABLE VIEW */}
-      <div className="desktop-only mocks-list-panel">
-        <table className="mocks-table">
+      <div className="desktop-only mock-table-card-container animate-slide-up">
+        <table className="modern-mocks-table">
           <thead>
             <tr>
-              <th className="mocks-th" style={{ width: '60px' }}>Mock #</th>
-              <th className="mocks-th" style={{ width: '130px' }}>Status</th>
-              <th className="mocks-th" style={{ width: '150px' }}>Mock Name</th>
-              <th className="mocks-th" style={{ width: '130px' }}>Date Taken</th>
-              <th className="mocks-th" style={{ width: '80px', textAnchor: 'center' }}>Quant</th>
-              <th className="mocks-th" style={{ width: '80px', textAnchor: 'center' }}>LRDI</th>
-              <th className="mocks-th" style={{ width: '80px', textAnchor: 'center' }}>VARC</th>
-              <th className="mocks-th" style={{ width: '80px', textAnchor: 'center' }}>Total</th>
-              <th className="mocks-th" style={{ width: '90px', textAnchor: 'center' }}>Percentile</th>
-              <th className="mocks-th">Analytical Notes / Review Summary</th>
+              <th style={{ width: '70px' }}>Mock</th>
+              <th style={{ width: '140px' }}>Status</th>
+              <th style={{ width: '160px' }}>Mock Series & Name</th>
+              <th style={{ width: '140px' }}>Date Taken</th>
+              <th style={{ width: '80px', textAlign: 'center' }}>Quant</th>
+              <th style={{ width: '80px', textAlign: 'center' }}>LRDI</th>
+              <th style={{ width: '80px', textAlign: 'center' }}>VARC</th>
+              <th style={{ width: '85px', textAlign: 'center' }}>Total</th>
+              <th style={{ width: '100px', textAlign: 'center' }}>%ile</th>
+              <th>Analytical Notes & Strategy Review</th>
             </tr>
           </thead>
           <tbody>
-            {mocks.map((mock) => {
+            {filteredMocks.map((mock) => {
               const calculatedTotal = (parseFloat(mock.quantScore) || 0) + (parseFloat(mock.lrdiScore) || 0) + (parseFloat(mock.varcScore) || 0);
               const displayTotal = mock.status === 'Taken' ? (mock.totalScore !== "" ? mock.totalScore : calculatedTotal) : "";
 
               return (
-                <tr key={mock.id} className="mocks-tr">
-                  <td className="mocks-td" style={{ fontWeight: 'bold' }}>#{mock.id}</td>
-                  <td className="mocks-td">
+                <tr key={mock.id} className="modern-mock-row">
+                  <td className="mock-cell-id">
+                    <span className="mock-id-badge">#{mock.id < 10 ? `0${mock.id}` : mock.id}</span>
+                  </td>
+
+                  <td>
                     <select
-                      value={mock.status}
+                      value={mock.status || 'Not Started'}
                       onChange={(e) => handleRowChange(mock.id, 'status', e.target.value)}
-                      className="mock-cell-select"
-                      style={{
-                        backgroundColor: mock.status === 'Taken' ? 'var(--accent-color)' : mock.status === 'Scheduled' ? 'var(--bg-primary)' : 'var(--bg-tertiary)',
-                        color: mock.status === 'Taken' ? 'var(--bg-primary)' : 'var(--text-primary)',
-                        borderColor: mock.status === 'Scheduled' ? 'var(--accent-color)' : 'var(--border-color)',
-                      }}
+                      className={`mock-status-pill-select ${mock.status === 'Taken' ? 'taken' : mock.status === 'Scheduled' ? 'scheduled' : 'not-started'}`}
                     >
                       <option value="Not Started">Not Started</option>
                       <option value="Scheduled">Scheduled</option>
                       <option value="Taken">Taken</option>
                     </select>
                   </td>
-                  <td className="mocks-td">
+
+                  <td>
                     <input
                       type="text"
-                      className="mock-cell-input title"
-                      placeholder="e.g. SIMCAT 1"
+                      className="mock-inline-input name"
+                      placeholder={`Mock Test ${mock.id}`}
                       value={mock.title}
                       onChange={(e) => handleRowChange(mock.id, 'title', e.target.value)}
                     />
                   </td>
-                  <td className="mocks-td">
+
+                  <td>
                     <input
                       type="date"
-                      className="mock-cell-input"
+                      className="mock-inline-input date"
                       value={mock.date}
                       onChange={(e) => handleRowChange(mock.id, 'date', e.target.value)}
                     />
                   </td>
-                  <td className="mocks-td">
+
+                  <td>
                     <input
                       type="number"
-                      className="mock-cell-input"
+                      className="mock-inline-input score quant"
                       placeholder="0"
                       disabled={mock.status !== 'Taken'}
                       value={mock.quantScore}
                       onChange={(e) => handleRowChange(mock.id, 'quantScore', e.target.value)}
                     />
                   </td>
-                  <td className="mocks-td">
+
+                  <td>
                     <input
                       type="number"
-                      className="mock-cell-input"
+                      className="mock-inline-input score lrdi"
                       placeholder="0"
                       disabled={mock.status !== 'Taken'}
                       value={mock.lrdiScore}
                       onChange={(e) => handleRowChange(mock.id, 'lrdiScore', e.target.value)}
                     />
                   </td>
-                  <td className="mocks-td">
+
+                  <td>
                     <input
                       type="number"
-                      className="mock-cell-input"
+                      className="mock-inline-input score varc"
                       placeholder="0"
                       disabled={mock.status !== 'Taken'}
                       value={mock.varcScore}
                       onChange={(e) => handleRowChange(mock.id, 'varcScore', e.target.value)}
                     />
                   </td>
-                  <td className="mocks-td" style={{ textAlign: 'center', fontWeight: 'bold' }}>
-                    {displayTotal}
+
+                  <td style={{ textAlign: 'center' }}>
+                    <div className={`mock-total-display ${displayTotal ? 'active' : ''}`}>
+                      {displayTotal || '-'}
+                    </div>
                   </td>
-                  <td className="mocks-td">
+
+                  <td>
                     <input
                       type="text"
-                      className="mock-cell-input"
-                      placeholder="e.g. 99.4"
+                      className="mock-inline-input percentile"
+                      placeholder="99.0"
                       disabled={mock.status !== 'Taken'}
                       value={mock.percentile}
                       onChange={(e) => handleRowChange(mock.id, 'percentile', e.target.value)}
                     />
                   </td>
-                  <td className="mocks-td">
+
+                  <td>
                     <input
                       type="text"
-                      className="mock-cell-input title"
-                      placeholder="Analysis summary notes..."
+                      className="mock-inline-input notes"
+                      placeholder="Silly mistakes, pacing summary, topics to revise..."
                       value={mock.notes}
                       onChange={(e) => handleRowChange(mock.id, 'notes', e.target.value)}
                     />
@@ -325,7 +477,7 @@ export default function MockTrackerView({ state, updateMockRow }) {
 
       {/* MOBILE COLLAPSIBLE CARDS VIEW */}
       <div className="mobile-only mock-cards-list">
-        {mocks.map((mock) => {
+        {filteredMocks.map((mock) => {
           const calculatedTotal = (parseFloat(mock.quantScore) || 0) + (parseFloat(mock.lrdiScore) || 0) + (parseFloat(mock.varcScore) || 0);
           const displayTotal = mock.status === 'Taken' ? (mock.totalScore !== "" ? mock.totalScore : calculatedTotal) : "";
           const isExpanded = expandedMockId === mock.id;
@@ -333,38 +485,30 @@ export default function MockTrackerView({ state, updateMockRow }) {
           return (
             <div 
               key={mock.id} 
-              className={`mock-card-item ${mock.status === 'Taken' ? 'taken' : mock.status === 'Scheduled' ? 'scheduled' : ''}`}
+              className={`mock-mobile-card ${mock.status === 'Taken' ? 'taken' : mock.status === 'Scheduled' ? 'scheduled' : ''}`}
             >
               {/* Header */}
               <div className="mock-card-header" onClick={() => toggleExpand(mock.id)}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="mock-card-id">#{mock.id}</span>
+                <div className="card-header-left">
+                  <span className="mock-id-badge">#{mock.id}</span>
                   <span className="mock-card-title">{mock.title || `Mock Test ${mock.id}`}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="card-header-right">
                   {mock.status === 'Taken' && displayTotal && (
                     <span className="mock-card-badge-score">
-                      {displayTotal} Qs ({mock.percentile ? `${mock.percentile}%` : '-%'})
+                      {displayTotal} pts {mock.percentile ? `(${mock.percentile}%)` : ''}
                     </span>
                   )}
-                  <span className="mock-card-status-dot" style={{
-                    backgroundColor: mock.status === 'Taken' ? 'var(--accent-color)' : mock.status === 'Scheduled' ? '#ff9900' : 'var(--text-tertiary)'
-                  }}></span>
-                  <span className="mock-card-arrow" style={{ display: 'flex', alignItems: 'center' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      {isExpanded ? (
-                        <polyline points="18 15 12 9 6 15"></polyline>
-                      ) : (
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                      )}
-                    </svg>
+                  <span className={`mock-card-status-dot ${mock.status || 'not-started'}`} />
+                  <span className="mock-card-arrow">
+                    <Icons.ArrowRight size={14} style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
                   </span>
                 </div>
               </div>
 
               {/* Collapsible content body */}
               {isExpanded && (
-                <div className="mock-card-body">
+                <div className="mock-card-body animate-fade-in">
                   <div className="mock-card-row">
                     <div className="mock-card-field">
                       <label>Mock Name</label>
