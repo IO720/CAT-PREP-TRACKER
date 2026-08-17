@@ -14,8 +14,8 @@ function bumpVersion() {
   const pkgPath = path.join(rootDir, 'package.json');
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
   
-  let currentVersion = pkg.version || '1.0.7';
-  if (currentVersion === '0.0.0') currentVersion = '1.0.7';
+  let currentVersion = pkg.version || '1.0.24';
+  if (currentVersion === '0.0.0') currentVersion = '1.0.24';
 
   const parts = currentVersion.split('.').map(Number);
   parts[2] = (parts[2] || 0) + 1; // Increment patch version
@@ -48,40 +48,62 @@ function bumpVersion() {
     console.log('✓ Updated src/utils/versionCheck.js');
   }
 
-  // 4. Update android/app/build.gradle
-  const gradlePath = path.join(rootDir, 'android', 'app', 'build.gradle');
-  if (fs.existsSync(gradlePath)) {
-    let gradle = fs.readFileSync(gradlePath, 'utf8');
-    gradle = gradle.replace(/versionCode \d+/, `versionCode ${newVersionCode}`);
-    gradle = gradle.replace(/versionName ".*?"/, `versionName "${newVersion}"`);
-    fs.writeFileSync(gradlePath, gradle);
-    console.log('✓ Updated android/app/build.gradle');
+  // 4. Update flutter_app/pubspec.yaml & build.gradle if exists
+  const pubspecPath = path.join(rootDir, 'flutter_app', 'pubspec.yaml');
+  if (fs.existsSync(pubspecPath)) {
+    let pubspec = fs.readFileSync(pubspecPath, 'utf8');
+    pubspec = pubspec.replace(/version: .*/, `version: ${newVersion}+${newVersionCode}`);
+    fs.writeFileSync(pubspecPath, pubspec);
+    console.log('✓ Updated flutter_app/pubspec.yaml');
   }
 
-  // 5. Build web assets & sync to Android
-  console.log('\n📦 Building production web bundle and syncing assets...');
+  const flutterGradlePath = path.join(rootDir, 'flutter_app', 'android', 'app', 'build.gradle');
+  if (fs.existsSync(flutterGradlePath)) {
+    let gradle = fs.readFileSync(flutterGradlePath, 'utf8');
+    gradle = gradle.replace(/flutterVersionCode = '.*?'/, `flutterVersionCode = '${newVersionCode}'`);
+    gradle = gradle.replace(/flutterVersionName = '.*?'/, `flutterVersionName = '${newVersion}'`);
+    fs.writeFileSync(flutterGradlePath, gradle);
+    console.log('✓ Updated flutter_app/android/app/build.gradle');
+  }
+
+  // 5. Build web assets
+  console.log('\n📦 Building production web bundle...');
   execSync('npm run build', { cwd: rootDir, stdio: 'inherit' });
-  execSync('npx cap copy android', { cwd: rootDir, stdio: 'inherit' });
 
-  // 6. Build Android APK
-  console.log('\n🤖 Compiling Android APK binary (gradlew assembleDebug)...');
-  const gradlewCmd = process.platform === 'win32' ? '.\\gradlew.bat' : './gradlew';
-  execSync(`${gradlewCmd} assembleDebug`, { cwd: path.join(rootDir, 'android'), stdio: 'inherit' });
+  // 6. Build Flutter APK if Flutter SDK is installed
+  const flutterDir = path.join(rootDir, 'flutter_app');
+  let hasFlutter = false;
+  try {
+    execSync('flutter --version', { stdio: 'ignore' });
+    hasFlutter = true;
+  } catch {
+    hasFlutter = false;
+  }
 
-  // Copy APK binary to public/Aspiranto-v1.0.bin
-  const apkSrc = path.join(rootDir, 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk');
-  const apkDest = path.join(rootDir, 'public', 'Aspiranto-v1.0.bin');
-  fs.copyFileSync(apkSrc, apkDest);
-  console.log('✓ Fresh APK copied to public/Aspiranto-v1.0.bin');
+  if (hasFlutter && fs.existsSync(flutterDir)) {
+    console.log('\n📱 Compiling Flutter APK (flutter build apk)...');
+    try {
+      execSync('flutter build apk --release', { cwd: flutterDir, stdio: 'inherit' });
+      const flutterApkSrc = path.join(flutterDir, 'build', 'app', 'outputs', 'flutter-apk', 'app-release.apk');
+      const apkDest = path.join(rootDir, 'public', 'Aspiranto-v1.0.bin');
+      if (fs.existsSync(flutterApkSrc)) {
+        fs.copyFileSync(flutterApkSrc, apkDest);
+        console.log('✓ Fresh Flutter APK copied to public/Aspiranto-v1.0.bin');
+      }
+    } catch (err) {
+      console.warn('Flutter build warning:', err.message);
+    }
+  } else {
+    console.log('\nℹ️ Flutter SDK not found in PATH — skipped local Flutter APK compilation.');
+  }
 
   // 7. Deploy to Firebase (Hosting + Firestore Rules)
   console.log('\n☁️ Deploying live hosting & secured Firestore rules to Firebase...');
   const firebaseBin = path.join(rootDir, 'node_modules', '.bin', process.platform === 'win32' ? 'firebase.cmd' : 'firebase');
   execSync(`"${firebaseBin}" deploy --only hosting,firestore:rules --non-interactive`, { cwd: rootDir, stdio: 'inherit' });
 
-  console.log(`\n🎉 Release v${newVersion} Successfully Built, Compiled & Deployed!`);
+  console.log(`\n🎉 Release v${newVersion} Successfully Built & Deployed!`);
   console.log(`👉 Web: https://cat-tracker-1538d.web.app`);
-  console.log(`👉 APK: https://cat-tracker-1538d.web.app/Aspiranto-v1.0.apk\n`);
 }
 
 bumpVersion();

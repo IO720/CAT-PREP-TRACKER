@@ -37,12 +37,15 @@ import ThemeSwitchToast from './components/ThemeSwitchToast';
 import UpdateNotificationToast from './components/UpdateNotificationToast';
 import { checkForAppUpdate } from './utils/versionCheck';
 import { audioEngine } from './utils/audioUtils';
-import { Capacitor } from '@capacitor/core';
 import SettingsView from './components/SettingsView';
 import AchievementsView from './components/AchievementsView';
 import { calculateUserBadges } from './utils/badgeUtils';
 
-const isNativeApp = Capacitor.isNativePlatform();
+const isNativeApp = typeof window !== 'undefined' && (
+  window.navigator?.userAgent?.includes('AspirantoMobile') ||
+  window.navigator?.userAgent?.includes('Flutter') ||
+  Boolean(window.isFlutterInAppWebView)
+);
 
 const Icons = {
   Logo: ({ size = 24 }) => (
@@ -223,12 +226,12 @@ export default function App() {
     return localStorage.getItem('aspiranto_guest_mode') === 'true';
   });
   const [isMobileScreen, setIsMobileScreen] = useState(() => {
-    return typeof window !== 'undefined' ? (window.innerWidth <= 768 || Capacitor.isNativePlatform()) : false;
+    return typeof window !== 'undefined' ? (window.innerWidth <= 768 || isNativeApp) : false;
   });
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobileScreen(window.innerWidth <= 768 || Capacitor.isNativePlatform());
+      setIsMobileScreen(window.innerWidth <= 768 || isNativeApp);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);

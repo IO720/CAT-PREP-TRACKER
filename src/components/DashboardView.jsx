@@ -2,9 +2,12 @@ import React from 'react';
 import { getTodayTrackerPosition } from '../utils/dateUtils';
 import StudyContributionHeatmap from './StudyContributionHeatmap';
 import { Icons } from './AspirantIcons';
-import { Capacitor } from '@capacitor/core';
 
-const isNativeApp = Capacitor.isNativePlatform();
+const isNativeApp = typeof window !== 'undefined' && (
+  window.navigator?.userAgent?.includes('AspirantoMobile') ||
+  window.navigator?.userAgent?.includes('Flutter') ||
+  Boolean(window.isFlutterInAppWebView)
+);
 
 export default function DashboardView({ 
   state, 
