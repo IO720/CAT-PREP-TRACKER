@@ -63,9 +63,11 @@ export default function ProfileView({
   const [profAvatar, setProfAvatar] = useState(userProfile?.avatar || 'rocket');
   const [profAvatarBg, setProfAvatarBg] = useState(userProfile?.avatarBg || '#5865f2');
   const [profBannerBg, setProfBannerBg] = useState(userProfile?.bannerBg || '#1e1f22');
+  const [profBannerUrl, setProfBannerUrl] = useState(userProfile?.bannerUrl || '');
   const [profBio, setProfBio] = useState(userProfile?.bio || '');
   const [profTarget, setProfTarget] = useState(userProfile?.target || 'CAT 2025 (99.5+%ile • IIM-A Focus)');
   const [profLocation, setProfLocation] = useState(userProfile?.location || '');
+  const [editModalTab, setEditModalTab] = useState('appearance'); // 'appearance' | 'identity' | 'goals'
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
   const [customImageUrl, setCustomImageUrl] = useState('');
@@ -76,6 +78,12 @@ export default function ProfileView({
   // Unique Aspirant ID State
   const currentAspirantId = userProfile?.aspirantId || (user ? generateUniqueAspirantId(user.uid) : getLocalAspirantId());
   const [copiedMyId, setCopiedMyId] = useState(false);
+  const [floatingToastMsg, setFloatingToastMsg] = useState('');
+
+  const showAssuranceToast = (msg) => {
+    setFloatingToastMsg(msg);
+    setTimeout(() => setFloatingToastMsg(''), 3200);
+  };
 
   // Add Friend & Requests State
   const [friendSearchInput, setFriendSearchInput] = useState('');
@@ -94,6 +102,7 @@ export default function ProfileView({
       if (userProfile.avatar) setProfAvatar(userProfile.avatar);
       if (userProfile.avatarBg) setProfAvatarBg(userProfile.avatarBg);
       if (userProfile.bannerBg) setProfBannerBg(userProfile.bannerBg);
+      if (userProfile.bannerUrl) setProfBannerUrl(userProfile.bannerUrl);
       if (userProfile.bio !== undefined) setProfBio(userProfile.bio);
       if (userProfile.target) setProfTarget(userProfile.target);
       if (userProfile.location !== undefined) setProfLocation(userProfile.location);
@@ -127,6 +136,11 @@ export default function ProfileView({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Avatar image size must be under 5MB.");
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
@@ -152,6 +166,7 @@ export default function ProfileView({
         ctx.drawImage(img, 0, 0, width, height);
         const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
         setProfAvatar(compressedDataUrl);
+        showAssuranceToast("Avatar photo successfully applied to preview!");
       };
       img.src = event.target.result;
     };
@@ -162,6 +177,7 @@ export default function ProfileView({
     if (!customImageUrl.trim()) return;
     setProfAvatar(customImageUrl.trim());
     setCustomImageUrl('');
+    showAssuranceToast("Avatar image URL successfully applied!");
   };
 
   // Handle local banner file upload (supports JPG, PNG, WebP, and animated GIFs)
@@ -175,35 +191,55 @@ export default function ProfileView({
     }
 
     const isGif = file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
-    const reader = new FileReader();
 
     if (isGif) {
-      // Preserve GIF animation frames without canvas flattening
+      // Check GIF file size - directly embedded animated GIFs in Firestore must be <= 400KB
+      if (file.size > 400 * 1024) {
+        alert("Animated GIF file is too large (" + Math.round(file.size / 1024) + "KB). Direct file uploads must be under 400KB. Tip: Paste an image URL (e.g. from Tenor, Giphy, or Imgur) in the URL box below to use any GIF without size limits!");
+        return;
+      }
+      const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
           setProfBannerBg(event.target.result);
+          setProfBannerUrl(event.target.result);
+          showAssuranceToast("Animated GIF banner successfully applied!");
         }
       };
       reader.readAsDataURL(file);
     } else {
-      // Optimize other image formats
+      // Optimize image formats with canvas downscaling and compression
+      const reader = new FileReader();
       reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_W = 800;
+          const MAX_W = 750;
+          const MAX_H = 320;
           let width = img.width;
           let height = img.height;
+
           if (width > MAX_W) {
-            height *= MAX_W / width;
+            height = Math.round((height * MAX_W) / width);
             width = MAX_W;
           }
+          if (height > MAX_H) {
+            width = Math.round((width * MAX_H) / height);
+            height = MAX_H;
+          }
+
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          const compressed = canvas.toDataURL('image/jpeg', 0.88);
+
+          let compressed = canvas.toDataURL('image/jpeg', 0.80);
+          if (compressed.length > 300000) {
+            compressed = canvas.toDataURL('image/jpeg', 0.65);
+          }
           setProfBannerBg(compressed);
+          setProfBannerUrl(compressed);
+          showAssuranceToast("Header banner photo successfully applied!");
         };
         img.src = event.target.result;
       };
@@ -214,7 +250,9 @@ export default function ProfileView({
   const handleApplyBannerUrl = () => {
     if (!customBannerUrl.trim()) return;
     setProfBannerBg(customBannerUrl.trim());
+    setProfBannerUrl(customBannerUrl.trim());
     setCustomBannerUrl('');
+    showAssuranceToast("Banner image URL successfully applied!");
   };
 
   const handleSaveProfile = async (e) => {
@@ -223,6 +261,16 @@ export default function ProfileView({
       alert("Please sign in to save and sync your profile to cloud.");
       return;
     }
+
+    if (profBannerBg && profBannerBg.length > 750000) {
+      alert("Banner image is too large for cloud storage. Please select a smaller image or paste an image URL.");
+      return;
+    }
+    if (profAvatar && profAvatar.length > 500000) {
+      alert("Avatar image is too large for cloud storage. Please select a smaller photo.");
+      return;
+    }
+
     setProfileSaving(true);
     setProfileSuccessMsg('');
 
@@ -240,11 +288,12 @@ export default function ProfileView({
           aspirantId: currentAspirantId
         });
       }
-      setProfileSuccessMsg("Profile card successfully updated! Live lounge presence synced.");
+      setProfileSuccessMsg("Profile changes successfully applied and cloud-synced!");
+      showAssuranceToast("Profile changes successfully applied and cloud-synced!");
       setTimeout(() => {
         setProfileSuccessMsg('');
         setIsEditModalOpen(false);
-      }, 1200);
+      }, 1000);
     } catch (err) {
       console.error("Save profile error:", err);
       alert("Failed to update profile: " + err.message);
@@ -262,7 +311,7 @@ export default function ProfileView({
 
     try {
       if (!user) {
-        setFriendError("Please sign in with your Aspiranto account to send friend requests.");
+        setFriendError("Please sign in with your CATalyze account to send friend requests.");
         return;
       }
 
@@ -544,7 +593,15 @@ export default function ProfileView({
           TAB 1: VIEW PROFILE & EDIT HOVER CARD
          ======================================================== */}
       {activeSubTab === 'profile' && (
-        <div className="profile-tab-content fade-in">
+        <div className="profile-page-container fade-in">
+          {/* Floating User Assurance Toast */}
+          {floatingToastMsg && (
+            <div className="profile-global-floating-toast animate-slide-up">
+              <div className="toast-success-icon"><Icons.Check size={14} /></div>
+              <span>{floatingToastMsg}</span>
+            </div>
+          )}
+
           {/* Primary Identity Profile Card */}
           <div className="profile-identity-direct-wrap">
             <AspirantProfileCard 
@@ -564,76 +621,112 @@ export default function ProfileView({
       {activeSubTab === 'friends' && (
         <div className="friends-tab-content fade-in">
           
-          {/* 1. Unique Aspirant ID Showcase Card */}
-          <div className="profile-card unique-id-share-card" style={{ marginBottom: '24px' }}>
-            <div className="unique-id-share-content">
-              <div className="unique-id-icon-circle">
-                <Icons.Hash size={24} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.5px' }}>
-                  YOUR UNIQUE ASPIRANT NUMBER
+          {/* Top Row: 2-Column Grid (My Unique ID + Connect Peer Search) */}
+          <div className="friends-top-hero-grid">
+            
+            {/* 1. Unique Aspirant ID Showcase Card */}
+            <div className="aspirant-id-hero-card">
+              <div className="id-card-header">
+                <div className="id-card-icon-badge">
+                  <Icons.Hash size={18} />
                 </div>
-                <div className="unique-id-display-row">
-                  <span className="unique-id-large-text">{currentAspirantId}</span>
-                  <button
-                    type="button"
-                    onClick={handleCopyMyId}
-                    className="copy-unique-id-btn"
-                    title="Click to copy your unique ID"
+                <div>
+                  <span className="id-card-super-title">Your Unique Aspirant ID</span>
+                  <p className="id-card-sub-desc">
+                    Share this ID so peers can connect instantly without email.
+                  </p>
+                </div>
+              </div>
+
+              <div className="id-card-action-box">
+                <span className="id-card-code-text">{currentAspirantId}</span>
+                <button
+                  type="button"
+                  onClick={handleCopyMyId}
+                  className="id-card-copy-btn"
+                  title="Click to copy your unique ID"
+                >
+                  {copiedMyId ? (
+                    <>
+                      <Icons.Check size={14} />
+                      <span>Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Icons.Copy size={14} />
+                      <span>Copy ID</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* 2. ADD NEW FRIEND FORM (By Unique ID or Email) */}
+            <div className="send-invite-hero-card">
+              <div className="invite-card-header">
+                <div className="invite-card-icon-badge">
+                  <Icons.UserPlus size={18} />
+                </div>
+                <div>
+                  <span className="id-card-super-title">Connect with a Study Buddy</span>
+                  <p className="id-card-sub-desc">
+                    Enter your peer's Unique ID (e.g. <code>ASP-749201</code>) or email.
+                  </p>
+                </div>
+              </div>
+
+              <form className="send-invite-form" onSubmit={handleSendFriendRequest}>
+                <div className="invite-input-container">
+                  <Icons.Search size={15} className="invite-search-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="Enter Unique ID (e.g. ASP-849201) or email" 
+                    value={friendSearchInput}
+                    onChange={(e) => setFriendSearchInput(e.target.value)}
+                    disabled={!user || friendActionLoading}
+                    className="invite-text-input"
+                  />
+                  <button 
+                    type="submit" 
+                    className="invite-submit-btn"
+                    disabled={!user || friendActionLoading || !friendSearchInput.trim()}
                   >
-                    {copiedMyId ? (
-                      <>
-                        <Icons.Check size={14} />
-                        <span>Copied!</span>
-                      </>
+                    {friendActionLoading ? (
+                      <span>Sending...</span>
                     ) : (
                       <>
-                        <Icons.Copy size={14} />
-                        <span>Copy ID</span>
+                        <Icons.UserPlus size={14} />
+                        <span>Send Invite</span>
                       </>
                     )}
                   </button>
                 </div>
-                <p className="unique-id-desc-text">
-                  Share this unique ID with fellow CAT aspirants so they can add you as a study buddy instantly <strong>without needing your Gmail address</strong>.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. INCOMING FRIEND REQUESTS NOTIFICATION PANEL */}
-          <div className="profile-card friend-requests-notification-panel" style={{ marginBottom: '24px' }}>
-            <div className="panel-header-with-badge">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div className={`notification-bell-icon-wrap ${pendingRequestsCount > 0 ? 'has-notifications' : ''}`}>
-                  <Icons.Bell size={18} />
+              </form>
+              {!user && (
+                <div className="invite-guest-warning">
+                  <Icons.Shield size={12} /> Sign in to send friend invitations.
                 </div>
-                <div>
-                  <h3 className="profile-section-title" style={{ margin: 0 }}>
-                    Friend Requests & Invitations
-                  </h3>
-                  <p className="profile-section-subtitle" style={{ margin: '2px 0 0 0' }}>
-                    Aspirants who are willing to add you as a study peer.
-                  </p>
-                </div>
-              </div>
-              {pendingRequestsCount > 0 && (
-                <span className="pending-badge-pill">
-                  {pendingRequestsCount} Pending
-                </span>
               )}
             </div>
 
-            {pendingRequestsCount === 0 ? (
-              <div className="empty-requests-state">
-                <Icons.Inbox size={28} />
-                <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginTop: '8px' }}>No Pending Friend Requests</div>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
-                  When someone adds your Unique ID or Email, their invitation will appear here with accept and decline options.
-                </p>
+          </div>
+
+          {/* 3. INCOMING FRIEND REQUESTS (Rendered prominently only if requests exist, or sleek minimal bar) */}
+          {pendingRequestsCount > 0 ? (
+            <div className="friend-requests-panel-card animate-slide-up">
+              <div className="panel-header-with-badge">
+                <div className="panel-header-title-wrap">
+                  <div className="notification-bell-icon-wrap has-notifications">
+                    <Icons.Bell size={16} />
+                  </div>
+                  <div>
+                    <h3 className="panel-main-title">Pending Invitations ({pendingRequestsCount})</h3>
+                    <p className="panel-sub-desc">Aspirants wishing to connect as study peers.</p>
+                  </div>
+                </div>
+                <span className="pending-badge-pill">{pendingRequestsCount} Action Required</span>
               </div>
-            ) : (
+
               <div className="incoming-requests-list">
                 {incomingRequests.map((req) => (
                   <div key={req.id} className="incoming-request-card">
@@ -642,7 +735,7 @@ export default function ProfileView({
                         avatar={req.fromAvatar || 'rocket'}
                         name={req.fromName}
                         avatarBg={req.fromAvatarBg || '#5865f2'}
-                        size={46}
+                        size={42}
                         status="online"
                       />
                       <div className="request-user-meta">
@@ -655,15 +748,12 @@ export default function ProfileView({
                           )}
                         </div>
                         <div className="request-target-text">
-                          <Icons.Target size={11} /> {req.fromTarget || 'CAT 2025 Focus'}
-                        </div>
-                        <div className="request-subtext">
-                          Willing to connect as study buddies
+                          <Icons.Target size={11} /> {req.fromTarget || 'CAT Aspirant'}
                         </div>
                       </div>
                     </div>
 
-                    {/* Accept & Decline Buttons */}
+                    {/* Accept & Decline Actions */}
                     <div className="request-actions-row">
                       <button
                         type="button"
@@ -689,122 +779,93 @@ export default function ProfileView({
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-
-          {/* 3. ADD NEW FRIEND FORM (By Unique ID or Email) */}
-          <div className="profile-card" style={{ marginBottom: '24px' }}>
-            <h3 className="profile-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Icons.UserPlus size={18} />
-              <span>Add Friend by Unique ID or Email</span>
-            </h3>
-            <p className="profile-section-subtitle">
-              Enter your peer's Unique Aspirant ID (e.g. <code>ASP-749201</code>) or their registered email to send an invitation.
-            </p>
-
-            <form className="add-friend-unique-form" onSubmit={handleSendFriendRequest}>
-              <div className="input-with-icon-wrapper">
-                <span className="input-leading-icon">
-                  <Icons.Search size={16} />
-                </span>
-                <input 
-                  type="text" 
-                  placeholder="Enter Unique ID (e.g. ASP-849201) or email" 
-                  value={friendSearchInput}
-                  onChange={(e) => setFriendSearchInput(e.target.value)}
-                  disabled={!user || friendActionLoading}
-                  className="friend-search-input"
-                />
-              </div>
-              <button 
-                type="submit" 
-                className="btn-primary send-request-btn"
-                disabled={!user || friendActionLoading || !friendSearchInput.trim()}
-              >
-                {friendActionLoading ? (
-                  <span>Sending...</span>
-                ) : (
-                  <>
-                    <Icons.UserPlus size={15} />
-                    <span>Send Request</span>
-                  </>
-                )}
-              </button>
-            </form>
-            {!user && (
-              <div style={{ fontSize: '12px', color: '#f59e0b', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Icons.Shield size={13} /> Please sign in to your Aspiranto account to send friend requests.
-              </div>
-            )}
-          </div>
+            </div>
+          ) : null}
 
           {/* 4. MY STUDY BUDDIES & CONNECTED PEERS */}
-          <div className="profile-card">
-            <div className="profile-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <div>
-                <h3 className="profile-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="study-buddies-section-card">
+            <div className="buddies-header-row">
+              <div className="buddies-header-left">
+                <div className="buddies-icon-wrap">
                   <Icons.Users size={18} />
-                  <span>My Study Buddies ({friends.length})</span>
-                </h3>
-                <p className="profile-section-subtitle">
-                  Track their daily questions solved, streak momentum, and study together in real-time.
-                </p>
+                </div>
+                <div>
+                  <h3 className="panel-main-title">
+                    My Study Buddies ({friends.length})
+                  </h3>
+                  <p className="panel-sub-desc">
+                    Real-time status, streak momentum, and study activity.
+                  </p>
+                </div>
               </div>
+
+              {friends.length > 0 && (
+                <div className="buddies-online-pill">
+                  <span className="live-dot" />
+                  <span>{friends.filter(f => f.status === 'studying' || f.status === 'online').length} Active</span>
+                </div>
+              )}
             </div>
 
             {friends.length === 0 ? (
-              <div className="empty-friends-state">
-                <Icons.Users size={32} />
-                <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginTop: '8px' }}>No Study Buddies Connected Yet</div>
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', maxWidth: '360px', margin: '6px auto 0 auto' }}>
-                  Share your Unique ID <strong>{currentAspirantId}</strong> or add friends above to start studying together!
+              <div className="empty-friends-clean-state">
+                <div className="empty-friends-icon-box">
+                  <Icons.Users size={28} />
+                </div>
+                <h4 className="empty-title">No Study Buddies Added Yet</h4>
+                <p className="empty-desc">
+                  Share your Unique ID <strong>{currentAspirantId}</strong> with peers or use the search above to start tracking progress together.
                 </p>
               </div>
             ) : (
-              <div className="buddies-grid">
+              <div className="buddies-modern-grid">
                 {friends.map((friend) => (
-                  <div key={friend.id || friend.uid} className="buddy-card">
-                    <div className="buddy-card-top">
-                      <AvatarRenderer 
-                        avatar={friend.avatar || 'rocket'}
-                        name={friend.displayName || friend.name}
-                        avatarBg={friend.avatarBg || '#5865f2'}
-                        size={48}
-                        status={friend.status || 'online'}
-                      />
-                      <div className="buddy-meta">
-                        <div className="buddy-name-row">
-                          <span className="buddy-name">{friend.displayName || friend.name}</span>
+                  <div key={friend.id || friend.uid} className="buddy-modern-card">
+                    <div className="buddy-modern-top">
+                      <div className="buddy-avatar-col">
+                        <AvatarRenderer 
+                          avatar={friend.avatar || 'rocket'}
+                          name={friend.displayName || friend.name}
+                          avatarBg={friend.avatarBg || '#5865f2'}
+                          size={46}
+                          status={friend.status || 'offline'}
+                        />
+                      </div>
+                      <div className="buddy-info-col">
+                        <div className="buddy-name-line">
+                          <span className="buddy-display-name">{friend.displayName || friend.name}</span>
                           {friend.aspirantId && (
-                            <span className="buddy-id-badge">
-                              <Icons.Hash size={10} /> {friend.aspirantId}
+                            <span className="buddy-aspirant-tag">
+                              <Icons.Hash size={9} /> {friend.aspirantId}
                             </span>
                           )}
                         </div>
-                        <div className="buddy-target">{friend.target || 'CAT Aspirant'}</div>
-                        <div className="buddy-status-indicator">
-                          <span className={`status-dot ${friend.status || 'online'}`} />
-                          <span className="status-label">{friend.status === 'studying' ? 'Focusing now' : friend.status === 'online' ? 'Online' : 'Offline'}</span>
+                        <div className="buddy-target-line">{friend.target || 'CAT Aspirant'}</div>
+                        <div className="buddy-live-status">
+                          <span className={`status-dot ${friend.status || 'offline'}`} />
+                          <span className="status-text">
+                            {friend.status === 'studying' ? 'Focusing Now' : friend.status === 'online' ? 'Online' : 'Offline'}
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="buddy-stats-row">
-                      <div className="buddy-stat-pill">
+                    <div className="buddy-stats-strip">
+                      <div className="buddy-stat-badge">
                         <Icons.Flame size={12} color="#f97316" />
                         <span>{friend.streak || 0}d streak</span>
                       </div>
-                      <div className="buddy-stat-pill">
-                        <Icons.Target size={12} color="#3b82f6" />
+                      <div className="buddy-stat-badge">
+                        <Icons.Target size={12} color="#38bdf8" />
                         <span>{friend.solvedQs || 0} Qs</span>
                       </div>
                     </div>
 
-                    <div className="buddy-actions-row">
+                    <div className="buddy-modern-actions">
                       {onInspectFriend && (
                         <button
                           type="button"
-                          className="btn-secondary buddy-inspect-btn"
+                          className="buddy-inspect-action-btn"
                           onClick={() => onInspectFriend(friend)}
                         >
                           <Icons.Target size={13} />
@@ -813,7 +874,7 @@ export default function ProfileView({
                       )}
                       <button
                         type="button"
-                        className="buddy-remove-btn"
+                        className="buddy-remove-action-btn"
                         onClick={() => handleRemoveFriend(friend)}
                         disabled={removingFriendId === (friend.id || friend.uid)}
                         title="Remove buddy"
@@ -835,19 +896,19 @@ export default function ProfileView({
       {isEditModalOpen && (
         <div className="modal-backdrop fade-in" onClick={() => setIsEditModalOpen(false)}>
           <div 
-            className="modal-card edit-profile-popup-modal"
+            className="modal-card edit-profile-popup-modal animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
             <div className="edit-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="edit-modal-header-left">
                 <div className="edit-modal-icon-wrap">
                   <Icons.Edit3 size={18} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: 0 }}>Edit Aspirant Profile</h3>
-                  <p style={{ fontSize: '12px', color: '#949ba4', margin: '2px 0 0 0' }}>
-                    Personalize your profile avatar, header banner, target exam, and bio.
+                  <h3 className="edit-modal-title">Edit Aspirant Profile</h3>
+                  <p className="edit-modal-subtitle">
+                    Customize your profile avatar, banner, handle, and preparation targets.
                   </p>
                 </div>
               </div>
@@ -862,282 +923,283 @@ export default function ProfileView({
               </button>
             </div>
 
-            {/* Modal Body / Form Organized in 4 Distinct Section Cards */}
-            <form onSubmit={handleSaveProfile} className="edit-modal-body">
-              
-              {/* Section 1: Avatar & Banner Theme */}
-              <div className="edit-profile-section-card">
-                <div className="edit-section-card-title">
-                  <Icons.Sparkles size={14} color="#38bdf8" />
-                  <span>1. Avatar & Banner Customization</span>
-                </div>
-
-                <div className="modal-form-section">
-                  <label className="modal-section-label">Profile Avatar</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                    <input 
-                      type="file" 
-                      ref={imageUploadInputRef} 
-                      accept="image/*" 
-                      style={{ display: 'none' }} 
-                      onChange={handleImageFileChange}
-                    />
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '8px 14px' }}
-                      onClick={() => imageUploadInputRef.current?.click()}
-                    >
-                      <Icons.Upload size={14} />
-                      <span>Upload Photo</span>
-                    </button>
-                    <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>PNG, JPG, WebP supported</span>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-                    <input 
-                      type="text" 
-                      placeholder="Or paste image URL (https://...)" 
-                      value={customImageUrl} 
-                      onChange={(e) => setCustomImageUrl(e.target.value)}
-                      style={{ flex: 1, padding: '7px 12px', fontSize: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)' }}
-                    />
-                    <button 
-                      type="button" 
-                      className="btn-secondary" 
-                      onClick={handleApplyImageUrl}
-                      style={{ fontSize: '12px', padding: '7px 12px' }}
-                    >
-                      Apply
-                    </button>
-                  </div>
-
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>Or Select Vector Character Badge:</div>
-                  <div className="avatar-preset-picker-grid">
-                    {AVATAR_PRESETS.map((preset) => {
-                      const PresetIcon = preset.icon;
-                      const isSelected = profAvatar === preset.id;
-                      return (
-                        <button
-                          key={preset.id}
-                          type="button"
-                          className={`avatar-preset-btn ${isSelected ? 'active' : ''}`}
-                          onClick={() => setProfAvatar(preset.id)}
-                          title={preset.label}
-                          style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '10px',
-                            background: isSelected ? 'var(--accent-color)' : 'var(--bg-tertiary)',
-                            border: isSelected ? '2px solid #ffffff' : '1px solid var(--border-color)',
-                            color: isSelected ? '#ffffff' : 'var(--text-primary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease'
-                          }}
-                        >
-                          <PresetIcon size={18} />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Avatar Glow & Theme Color */}
-                <div className="modal-form-section" style={{ marginTop: '12px' }}>
-                  <label className="modal-section-label">Avatar Glow & Accent Color</label>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {BG_COLORS.map(color => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => setProfAvatarBg(color)}
-                        style={{
-                          width: '26px',
-                          height: '26px',
-                          borderRadius: '50%',
-                          backgroundColor: color,
-                          border: profAvatarBg === color ? '3px solid #ffffff' : '1px solid rgba(0,0,0,0.2)',
-                          boxShadow: profAvatarBg === color ? `0 0 10px ${color}` : 'none',
-                          cursor: 'pointer',
-                          transform: profAvatarBg === color ? 'scale(1.15)' : 'scale(1)',
-                          transition: 'all 0.15s ease'
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Header Banner Customization (Photo, Animated GIF, or Colors) */}
-                <div className="modal-form-section" style={{ marginTop: '16px' }}>
-                  <label className="modal-section-label">Header Banner (Supports Animated GIFs & Photos)</label>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' }}>
-                    <input 
-                      type="file" 
-                      ref={bannerUploadInputRef} 
-                      accept="image/*,.gif" 
-                      style={{ display: 'none' }} 
-                      onChange={handleBannerFileChange}
-                    />
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '8px 14px', background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}
-                      onClick={() => bannerUploadInputRef.current?.click()}
-                    >
-                      <Icons.Upload size={14} />
-                      <span>Upload Photo / Animated GIF</span>
-                    </button>
-                    <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>GIF, PNG, JPG, WebP (Auto-optimized)</span>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                    <input 
-                      type="text" 
-                      placeholder="Or paste banner image/GIF URL (https://...)" 
-                      value={customBannerUrl} 
-                      onChange={(e) => setCustomBannerUrl(e.target.value)}
-                      style={{ flex: 1, padding: '7px 12px', fontSize: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)' }}
-                    />
-                    <button 
-                      type="button" 
-                      className="btn-secondary" 
-                      onClick={handleApplyBannerUrl}
-                      style={{ fontSize: '12px', padding: '7px 12px' }}
-                    >
-                      Apply
-                    </button>
-                  </div>
-
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>Or Select Theme Color:</div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {BANNER_COLORS.map(color => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => setProfBannerBg(color)}
-                        style={{
-                          width: '26px',
-                          height: '26px',
-                          borderRadius: '6px',
-                          backgroundColor: color,
-                          border: profBannerBg === color ? '3px solid #ffffff' : '1px solid rgba(0,0,0,0.4)',
-                          boxShadow: profBannerBg === color ? `0 0 10px ${color}` : 'none',
-                          cursor: 'pointer',
-                          transform: profBannerBg === color ? 'scale(1.15)' : 'scale(1)',
-                          transition: 'all 0.15s ease'
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
+            {/* Live Profile Header Preview Card */}
+            <div className="edit-modal-live-preview">
+              <div 
+                className="edit-preview-banner" 
+                style={{ 
+                  backgroundColor: profBannerBg || '#1e1f22',
+                  backgroundImage: profBannerUrl ? `url(${profBannerUrl})` : 'none',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
+              >
+                <span className="edit-preview-tag">LIVE PREVIEW</span>
               </div>
-
-              {/* Section 2: Identity & Username Alias */}
-              <div className="edit-profile-section-card">
-                <div className="edit-section-card-title">
-                  <Icons.User size={14} color="#a855f7" />
-                  <span>2. Identity & Handle Alias</span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <div>
-                    <label className="modal-section-label">Display Name</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Sesmxc"
-                      value={profName}
-                      onChange={(e) => setProfName(e.target.value)}
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="modal-section-label">Username / Handle</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. sesmic"
-                      value={profUsername}
-                      onChange={(e) => setProfUsername(e.target.value)}
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px' }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 3: Target Exam & Location */}
-              <div className="edit-profile-section-card">
-                <div className="edit-section-card-title">
-                  <Icons.Target size={14} color="#10b981" />
-                  <span>3. Target Exam & Preparation Goal</span>
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label className="modal-section-label">Target Exam & Focus Track</label>
-                  <select
-                    value={profTarget}
-                    onChange={(e) => setProfTarget(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px', marginBottom: '6px' }}
-                  >
-                    {TARGET_PRESETS.map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                  {profTarget === 'Custom Target Goal' && (
-                    <input
-                      type="text"
-                      placeholder="Type your custom target (e.g. CAT 2026 Core • IIM-A Focus)"
-                      onChange={(e) => setProfTarget(e.target.value)}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px' }}
-                    />
-                  )}
-                </div>
-
-                <div>
-                  <label className="modal-section-label">Location / City (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Bengaluru, Karnataka or New Delhi"
-                    value={profLocation}
-                    onChange={(e) => setProfLocation(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px' }}
+              <div className="edit-preview-body">
+                <div className="edit-preview-avatar-wrap">
+                  <AvatarRenderer 
+                    avatar={profAvatar} 
+                    name={profName} 
+                    avatarBg={profAvatarBg} 
+                    size={48} 
                   />
                 </div>
-              </div>
-
-              {/* Section 4: About Me & Bio */}
-              <div className="edit-profile-section-card">
-                <div className="edit-section-card-title">
-                  <Icons.BookOpen size={14} color="#f97316" />
-                  <span>4. Aspirant Bio (About Me)</span>
+                <div className="edit-preview-meta">
+                  <span className="edit-preview-name">{profName || 'Your Name'}</span>
+                  <span className="edit-preview-target">{profTarget || 'CAT 2025 Aspirant'}</span>
                 </div>
-                <textarea
-                  rows={3}
-                  placeholder="e.g. Focusing on daily Quant drills, LRDI speed practice, and regular mock analysis."
-                  value={profBio}
-                  onChange={(e) => setProfBio(e.target.value)}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '13px', resize: 'vertical' }}
-                />
               </div>
+            </div>
 
-              {/* Modal Actions */}
+            {/* Modal Navigation Tabs */}
+            <div className="edit-modal-tabs-bar">
+              <button
+                type="button"
+                className={`edit-tab-btn ${editModalTab === 'appearance' ? 'active' : ''}`}
+                onClick={() => setEditModalTab('appearance')}
+              >
+                <Icons.Sparkles size={13} />
+                <span>Appearance & Banner</span>
+              </button>
+              <button
+                type="button"
+                className={`edit-tab-btn ${editModalTab === 'identity' ? 'active' : ''}`}
+                onClick={() => setEditModalTab('identity')}
+              >
+                <Icons.User size={13} />
+                <span>Identity & Handle</span>
+              </button>
+              <button
+                type="button"
+                className={`edit-tab-btn ${editModalTab === 'goals' ? 'active' : ''}`}
+                onClick={() => setEditModalTab('goals')}
+              >
+                <Icons.Target size={13} />
+                <span>Target & Bio</span>
+              </button>
+            </div>
+
+            {/* Modal Body / Form */}
+            <form onSubmit={handleSaveProfile} className="edit-modal-body">
+              {profileSuccessMsg && (
+                <div className="edit-modal-success-banner animate-slide-up">
+                  <Icons.Check size={16} />
+                  <span>{profileSuccessMsg}</span>
+                </div>
+              )}
+              
+              {/* TAB 1: APPEARANCE & BANNER */}
+              {editModalTab === 'appearance' && (
+                <div className="edit-tab-pane animate-fade-in">
+                  
+                  {/* Profile Avatar Block */}
+                  <div className="edit-uniform-block">
+                    <div className="edit-block-title-row">
+                      <Icons.User size={14} className="edit-block-icon" />
+                      <span>Profile Avatar</span>
+                    </div>
+
+                    <div className="edit-upload-action-row">
+                      <input 
+                        type="file" 
+                        ref={imageUploadInputRef} 
+                        accept="image/*" 
+                        style={{ display: 'none' }} 
+                        onChange={handleImageFileChange}
+                      />
+                      <button
+                        type="button"
+                        className="edit-uniform-upload-btn"
+                        onClick={() => imageUploadInputRef.current?.click()}
+                      >
+                        <Icons.Upload size={14} />
+                        <span>Upload Photo</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`edit-default-toggle-btn ${profAvatar === 'default' || !profAvatar.startsWith('data:') ? 'active' : ''}`}
+                        onClick={() => {
+                          setProfAvatar('default');
+                          showAssuranceToast("Reset to default CATalyze icon!");
+                        }}
+                      >
+                        <Icons.Sparkles size={13} />
+                        <span>Default Icon</span>
+                      </button>
+                    </div>
+
+                    <div className="edit-sub-label" style={{ marginTop: '12px' }}>
+                      Default Icon & Glow Color:
+                    </div>
+                    <div className="edit-color-swatches-row">
+                      {BG_COLORS.map(color => (
+                        <button
+                          key={color}
+                          type="button"
+                          className={`edit-color-swatch-circle ${profAvatarBg === color ? 'active' : ''}`}
+                          onClick={() => {
+                            setProfAvatarBg(color);
+                            showAssuranceToast("Avatar color updated!");
+                          }}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Header Banner Block */}
+                  <div className="edit-uniform-block" style={{ marginTop: '14px' }}>
+                    <div className="edit-block-title-row">
+                      <Icons.Image size={14} className="edit-block-icon" />
+                      <span>Header Banner (Photos & Animated GIFs)</span>
+                    </div>
+
+                    <div className="edit-upload-action-row">
+                      <input 
+                        type="file" 
+                        ref={bannerUploadInputRef} 
+                        accept="image/*,.gif" 
+                        style={{ display: 'none' }} 
+                        onChange={handleBannerFileChange}
+                      />
+                      <button
+                        type="button"
+                        className="edit-uniform-upload-btn"
+                        onClick={() => bannerUploadInputRef.current?.click()}
+                      >
+                        <Icons.Upload size={14} />
+                        <span>Upload Photo or Animated GIF</span>
+                      </button>
+                      <span className="edit-upload-hint">GIF, PNG, JPG supported</span>
+                    </div>
+
+                    <div className="edit-sub-label" style={{ marginTop: '12px' }}>
+                      Or Select Theme Banner Palette:
+                    </div>
+                    <div className="edit-color-swatches-row">
+                      {BANNER_COLORS.map(color => (
+                        <button
+                          key={color}
+                          type="button"
+                          className={`edit-banner-swatch-rect ${profBannerBg === color ? 'active' : ''}`}
+                          onClick={() => {
+                            setProfBannerBg(color);
+                            setProfBannerUrl('');
+                            showAssuranceToast("Banner color updated!");
+                          }}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* TAB 2: IDENTITY & HANDLE */}
+              {editModalTab === 'identity' && (
+                <div className="edit-tab-pane animate-fade-in">
+                  <div className="edit-uniform-block">
+                    <div className="edit-grid-2col">
+                      <div className="edit-form-field">
+                        <label className="edit-field-label">Display Name</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Sunny Pathak"
+                          value={profName}
+                          onChange={(e) => setProfName(e.target.value)}
+                          className="edit-uniform-input"
+                          required
+                        />
+                      </div>
+
+                      <div className="edit-form-field">
+                        <label className="edit-field-label">Username / Handle</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. sunnypathak"
+                          value={profUsername}
+                          onChange={(e) => setProfUsername(e.target.value)}
+                          className="edit-uniform-input"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="edit-form-field" style={{ marginTop: '14px' }}>
+                      <label className="edit-field-label">Location / City (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Bengaluru, Karnataka"
+                        value={profLocation}
+                        onChange={(e) => setProfLocation(e.target.value)}
+                        className="edit-uniform-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: TARGET & BIO */}
+              {editModalTab === 'goals' && (
+                <div className="edit-tab-pane animate-fade-in">
+                  <div className="edit-uniform-block">
+                    <div className="edit-form-field">
+                      <label className="edit-field-label">Target Examination & Focus Goal</label>
+                      <select
+                        value={profTarget}
+                        onChange={(e) => setProfTarget(e.target.value)}
+                        className="edit-uniform-select"
+                      >
+                        {TARGET_PRESETS.map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                      {profTarget === 'Custom Target Goal' && (
+                        <input
+                          type="text"
+                          placeholder="Type custom target (e.g. CAT 2026 Core • IIM-A Focus)"
+                          onChange={(e) => setProfTarget(e.target.value)}
+                          className="edit-uniform-input"
+                          style={{ marginTop: '8px' }}
+                        />
+                      )}
+                    </div>
+
+                    <div className="edit-form-field" style={{ marginTop: '14px' }}>
+                      <label className="edit-field-label">Aspirant Bio & Strategy Notes</label>
+                      <textarea
+                        rows={4}
+                        placeholder="e.g. Focusing on daily Quant drills, LRDI speed practice, and regular mock analysis."
+                        value={profBio}
+                        onChange={(e) => setProfBio(e.target.value)}
+                        className="edit-uniform-textarea"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Actions Footer */}
               <div className="edit-modal-footer">
                 <button
                   type="button"
-                  className="btn-secondary"
+                  className="edit-modal-cancel-btn"
                   onClick={() => setIsEditModalOpen(false)}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary"
+                  className="edit-modal-save-btn"
                   disabled={profileSaving}
-                  style={{ padding: '10px 20px', fontWeight: 800, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
                   {profileSaving ? (
-                    <span>Syncing...</span>
+                    <>
+                      <span className="btn-spinner"></span>
+                      <span>Saving...</span>
+                    </>
                   ) : (
                     <>
                       <Icons.CheckCircle size={15} />

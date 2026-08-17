@@ -15,6 +15,7 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
   }, [activeTheme]);
 
   const themeObj = THEMES.find(t => t.id === activeTheme) || THEMES[0];
+  const ActiveIcon = themeObj.IconComponent;
 
   return (
     <div className="theme-switch-toast-overlay" onClick={onClose} title="Click to dismiss">
@@ -22,6 +23,32 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
         
         {/* Animated SVG Cartoon Artwork based on theme */}
         <div className="theme-toast-art">
+          {activeTheme === 'crimson-velvet' && (
+            <svg viewBox="0 0 100 100" className="theme-svg-art crimson-anim">
+              <circle cx="50" cy="50" r="30" fill="#b81432" opacity="0.9" />
+              <path d="M30 65 L50 30 L70 65 Z" fill="#f43f5e" />
+              <circle cx="50" cy="30" r="5" fill="#fecdd3" />
+              <circle cx="30" cy="65" r="4" fill="#fecdd3" />
+              <circle cx="70" cy="65" r="4" fill="#fecdd3" />
+            </svg>
+          )}
+
+          {activeTheme === 'sage-frost' && (
+            <svg viewBox="0 0 100 100" className="theme-svg-art sage-anim">
+              <circle cx="50" cy="50" r="30" fill="#7daeb9" opacity="0.9" />
+              <path d="M50 18 Q72 38 52 78 Q32 78 28 50 Q30 28 50 18 Z" fill="#9be2b0" />
+              <path d="M50 18 L48 78" stroke="#edf6ee" strokeWidth="2" />
+            </svg>
+          )}
+
+          {activeTheme === 'nordic-slate' && (
+            <svg viewBox="0 0 100 100" className="theme-svg-art slate-anim">
+              <path d="M15 70 L45 30 L60 50 L75 35 L90 70 Z" fill="#3c617b" />
+              <path d="M35 43 L45 30 L55 43 Z" fill="#c8b7a6" />
+              <path d="M68 42 L75 35 L82 42 Z" fill="#c8b7a6" />
+            </svg>
+          )}
+
           {activeTheme === 'coffee' && (
             <svg viewBox="0 0 100 100" className="theme-svg-art steam-anim">
               <path d="M30 45 L70 45 L65 75 Q50 82 35 75 Z" fill="#d9a774" stroke="#593f2d" strokeWidth="3" />
@@ -87,7 +114,7 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
 
           {activeTheme === 'light' && (
             <svg viewBox="0 0 100 100" className="theme-svg-art sun-anim">
-              <circle cx="50" cy="50" r="22" fill="#0f172a" />
+              <circle cx="50" cy="22" r="16" fill="#f59e0b" />
               {Array.from({ length: 8 }).map((_, i) => (
                 <line
                   key={i}
@@ -95,13 +122,20 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
                   y1="15"
                   x2="50"
                   y2="5"
-                  stroke="#0f172a"
+                  stroke="#f59e0b"
                   strokeWidth="4"
                   strokeLinecap="round"
-                  transform={`rotate(${i * 45} 50 50)`}
+                  transform={`rotate(${i * 45} 50 22)`}
                 />
               ))}
             </svg>
+          )}
+
+          {/* Universal Fallback icon if no artwork matched */}
+          {!['crimson-velvet', 'sage-frost', 'nordic-slate', 'coffee', 'fall', 'warm', 'sunset', 'ephemeral', 'emerald', 'nordic', 'dark', 'light'].includes(activeTheme) && (
+            <div className="theme-fallback-icon-wrap" style={{ color: themeObj.colors[3] || 'var(--accent-color, #38bdf8)' }}>
+              {ActiveIcon && <ActiveIcon />}
+            </div>
           )}
         </div>
 

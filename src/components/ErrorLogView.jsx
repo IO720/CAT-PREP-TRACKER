@@ -77,7 +77,11 @@ export default function ErrorLogView({ state, onDayClick }) {
             onChange={(e) => setSelectedMonth(e.target.value)}
           >
             <option value="All">All Months</option>
-            {Object.keys(tracker).map(m => (
+            {Object.keys(tracker).sort((a, b) => {
+              const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+              const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+              return numA - numB;
+            }).map(m => (
               <option key={m} value={m}>{m}</option>
             ))}
           </select>

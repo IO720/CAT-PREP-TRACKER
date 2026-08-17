@@ -17,7 +17,11 @@ export default function DailyTrackerView({
 }) {
   const { tracker, settings } = state;
   const startDateStr = settings?.startDate;
-  const months = Object.keys(tracker);
+  const months = Object.keys(tracker || {}).sort((a, b) => {
+    const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+    const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+    return numA - numB;
+  });
   
   // Available weeks in current month
   const weeks = tracker[activeMonth] || [];

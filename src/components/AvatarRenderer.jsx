@@ -59,14 +59,12 @@ export default function AvatarRenderer({
               e.target.style.display = 'none';
             }}
           />
-        ) : preset ? (
-          <preset.icon size={Math.round(size * 0.52)} />
         ) : (
-          <span>{(name ? name.charAt(0) : 'A').toUpperCase()}</span>
+          <Icons.Sparkles size={Math.round(size * 0.52)} />
         )}
       </div>
 
-      {/* Online / Studying Status Indicator */}
+      {/* Online / Studying / Offline Status Indicator */}
       {status && (
         <span 
           style={{
@@ -76,11 +74,11 @@ export default function AvatarRenderer({
             width: `${Math.max(10, Math.round(size * 0.28))}px`,
             height: `${Math.max(10, Math.round(size * 0.28))}px`,
             borderRadius: '50%',
-            backgroundColor: status === 'studying' ? '#ef4444' : status === 'online' ? '#22c55e' : '#64748b',
-            border: '2px solid #1e1f22',
-            boxShadow: status === 'studying' ? '0 0 6px #ef4444' : status === 'online' ? '0 0 6px #22c55e' : 'none'
+            backgroundColor: status === 'studying' ? '#f97316' : status === 'online' ? '#22c55e' : '#64748b',
+            border: '2px solid #14161c',
+            boxShadow: status === 'studying' ? '0 0 8px #f97316' : status === 'online' ? '0 0 8px #22c55e' : 'none'
           }}
-          title={status === 'studying' ? 'In Study Session' : status === 'online' ? 'Online' : 'Offline'}
+          title={status === 'studying' ? 'Focusing now' : status === 'online' ? 'Online' : 'Offline'}
         />
       )}
     </div>

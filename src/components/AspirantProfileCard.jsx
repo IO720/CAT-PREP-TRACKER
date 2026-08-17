@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import AvatarRenderer from './AvatarRenderer';
+import { Icons } from './AspirantIcons';
 import StudyContributionHeatmap from './StudyContributionHeatmap';
 import { calculateUserBadges } from '../utils/badgeUtils';
-import { Icons } from './AspirantIcons';
 
 export default function AspirantProfileCard({
   profile = {},
@@ -10,48 +10,47 @@ export default function AspirantProfileCard({
   onEditProfile = null,
   onMessagePeer = null,
   onViewAchievements = null,
-  compact = false,
-  tracker = null
+  compact = false
 }) {
-  const {
-    displayName = 'Aspirant',
-    username = 'aspirant',
-    aspirantId = '',
-    avatar = '',
-    avatarBg = '#5865f2',
-    bannerBg = '#18191c',
-    bio = '',
-    location = '',
-    streak = 0,
-    solvedQs = 0,
-    mocksCount = 0,
-    status = 'online',
-    email = ''
-  } = profile;
-
-  const [copiedId, setCopiedId] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
   const [activeBadgeTooltip, setActiveBadgeTooltip] = useState(null);
+
+  const displayName = profile.displayName || profile.name || (isSelf ? 'You' : 'Aspirant');
+  const avatar = profile.avatar || 'rocket';
+  const avatarBg = profile.avatarBg || '#5865f2';
+  const bannerBg = profile.bannerBg || '';
+  const bio = profile.bio || '';
+  const location = profile.location || '';
+  const aspirantId = profile.aspirantId || '';
+  const target = profile.target || 'CAT Aspirant';
+  const streak = profile.streak || 0;
+  const solvedQs = profile.solvedQs || 0;
+  const mocksCount = profile.mocksCount || 0;
+  const tracker = profile.tracker || null;
+  const status = profile.status || 'offline';
+
+  const handleText = target ? `${target}` : '@aspirant';
 
   const handleCopyId = (e) => {
     e.stopPropagation();
     if (!aspirantId) return;
-    navigator.clipboard.writeText(aspirantId);
-    setCopiedId(true);
-    setTimeout(() => setCopiedId(false), 2000);
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(aspirantId);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    }
   };
-
-  const handleText = username ? (username.startsWith('@') ? username : `@${username}`) : (email ? `@${email.split('@')[0]}` : '@aspirant');
 
   const badges = calculateUserBadges({ streak, solvedQs, mocksCount });
   const unlockedCount = badges.filter(b => b.isUnlocked).length;
 
   return (
     <div 
-      className={`discord-profile-card-container ${compact ? 'compact' : ''}`}
+      className={`profile-card-container ${compact ? 'compact' : ''}`}
       onClick={() => setActiveBadgeTooltip(null)}
     >
-      {/* Top Banner Header (Supports solid color, gradient, custom image, or animated GIF) */}
+      {/* Top Banner Header */}
       {(() => {
         const isImageOrGifBanner = bannerBg && (
           bannerBg.startsWith('data:image') || 
@@ -65,7 +64,7 @@ export default function AspirantProfileCard({
 
         return (
           <div 
-            className="discord-banner-header"
+            className="profile-card-banner-header"
             style={{
               backgroundColor: '#121316',
               backgroundImage: isImageOrGifBanner 
@@ -76,19 +75,19 @@ export default function AspirantProfileCard({
               backgroundRepeat: 'no-repeat'
             }}
           >
-            <div className="discord-banner-badge">
+            <div className="profile-card-banner-badge">
               <Icons.Shield size={12} />
-              <span>Aspiranto Verified</span>
+              <span>CATalyze Verified</span>
             </div>
           </div>
         );
       })()}
 
       {/* Main Profile Content */}
-      <div className="discord-profile-body">
+      <div className="profile-card-body">
         {/* Overlapping Avatar Header */}
-        <div className="discord-avatar-row">
-          <div className="discord-avatar-wrapper">
+        <div className="profile-card-avatar-row">
+          <div className="profile-card-avatar-wrapper">
             <AvatarRenderer 
               avatar={avatar}
               name={displayName}
@@ -99,12 +98,12 @@ export default function AspirantProfileCard({
           </div>
 
           {/* Action Buttons */}
-          <div className="discord-top-actions">
+          <div className="profile-card-top-actions">
             {isSelf ? (
               onEditProfile && (
                 <button 
                   type="button" 
-                  className="discord-action-btn primary"
+                  className="profile-card-action-btn primary"
                   onClick={onEditProfile}
                 >
                   <Icons.Edit3 size={13} />
@@ -115,7 +114,7 @@ export default function AspirantProfileCard({
               onMessagePeer && (
                 <button 
                   type="button" 
-                  className="discord-action-btn primary"
+                  className="profile-card-action-btn primary"
                   onClick={onMessagePeer}
                 >
                   <Icons.MessageSquare size={13} />
@@ -127,13 +126,13 @@ export default function AspirantProfileCard({
         </div>
 
         {/* Identity & Location */}
-        <div className="discord-identity-section">
-          <div className="discord-display-name-row">
-            <h2 className="discord-display-name">{displayName}</h2>
-            {isSelf && <span className="discord-self-pill">YOU</span>}
+        <div className="profile-card-identity-section">
+          <div className="profile-card-display-name-row">
+            <h2 className="profile-card-display-name">{displayName}</h2>
+            {isSelf && <span className="profile-card-self-pill">YOU</span>}
           </div>
-          <div className="discord-handle-row">
-            <span className="discord-username">{handleText}</span>
+          <div className="profile-card-handle-row">
+            <span className="profile-card-username">{handleText}</span>
             {aspirantId && (
               <button 
                 type="button"
@@ -152,8 +151,8 @@ export default function AspirantProfileCard({
             )}
             {location && (
               <>
-                <span className="discord-dot-separator">•</span>
-                <span className="discord-location">
+                <span className="profile-card-dot-separator">•</span>
+                <span className="profile-card-location">
                   <Icons.MapPin size={10} /> {location}
                 </span>
               </>
@@ -162,52 +161,52 @@ export default function AspirantProfileCard({
         </div>
 
         {/* Divider */}
-        <div className="discord-card-divider" />
+        <div className="profile-card-divider" />
 
         {/* About Me */}
-        <div className="discord-info-block">
-          <div className="discord-section-header">ABOUT ME</div>
-          <div className="discord-bio-text">
+        <div className="profile-card-info-block">
+          <div className="profile-card-section-header">ABOUT ME</div>
+          <div className="profile-card-bio-text">
             {bio || "Consistent daily practice, mocks analysis & speed building."}
           </div>
         </div>
 
         {/* 3-Column Clean Preparation Stats */}
-        <div className="discord-info-block">
-          <div className="discord-section-header">PREPARATION STATS</div>
-          <div className="discord-stats-grid-3col">
-            <div className="discord-stat-cell">
-              <div className="discord-stat-title">
+        <div className="profile-card-info-block">
+          <div className="profile-card-section-header">PREPARATION STATS</div>
+          <div className="profile-card-stats-grid-3col">
+            <div className="profile-card-stat-cell">
+              <div className="profile-card-stat-title">
                 <Icons.Flame size={11} color="#f97316" /> CURRENT STREAK
               </div>
-              <div className="discord-stat-number">{streak} {streak === 1 ? 'Day' : 'Days'}</div>
+              <div className="profile-card-stat-number">{streak} {streak === 1 ? 'Day' : 'Days'}</div>
             </div>
 
-            <div className="discord-stat-cell">
-              <div className="discord-stat-title">
+            <div className="profile-card-stat-cell">
+              <div className="profile-card-stat-title">
                 <Icons.Target size={11} color="#3b82f6" /> QUESTIONS SOLVED
               </div>
-              <div className="discord-stat-number">{solvedQs ? solvedQs.toLocaleString() : '0'} Qs</div>
+              <div className="profile-card-stat-number">{solvedQs ? solvedQs.toLocaleString() : '0'} Qs</div>
             </div>
 
-            <div className="discord-stat-cell">
-              <div className="discord-stat-title">
+            <div className="profile-card-stat-cell">
+              <div className="profile-card-stat-title">
                 <Icons.BookOpen size={11} color="#10b981" /> MOCKS TAKEN
               </div>
-              <div className="discord-stat-number">{mocksCount} / 30</div>
+              <div className="profile-card-stat-number">{mocksCount} / 30</div>
             </div>
           </div>
         </div>
 
         {/* Badges & Collectible Perks Section */}
-        <div className="discord-info-block">
+        <div className="profile-card-info-block">
           <div 
-            className="discord-section-header-row"
+            className="profile-card-section-header-row"
             onClick={onViewAchievements}
             style={onViewAchievements ? { cursor: 'pointer' } : undefined}
             title={onViewAchievements ? "View All Achievements & Badges" : undefined}
           >
-            <span className="discord-section-header">COLLECTED PERKS & BADGES</span>
+            <span className="profile-card-section-header">COLLECTED PERKS & BADGES</span>
             <span className="badge-count-pill" style={onViewAchievements ? { cursor: 'pointer', transition: 'all 0.2s' } : undefined}>
               {unlockedCount} / {badges.length} Unlocked {onViewAchievements ? '→' : ''}
             </span>
@@ -304,10 +303,10 @@ export default function AspirantProfileCard({
 
         {/* Toggleable Contribution Matrix Button */}
         {tracker && (
-          <div className="discord-info-block" style={{ marginBottom: '4px' }}>
+          <div className="profile-card-info-block" style={{ marginBottom: '4px' }}>
             <button
               type="button"
-              className="discord-toggle-heatmap-btn"
+              className="profile-card-toggle-heatmap-btn"
               onClick={() => setShowHeatmap(!showHeatmap)}
             >
               <Icons.Calendar size={13} />

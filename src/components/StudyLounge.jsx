@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AvatarRenderer from './AvatarRenderer';
 import { Icons } from './AspirantIcons';
-import { sendChatMessage, subscribeToChatMessages } from '../utils/firebase';
+import { sendChatMessage, subscribeToChatMessages, deleteChatMessage } from '../utils/firebase';
+
+const PUBLIC_CHANNELS = [
+  { id: 'general-hall', name: 'general-hall', icon: Icons.MessageSquare, desc: 'Real-time discussions, doubts, prep strategy & general banter.' },
+  { id: 'quant-sprints', name: 'quant-sprints', icon: Icons.Calculator, desc: 'Quantitative Aptitude problem sprints, shortcuts & doubts.' },
+  { id: 'varc-reading', name: 'varc-reading', icon: Icons.BookOpen, desc: 'Reading Comprehension sets, Vocabulary & Verbal Ability.' },
+  { id: 'lrdi-puzzles', name: 'lrdi-puzzles', icon: Icons.Puzzle, desc: 'Arrangements, Matrix, Caselets & Games & Tournaments.' },
+  { id: 'milestones', name: 'milestones', icon: Icons.Trophy, desc: 'Daily study question targets crushed & milestone celebrations.' }
+];
 
 const QUICK_CHIPS = [
   { label: '1hr Quant Sprint', text: 'Starting a 1-hour Quant focus sprint! Who is in? #QUANT', tag: 'QUANT' },
@@ -11,15 +19,8 @@ const QUICK_CHIPS = [
   { label: 'Daily Target Hit', text: 'Crushed my daily question target for today! #MILESTONE', tag: 'MILESTONE' }
 ];
 
-const TAG_FILTERS = [
-  { id: 'ALL', label: '#all-messages' },
-  { id: 'QUANT', label: '#quant' },
-  { id: 'LRDI', label: '#lrdi' },
-  { id: 'VARC', label: '#varc' },
-  { id: 'MILESTONE', label: '#milestones' }
-];
-
 export default function StudyLounge({
+  peers = [],
   friends = [],
   onInspectFriend,
   currentUser = null,
@@ -28,16 +29,22 @@ export default function StudyLounge({
   compact = false,
   fullPage = true
 }) {
+  const [activeChannelId, setActiveChannelId] = useState('general-hall'); // 'general-hall' | 'quant-sprints' | ... | 'buddies-circle' | 'dm_[uid]'
+  const [selectedDirectFriend, setSelectedDirectFriend] = useState(null); // null | friend object
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
-  const [selectedTagFilter, setSelectedTagFilter] = useState('ALL');
   const [sending, setSending] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
-  const [mobileTab, setMobileTab] = useState('chat'); // 'chat' | 'peers'
-  const messagesEndRef = useRef(null);
+  const [mobileTab, setMobileTab] = useState('chat'); // 'channels' | 'chat' | 'sidebar'
+  const [replyingTo, setReplyingTo] = useState(null); // { id, senderName, text, avatar, avatarBg }
+  const [activeActionMessage, setActiveActionMessage] = useState(null); // Message object for action modal/sheet
+  const [copyToast, setCopyToast] = useState('');
+  const [highlightedMsgId, setHighlightedMsgId] = useState(null);
 
-  // Real-time tick to update countdowns for other studying peers smoothly
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Real-time tick to update countdowns for studying students smoothly
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTimeMs(Date.now());
@@ -45,19 +52,30 @@ export default function StudyLounge({
     return () => clearInterval(interval);
   }, []);
 
-  // Subscribe to real-time chat messages
+  // Subscribe to real-time chat messages based on activeChannelId
   useEffect(() => {
-    const unsubscribe = subscribeToChatMessages((msgs) => {
-      setMessages(msgs || []);
-    });
+    const friendIds = Array.isArray(userProfile?.friends) && userProfile.friends.length > 0
+      ? userProfile.friends
+      : friends.map(f => f.id || f.uid).filter(Boolean);
+    const targetFriendId = selectedDirectFriend ? (selectedDirectFriend.id || selectedDirectFriend.uid) : null;
+
+    const unsubscribe = subscribeToChatMessages(
+      activeChannelId, 
+      (msgs) => {
+        setMessages(msgs || []);
+      },
+      currentUser?.uid,
+      friendIds,
+      targetFriendId
+    );
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
-  }, []);
+  }, [activeChannelId, currentUser?.uid, userProfile?.friends, friends, selectedDirectFriend]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, selectedTagFilter]);
+  }, [messages, activeChannelId]);
 
   // Format seconds to mm:ss for live timer
   const formatTime = (secs) => {
@@ -114,63 +132,132 @@ export default function StudyLounge({
     }
   } : null;
 
-  // Filter peers by search query
-  const filteredPeers = friends.filter(p => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      (p.name && p.name.toLowerCase().includes(q)) ||
-      (p.displayName && p.displayName.toLowerCase().includes(q)) ||
-      (p.target && p.target.toLowerCase().includes(q)) ||
-      (p.location && p.location.toLowerCase().includes(q)) ||
-      (p.aspirantId && p.aspirantId.toLowerCase().includes(q)) ||
-      (p.activity?.title && p.activity.title.toLowerCase().includes(q)) ||
-      (p.activity?.subject && p.activity.subject.toLowerCase().includes(q))
-    );
+  // Compile Leaderboard of ACTIVELY STUDYING students (Strictly only studying users, no offline users)
+  const peerSource = peers.length > 0 ? peers : friends;
+  const studyingPeers = peerSource.filter(p => p.status === 'studying');
+  
+  const allStudyingStudents = [
+    ...(userActivity ? [userActivity] : []),
+    ...studyingPeers.filter(p => p.id !== currentUser?.uid && p.uid !== currentUser?.uid)
+  ].sort((a, b) => {
+    return (b.solvedQs || 0) - (a.solvedQs || 0) || (b.streak || 0) - (a.streak || 0);
   });
 
-  // Split into categories
-  const studyingPeers = filteredPeers.filter(p => p.status === 'studying');
-  const onlinePeers = filteredPeers.filter(p => p.status === 'online');
-  const offlinePeers = filteredPeers.filter(p => p.status === 'offline');
+  // Channel switching handlers
+  const handleSelectPublicChannel = (channel) => {
+    setActiveChannelId(channel.id);
+    setSelectedDirectFriend(null);
+    setReplyingTo(null);
+    setMobileTab('chat');
+  };
 
-  // Count summaries
-  const selfStudyingCount = userActivity ? 1 : 0;
-  const selfOnlineCount = (!userActivity && currentUser) ? 1 : 0;
-  
-  const totalStudying = selfStudyingCount + studyingPeers.length;
-  const totalOnline = selfOnlineCount + onlinePeers.length;
-  const totalActivePeers = totalStudying + totalOnline;
+  const handleSelectBuddiesCircle = () => {
+    setActiveChannelId('buddies-circle');
+    setSelectedDirectFriend(null);
+    setReplyingTo(null);
+    setMobileTab('chat');
+  };
+
+  const handleSelectDirectFriend = (friend) => {
+    const fId = friend.id || friend.uid;
+    setActiveChannelId(`dm_${fId}`);
+    setSelectedDirectFriend(friend);
+    setReplyingTo(null);
+    setMobileTab('chat');
+  };
+
+  const isPrivateChannel = activeChannelId === 'buddies-circle' || activeChannelId.startsWith('dm_') || !!selectedDirectFriend;
+
+  const currentChannelInfo = isPrivateChannel
+    ? selectedDirectFriend
+      ? { name: `@${selectedDirectFriend.displayName || selectedDirectFriend.name}`, desc: `Direct 1-on-1 private discussion with ${selectedDirectFriend.displayName || selectedDirectFriend.name}.` }
+      : { name: 'study-buddies', desc: `Private discussion room exclusively for you and your ${friends.length} connected buddies.` }
+    : PUBLIC_CHANNELS.find(c => c.id === activeChannelId) || PUBLIC_CHANNELS[0];
 
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
     if (!inputText.trim() || sending) return;
 
     const text = inputText.trim();
+    const currentReply = replyingTo;
+    const targetFriendId = selectedDirectFriend ? (selectedDirectFriend.id || selectedDirectFriend.uid) : null;
+
     setInputText('');
+    setReplyingTo(null);
     setSending(true);
 
     let tag = 'GENERAL';
-    if (text.toUpperCase().includes('#QUANT')) tag = 'QUANT';
-    else if (text.toUpperCase().includes('#LRDI')) tag = 'LRDI';
-    else if (text.toUpperCase().includes('#VARC')) tag = 'VARC';
-    else if (text.toUpperCase().includes('#MILESTONE')) tag = 'MILESTONE';
+    if (activeChannelId === 'quant-sprints' || text.toUpperCase().includes('#QUANT')) tag = 'QUANT';
+    else if (activeChannelId === 'varc-reading' || text.toUpperCase().includes('#VARC')) tag = 'VARC';
+    else if (activeChannelId === 'lrdi-puzzles' || text.toUpperCase().includes('#LRDI')) tag = 'LRDI';
+    else if (activeChannelId === 'milestones' || text.toUpperCase().includes('#MILESTONE')) tag = 'MILESTONE';
     else if (text.toUpperCase().includes('#BREAK')) tag = 'BREAK';
 
-    await sendChatMessage(currentUser, text, tag, userProfile);
+    await sendChatMessage(currentUser, text, tag, userProfile, activeChannelId, currentReply, targetFriendId);
     setSending(false);
+    inputRef.current?.focus();
   };
 
   const handleQuickChipClick = async (chip) => {
     if (sending) return;
+    const targetFriendId = selectedDirectFriend ? (selectedDirectFriend.id || selectedDirectFriend.uid) : null;
+
     setSending(true);
-    await sendChatMessage(currentUser, chip.text, chip.tag, userProfile);
+    await sendChatMessage(currentUser, chip.text, chip.tag, userProfile, activeChannelId, replyingTo, targetFriendId);
+    setReplyingTo(null);
     setSending(false);
   };
 
-  const filteredMessages = selectedTagFilter === 'ALL'
-    ? messages
-    : messages.filter(m => m.tag === selectedTagFilter);
+  // Initiate reply
+  const handleInitiateReply = (msg) => {
+    setReplyingTo({
+      id: msg.id,
+      senderName: msg.senderName || 'Aspirant',
+      text: msg.text || '',
+      avatar: msg.avatar,
+      avatarBg: msg.avatarBg
+    });
+    setActiveActionMessage(null);
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
+  };
+
+  // Copy text to clipboard with toast
+  const handleCopyText = (text) => {
+    if (!text) return;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+    }
+    setCopyToast("Message copied to clipboard!");
+    setActiveActionMessage(null);
+    setTimeout(() => setCopyToast(''), 2000);
+  };
+
+  // Forward message into input
+  const handleForwardMessage = (msg) => {
+    setInputText(`"${msg.text}" - @${msg.senderName} `);
+    setActiveActionMessage(null);
+    inputRef.current?.focus();
+  };
+
+  // Delete message
+  const handleDeleteMsg = async (msg) => {
+    if (!window.confirm("Delete this message?")) return;
+    await deleteChatMessage(msg.id, activeChannelId);
+    setActiveActionMessage(null);
+  };
+
+  // Jump to referenced replied message
+  const handleJumpToMessage = (targetMsgId) => {
+    if (!targetMsgId) return;
+    const elem = document.getElementById(`channel-msg-${targetMsgId}`);
+    if (elem) {
+      elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedMsgId(targetMsgId);
+      setTimeout(() => setHighlightedMsgId(null), 2500);
+    }
+  };
 
   const formatMessageTime = (isoString) => {
     if (!isoString) return '';
@@ -183,138 +270,276 @@ export default function StudyLounge({
   };
 
   return (
-    <div className={`discord-lounge-full-layout ${fullPage ? 'full-page-lounge' : ''}`}>
+    <div className={`hub-layout ${fullPage ? 'full-page-hub' : ''}`}>
       
-      {/* Mobile View Toggle Switch */}
-      <div className="lounge-mobile-tab-switch">
+      {/* Toast Notification */}
+      {copyToast && (
+        <div className="lounge-floating-toast animate-slide-up">
+          <Icons.Check size={14} />
+          <span>{copyToast}</span>
+        </div>
+      )}
+
+      {/* Mobile Top View Switcher */}
+      <div className="hub-mobile-tabs-bar">
         <button 
           type="button" 
-          className={`lounge-mobile-tab-btn ${mobileTab === 'chat' ? 'active' : ''}`}
-          onClick={() => setMobileTab('chat')}
+          className={`hub-mobile-tab-btn ${mobileTab === 'channels' ? 'active' : ''}`}
+          onClick={() => setMobileTab('channels')}
         >
-          <Icons.Chat size={15} />
-          <span>Chat Stream</span>
+          <Icons.Hash size={14} />
+          <span>Channels</span>
         </button>
         <button 
           type="button" 
-          className={`lounge-mobile-tab-btn ${mobileTab === 'peers' ? 'active' : ''}`}
-          onClick={() => setMobileTab('peers')}
+          className={`hub-mobile-tab-btn ${mobileTab === 'chat' ? 'active' : ''}`}
+          onClick={() => setMobileTab('chat')}
         >
-          <Icons.Users size={15} />
-          <span>Active Peers ({totalStudying} Studying)</span>
-          {totalStudying > 0 && <span className="live-studying-pulse-dot"></span>}
+          <Icons.MessageSquare size={14} />
+          <span>Chat</span>
+        </button>
+        <button 
+          type="button" 
+          className={`hub-mobile-tab-btn ${mobileTab === 'sidebar' ? 'active' : ''}`}
+          onClick={() => setMobileTab('sidebar')}
+        >
+          <Icons.Flame size={14} />
+          <span>{isPrivateChannel ? 'Members' : 'Leaderboard'}</span>
+          {allStudyingStudents.length > 0 && <span className="live-studying-pulse-dot"></span>}
         </button>
       </div>
 
       {/* ========================================================
-          LEFT / CENTER: CHAT CHANNEL
+          LEFT: TEXT CHANNELS SIDEBAR
          ======================================================== */}
-      <div className={`discord-chat-main-area ${mobileTab === 'chat' ? 'mobile-active' : 'mobile-inactive'}`}>
-        {/* Channel Top Header */}
-        <div className="discord-channel-top-bar">
-          <div className="discord-channel-info">
-            <span className="discord-hash-tag">#</span>
+      <div className={`hub-channels-sidebar ${mobileTab === 'channels' ? 'mobile-active' : 'mobile-inactive'}`}>
+        <div className="hub-server-header">
+          <div className="hub-server-title-row">
+            <span className="hub-server-icon-badge">⚡</span>
+            <span className="hub-server-title">Aspirants Study Hall</span>
+          </div>
+        </div>
+
+        <div className="hub-channels-list-scroll">
+          
+          {/* SECTION 1: PUBLIC STUDY CHANNELS */}
+          <div className="hub-channel-category">
+            <div className="hub-category-label">
+              <span>TEXT CHANNELS</span>
+            </div>
+
+            {PUBLIC_CHANNELS.map(channel => {
+              const ChannelIcon = channel.icon;
+              const isActive = activeChannelId === channel.id;
+              return (
+                <button
+                  key={channel.id}
+                  type="button"
+                  className={`hub-channel-btn ${isActive ? 'active' : ''}`}
+                  onClick={() => handleSelectPublicChannel(channel)}
+                >
+                  <span className="hub-channel-hash">#</span>
+                  <span className="hub-channel-name">{channel.name}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* SECTION 2: PRIVATE CIRCLES & DIRECT DMS */}
+          <div className="hub-channel-category">
+            <div className="hub-category-label">
+              <span>PRIVATE & BUDDIES</span>
+            </div>
+
+            {/* Buddies Circle Room */}
+            <button
+              type="button"
+              className={`hub-channel-btn ${activeChannelId === 'buddies-circle' && !selectedDirectFriend ? 'active' : ''}`}
+              onClick={handleSelectBuddiesCircle}
+            >
+              <Icons.Users size={14} className="hub-channel-icon" />
+              <span className="hub-channel-name">study-buddies</span>
+              {friends.length > 0 && <span className="hub-badge-count">{friends.length}</span>}
+            </button>
+
+            {/* Direct 1-on-1 Friends Rooms */}
+            {friends.map(friend => {
+              const fId = friend.id || friend.uid;
+              const isActive = selectedDirectFriend && ((selectedDirectFriend.id === fId) || (selectedDirectFriend.uid === fId));
+              return (
+                <button
+                  key={fId}
+                  type="button"
+                  className={`hub-channel-btn ${isActive ? 'active' : ''}`}
+                  onClick={() => handleSelectDirectFriend(friend)}
+                >
+                  <span className={`status-dot-mini ${friend.status || 'offline'}`}></span>
+                  <span className="hub-channel-name">{friend.displayName || friend.name}</span>
+                </button>
+              );
+            })}
+
+            {friends.length === 0 && (
+              <div className="hub-empty-friends-hint">
+                No buddies added yet. Add friends from Profile!
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+
+      {/* ========================================================
+          CENTER: CHAT STREAM & COMPOSER
+         ======================================================== */}
+      <div className={`hub-chat-area ${mobileTab === 'chat' ? 'mobile-active' : 'mobile-inactive'}`}>
+        
+        {/* Channel Top Header Bar (Clean, no redundant studying pill) */}
+        <div className="hub-chat-header-bar">
+          <div className="hub-chat-header-info">
+            <span className="hub-header-hash">{isPrivateChannel && selectedDirectFriend ? '@' : '#'}</span>
             <div>
-              <h2 className="discord-channel-name">aspirants-study-hall</h2>
-              <p className="discord-channel-desc">Real-time study discussions, doubts, sprints & daily prep accountability.</p>
+              <h2 className="hub-header-channel-name">{currentChannelInfo.name}</h2>
+              <p className="hub-header-channel-desc">{currentChannelInfo.desc}</p>
             </div>
           </div>
-
-          <div className="discord-channel-meta-pill">
-            <span className="live-pulse-dot"></span>
-            <span>{totalStudying} Studying Now • {totalActivePeers} Online</span>
-          </div>
         </div>
 
-        {/* Category Tag Filters */}
-        <div className="discord-tag-filters-bar">
-          {TAG_FILTERS.map(filter => (
-            <button
-              key={filter.id}
-              type="button"
-              className={`discord-tag-filter-btn ${selectedTagFilter === filter.id ? 'active' : ''}`}
-              onClick={() => setSelectedTagFilter(filter.id)}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Real-time Message Stream */}
-        <div className="discord-messages-scroll-box">
-          {filteredMessages.length === 0 ? (
-            <div className="discord-chat-empty">
-              <div className="discord-empty-icon-wrap">
-                <Icons.MessageSquare size={36} />
+        {/* Message Stream */}
+        <div className="hub-messages-container">
+          {messages.length === 0 ? (
+            <div className="hub-messages-empty-state">
+              <div className="hub-empty-icon-wrap">
+                <Icons.MessageSquare size={38} />
               </div>
-              <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', margin: '8px 0 4px 0' }}>
-                Welcome to #aspirants-study-hall!
+              <h4 className="hub-empty-title">
+                Welcome to #{currentChannelInfo.name}!
               </h4>
-              <p style={{ fontSize: '13px', color: '#949ba4', margin: 0, maxWidth: '400px', lineHeight: 1.4 }}>
-                This is the start of the study lounge channel. Share a question doubt, start a sprint, or chat with study buddies!
+              <p className="hub-empty-desc">
+                {isPrivateChannel
+                  ? selectedDirectFriend 
+                    ? `This is the direct private room with ${selectedDirectFriend.displayName || selectedDirectFriend.name}. Send your first message!`
+                    : `This is the start of your private buddies circle with ${friends.length} study friends!`
+                  : `This is the start of the #${currentChannelInfo.name} channel. Share a question, study tip, or discuss doubts!`}
               </p>
             </div>
           ) : (
-            filteredMessages.map((msg) => {
+            messages.map((msg) => {
               const isSelf = currentUser && (msg.userId === currentUser.uid);
-                const handleMessageSenderClick = () => {
-                  if (!onInspectFriend) return;
-                  if (isSelf) {
-                    onInspectFriend({ isSelf: true, ...userProfile, id: currentUser?.uid, uid: currentUser?.uid });
-                  } else {
-                    onInspectFriend({
-                      id: msg.userId,
-                      uid: msg.userId,
-                      displayName: msg.senderName,
-                      name: msg.senderName,
-                      avatar: msg.avatar,
-                      avatarBg: msg.avatarBg,
-                      location: msg.location,
-                      aspirantId: msg.aspirantId || ''
-                    });
-                  }
-                };
+              const isHighlighted = highlightedMsgId === msg.id;
 
-                return (
-                  <div key={msg.id} className={`discord-message-row ${isSelf ? 'is-self' : ''}`}>
-                    <div 
-                      className="discord-msg-avatar clickable" 
-                      onClick={handleMessageSenderClick}
-                      title="Click to view aspirant profile"
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <AvatarRenderer 
-                        avatar={msg.avatar}
-                        name={msg.senderName}
-                        avatarBg={msg.avatarBg}
-                        size={40}
-                      />
+              const handleSenderInspect = (e) => {
+                e.stopPropagation();
+                if (!onInspectFriend) return;
+                if (isSelf) {
+                  onInspectFriend({ isSelf: true, ...userProfile, id: currentUser?.uid, uid: currentUser?.uid });
+                } else {
+                  onInspectFriend({
+                    id: msg.userId,
+                    uid: msg.userId,
+                    displayName: msg.senderName,
+                    name: msg.senderName,
+                    avatar: msg.avatar,
+                    avatarBg: msg.avatarBg,
+                    location: msg.location,
+                    aspirantId: msg.aspirantId || ''
+                  });
+                }
+              };
+
+              return (
+                <div 
+                  key={msg.id} 
+                  id={`channel-msg-${msg.id}`}
+                  className={`hub-message-row ${isSelf ? 'is-self' : ''} ${isHighlighted ? 'message-highlight-pulse' : ''}`}
+                  onDoubleClick={() => setActiveActionMessage(msg)}
+                  onTouchStart={(e) => {
+                    const now = Date.now();
+                    if (msg._lastTouch && (now - msg._lastTouch < 350)) {
+                      setActiveActionMessage(msg);
+                    }
+                    msg._lastTouch = now;
+                  }}
+                >
+                  <div 
+                    className="hub-msg-avatar clickable" 
+                    onClick={handleSenderInspect}
+                    title="View aspirant profile"
+                  >
+                    <AvatarRenderer 
+                      avatar={msg.avatar}
+                      name={msg.senderName}
+                      avatarBg={msg.avatarBg}
+                      size={40}
+                    />
+                  </div>
+
+                  <div className="hub-msg-body-wrapper">
+                    <div className="hub-msg-header">
+                      <span 
+                        className="hub-msg-sender clickable" 
+                        onClick={handleSenderInspect}
+                        title="View profile"
+                      >
+                        {msg.senderName}
+                      </span>
+                      {isSelf && <span className="hub-self-badge">YOU</span>}
+                      {msg.location && (
+                        <span className="hub-msg-location">
+                          <Icons.MapPin size={10} /> {msg.location}
+                        </span>
+                      )}
+                      <span className="hub-msg-timestamp">{formatMessageTime(msg.timestamp)}</span>
+
+                      {/* Quick Action Buttons on Hover */}
+                      <div className="hub-msg-hover-actions">
+                        <button
+                          type="button"
+                          className="hub-hover-btn"
+                          onClick={() => handleInitiateReply(msg)}
+                          title="Reply"
+                        >
+                          <Icons.Reply size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          className="hub-hover-btn"
+                          onClick={() => handleCopyText(msg.text)}
+                          title="Copy text"
+                        >
+                          <Icons.Copy size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          className="hub-hover-btn"
+                          onClick={() => setActiveActionMessage(msg)}
+                          title="More options"
+                        >
+                          <Icons.MoreVertical size={13} />
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="discord-msg-content">
-                      <div className="discord-msg-header">
-                        <span 
-                          className="discord-msg-sender clickable" 
-                          onClick={handleMessageSenderClick}
-                          title="Click to view aspirant profile"
-                          style={{ cursor: 'pointer' }}
-                        >
-                          {msg.senderName}
-                        </span>
-                        {isSelf && <span className="discord-msg-self-badge">YOU</span>}
-                        {msg.location && (
-                          <span className="discord-msg-location">
-                            <Icons.MapPin size={10} /> {msg.location}
-                          </span>
-                        )}
-                        <span className="discord-msg-time">{formatMessageTime(msg.timestamp)}</span>
+                    {/* Quoted Replied Message Bubble */}
+                    {msg.replyTo && (
+                      <div 
+                        className="hub-quoted-reply-box clickable"
+                        onClick={() => handleJumpToMessage(msg.replyTo.id)}
+                        title="Jump to original message"
+                      >
+                        <div className="hub-reply-line"></div>
+                        <div className="hub-reply-meta">
+                          <span className="hub-reply-user">@{msg.replyTo.senderName}</span>
+                          <span className="hub-reply-snippet">{msg.replyTo.text}</span>
+                        </div>
                       </div>
+                    )}
 
-                    <div className="discord-msg-body">{msg.text}</div>
+                    <div className="hub-msg-text">{msg.text}</div>
 
                     {msg.tag && msg.tag !== 'GENERAL' && (
-                      <div className="discord-msg-tags">
-                        <span className={`discord-tag-pill tag-${msg.tag.toLowerCase()}`}>
+                      <div className="hub-msg-tags-row">
+                        <span className={`hub-tag-chip tag-${msg.tag.toLowerCase()}`}>
                           #{msg.tag}
                         </span>
                       </div>
@@ -327,13 +552,13 @@ export default function StudyLounge({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick 1-Tap Action Sprint Chips (Desktop Only) */}
-        <div className="discord-quick-chips-bar desktop-only-chips">
+        {/* 1-Tap Quick Action Sprint Chips (Desktop Only) */}
+        <div className="hub-quick-chips-bar">
           {QUICK_CHIPS.map((chip, idx) => (
             <button
               key={idx}
               type="button"
-              className="discord-quick-chip"
+              className="hub-quick-chip"
               onClick={() => handleQuickChipClick(chip)}
               disabled={sending}
             >
@@ -342,41 +567,45 @@ export default function StudyLounge({
           ))}
         </div>
 
-        {/* Message Input Composer */}
-        <form className="discord-input-composer" onSubmit={handleSendMessage}>
-          {/* Quick Topic / Sprint Dropdown Menu */}
-          <div className="discord-topic-dropdown-wrap">
-            <select
-              className="discord-topic-select-dropdown"
-              value=""
-              onChange={(e) => {
-                const selected = QUICK_CHIPS.find(c => c.label === e.target.value);
-                if (selected) {
-                  handleQuickChipClick(selected);
-                }
-              }}
-              title="Quick Sprint Topics"
+        {/* Reply Indicator Preview Bar */}
+        {replyingTo && (
+          <div className="composer-reply-preview-bar animate-slide-up">
+            <div className="composer-reply-left">
+              <Icons.Reply size={14} className="composer-reply-icon" />
+              <div className="composer-reply-meta">
+                <span className="composer-reply-title">Replying to <strong>@{replyingTo.senderName}</strong></span>
+                <span className="composer-reply-text">{replyingTo.text}</span>
+              </div>
+            </div>
+            <button 
+              type="button" 
+              className="composer-reply-close-btn"
+              onClick={() => setReplyingTo(null)}
+              title="Cancel reply"
             >
-              <option value="" disabled>⚡</option>
-              {QUICK_CHIPS.map((c, i) => (
-                <option key={i} value={c.label}>
-                  {c.label} (#{c.tag})
-                </option>
-              ))}
-            </select>
+              <Icons.Close size={14} />
+            </button>
           </div>
+        )}
 
+        {/* Input Composer */}
+        <form className="hub-composer-form" onSubmit={handleSendMessage}>
           <input
+            ref={inputRef}
             type="text"
-            className="discord-composer-input"
-            placeholder="Message study hall (#QUANT, #LRDI)..."
+            className="hub-composer-input"
+            placeholder={
+              replyingTo 
+                ? `Reply to @${replyingTo.senderName}...` 
+                : `Message #${currentChannelInfo.name}...`
+            }
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             disabled={sending}
           />
           <button 
             type="submit" 
-            className="discord-send-button"
+            className="hub-send-btn"
             disabled={!inputText.trim() || sending}
             title="Send Message (Enter)"
           >
@@ -393,210 +622,252 @@ export default function StudyLounge({
       </div>
 
       {/* ========================================================
-          RIGHT SIDE: FIXED SERVER MEMBER LIST SIDEBAR
+          RIGHT: DYNAMIC SIDEBAR
+          - In Public Channels: LIVE STUDYING LEADERBOARD (Only actively studying students)
+          - In Private / DM Channels: THAT CHANNEL'S STUDENTS ONLY
          ======================================================== */}
-      <div className={`discord-members-sidebar ${mobileTab === 'peers' ? 'mobile-active' : 'mobile-inactive'}`}>
+      <div className={`hub-right-sidebar ${mobileTab === 'sidebar' ? 'mobile-active' : 'mobile-inactive'}`}>
         
-        {/* Search Members Bar */}
-        <div className="discord-member-search-box">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search peers..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="discord-member-search-input"
-          />
-        </div>
-
-        <div className="discord-members-list-scroll">
-          
-          {/* CATEGORY 1: ACTIVELY STUDYING */}
-          <div className="discord-member-category">
-            <div className="discord-category-title">
-              <Icons.Flame size={12} color="#f97316" />
-              <span>ACTIVELY STUDYING — {totalStudying}</span>
+        {!isPrivateChannel ? (
+          /* ====================================================
+             DEFAULT PUBLIC VIEW: LIVE STUDYING LEADERBOARD
+             ==================================================== */
+          <div className="hub-leaderboard-container">
+            <div className="hub-leaderboard-header">
+              <div className="hub-leaderboard-title-row">
+                <Icons.Trophy size={16} color="#fbbf24" />
+                <span className="hub-leaderboard-title">STUDYING LEADERBOARD</span>
+              </div>
+              <span className="hub-leaderboard-badge">
+                <span className="live-pulse-dot"></span>
+                {allStudyingStudents.length} Active Now
+              </span>
             </div>
 
-            {totalStudying === 0 ? (
-              <div className="discord-category-empty">
-                No peers actively in timer. Start a session to appear here!
-              </div>
-            ) : (
-              <>
-                {/* Self studying card */}
-                {userActivity && (
-                  <div 
-                    className="discord-member-item is-studying is-self clickable"
-                    onClick={() => onInspectFriend && onInspectFriend({ isSelf: true, ...userProfile, id: currentUser?.uid, uid: currentUser?.uid })}
-                    title="Click to view & edit your profile"
-                  >
-                    <AvatarRenderer 
-                      avatar={userActivity.avatar}
-                      name={userActivity.name}
-                      avatarBg={userActivity.avatarBg}
-                      size={36}
-                      status="studying"
-                    />
-                    <div className="discord-member-meta">
-                      <div className="discord-member-name-row">
-                        <span className="discord-member-name">{userActivity.name}</span>
-                        <span className="discord-self-tag">YOU</span>
-                      </div>
-                      <div className="discord-member-timer-badge">
-                        <Icons.Clock size={11} color="#eab308" />
-                        <span>{userActivity.activity.timerText}</span>
-                      </div>
-                      <div className="discord-member-task-snippet">
-                        {userActivity.activity.subject} Focus
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Other studying peers */}
-                {studyingPeers.map((peer) => {
-                  const timerDisplay = getPeerTimerDisplay(peer);
+            <div className="hub-leaderboard-scroll">
+              {allStudyingStudents.length === 0 ? (
+                <div className="hub-leaderboard-empty">
+                  <Icons.Flame size={32} color="#f97316" />
+                  <h4>No Active Timers</h4>
+                  <p>Start a focus session in the Timer tab to claim #1 on the live leaderboard!</p>
+                </div>
+              ) : (
+                allStudyingStudents.map((student, idx) => {
+                  const timerDisplay = getPeerTimerDisplay(student);
+                  const rankIcon = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+                  
                   return (
                     <div 
-                      key={peer.id || peer.uid} 
-                      className="discord-member-item is-studying clickable"
-                      onClick={() => onInspectFriend && onInspectFriend(peer)}
-                      title="Click to view peer's study tracker"
+                      key={student.id || student.uid} 
+                      className={`hub-leaderboard-card ${student.isSelf ? 'is-self' : ''} clickable`}
+                      onClick={() => onInspectFriend && onInspectFriend(student.isSelf ? { isSelf: true, ...userProfile, id: currentUser?.uid, uid: currentUser?.uid } : student)}
+                      title="Click to view full aspirant profile card"
                     >
+                      <div className="hub-rank-badge">{rankIcon}</div>
+
                       <AvatarRenderer 
-                        avatar={peer.avatar}
-                        name={peer.name || peer.displayName}
-                        avatarBg={peer.avatarBg}
+                        avatar={student.avatar}
+                        name={student.name || student.displayName}
+                        avatarBg={student.avatarBg}
                         size={36}
                         status="studying"
                       />
-                      <div className="discord-member-meta">
-                        <div className="discord-member-name-row">
-                          <span className="discord-member-name">{peer.name || peer.displayName}</span>
+
+                      <div className="hub-leaderboard-meta">
+                        <div className="hub-student-name-row">
+                          <span className="hub-student-name">{student.name || student.displayName}</span>
+                          {student.isSelf && <span className="hub-self-tag">YOU</span>}
                         </div>
-                        {timerDisplay && (
-                          <div className="discord-member-timer-badge">
-                            <Icons.Clock size={11} color="#eab308" />
-                            <span>{timerDisplay}</span>
-                          </div>
-                        )}
-                        <div className="discord-member-task-snippet">
-                          {peer.activity?.subject || peer.activity?.title || peer.target}
+
+                        <div className="hub-leaderboard-timer">
+                          <Icons.Clock size={11} color="#eab308" />
+                          <span>{timerDisplay}</span>
+                          <span className="hub-subject-pill">{student.activity?.subject || 'Quant'}</span>
+                        </div>
+
+                        <div className="hub-student-stats-row">
+                          <span>🔥 {student.streak || 0}d streak</span>
+                          <span>•</span>
+                          <span>🎯 {student.solvedQs || 0} Qs</span>
                         </div>
                       </div>
                     </div>
                   );
-                })}
-              </>
-            )}
+                })
+              )}
+            </div>
           </div>
-
-          {/* CATEGORY 2: ONLINE ASPIRANTS */}
-          <div className="discord-member-category">
-            <div className="discord-category-title">
-              <span className="online-dot-tiny"></span>
-              <span>ONLINE — {totalOnline}</span>
+        ) : (
+          /* ====================================================
+             PRIVATE / DM VIEW: CHANNEL STUDENTS ONLY (EVEN IF OFFLINE)
+             ==================================================== */
+          <div className="hub-channel-members-container">
+            <div className="hub-leaderboard-header">
+              <div className="hub-leaderboard-title-row">
+                <Icons.Users size={16} color="#38bdf8" />
+                <span className="hub-leaderboard-title">CHANNEL STUDENTS</span>
+              </div>
+              <span className="hub-leaderboard-badge">
+                {selectedDirectFriend ? '2 Members' : `${friends.length + 1} Members`}
+              </span>
             </div>
 
-            {/* Self online item */}
-            {!userActivity && (
+            <div className="hub-leaderboard-scroll">
+              {/* Current User Nameplate */}
               <div 
-                className="discord-member-item is-online is-self clickable"
-                onClick={() => onInspectFriend && onInspectFriend({ 
-                  isSelf: true, 
-                  ...userProfile, 
-                  id: currentUser?.uid || 'self_user', 
-                  uid: currentUser?.uid || 'self_user' 
-                })}
-                title="Click to view & edit your profile"
+                className="hub-member-card is-self clickable"
+                onClick={() => onInspectFriend && onInspectFriend({ isSelf: true, ...userProfile, id: currentUser?.uid, uid: currentUser?.uid })}
+                title="Click to view full aspirant profile card"
               >
                 <AvatarRenderer 
                   avatar={userAvatar}
-                  name={userProfile?.displayName || currentUser?.displayName || 'You'}
+                  name={userProfile?.displayName || 'You'}
                   avatarBg={userAvatarBg}
                   size={36}
-                  status="online"
+                  status={isUserStudying ? 'studying' : 'online'}
                 />
-                <div className="discord-member-meta">
-                  <div className="discord-member-name-row">
-                    <span className="discord-member-name">{userProfile?.displayName || currentUser?.displayName || 'You'}</span>
-                    <span className="discord-self-tag">YOU</span>
+                <div className="hub-member-meta">
+                  <div className="hub-member-name-row">
+                    <span className="hub-member-name">{userProfile?.displayName || 'You'}</span>
+                    <span className="hub-self-tag">YOU</span>
                   </div>
-                  <div className="discord-member-sub">{userProfile?.streak || 0}d streak • Online</div>
-                </div>
-              </div>
-            )}
-
-            {/* Other online peers */}
-            {onlinePeers.map((peer) => (
-              <div 
-                key={peer.id || peer.uid} 
-                className="discord-member-item is-online clickable"
-                onClick={() => onInspectFriend && onInspectFriend(peer)}
-                title="Click to view peer's study tracker"
-              >
-                <AvatarRenderer 
-                  avatar={peer.avatar}
-                  name={peer.name || peer.displayName}
-                  avatarBg={peer.avatarBg}
-                  size={36}
-                  status="online"
-                />
-                <div className="discord-member-meta">
-                  <div className="discord-member-name-row">
-                    <span className="discord-member-name">{peer.name || peer.displayName}</span>
-                    {peer.aspirantId && (
-                      <span className="discord-member-id-tag">
-                        <Icons.Hash size={9} /> {peer.aspirantId}
-                      </span>
-                    )}
+                  <div className="hub-member-status-line">
+                    <span className={`status-dot-mini ${isUserStudying ? 'studying' : 'online'}`}></span>
+                    <span>{isUserStudying ? `Studying (${userActivity?.activity?.timerText || 'Live'})` : 'Online'}</span>
                   </div>
-                  <div className="discord-member-sub">
-                    {peer.streak ? `${peer.streak}d streak` : 'Online'}
+                  <div className="hub-student-stats-row">
+                    <span>🔥 {userProfile?.streak || 0}d streak</span>
+                    <span>•</span>
+                    <span>🎯 {userProfile?.solvedQs || 0} Qs</span>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* CATEGORY 3: OFFLINE BUDDIES */}
-          {offlinePeers.length > 0 && (
-            <div className="discord-member-category">
-              <div className="discord-category-title">
-                <span>OFFLINE — {offlinePeers.length}</span>
-              </div>
-
-              {offlinePeers.map((peer) => (
+              {/* Direct friend or all buddies in circle */}
+              {selectedDirectFriend ? (
                 <div 
-                  key={peer.id || peer.uid} 
-                  className="discord-member-item is-offline clickable"
-                  onClick={() => onInspectFriend && onInspectFriend(peer)}
-                  title="Click to view peer's study tracker"
+                  key={selectedDirectFriend.id || selectedDirectFriend.uid}
+                  className="hub-member-card clickable"
+                  onClick={() => onInspectFriend && onInspectFriend(selectedDirectFriend)}
+                  title="Click to view full aspirant profile card"
                 >
                   <AvatarRenderer 
-                    avatar={peer.avatar}
-                    name={peer.name || peer.displayName}
-                    avatarBg={peer.avatarBg}
-                    size={34}
-                    status="offline"
+                    avatar={selectedDirectFriend.avatar}
+                    name={selectedDirectFriend.displayName || selectedDirectFriend.name}
+                    avatarBg={selectedDirectFriend.avatarBg}
+                    size={36}
+                    status={selectedDirectFriend.status || 'offline'}
                   />
-                  <div className="discord-member-meta">
-                    <div className="discord-member-name-row">
-                      <span className="discord-member-name">{peer.name || peer.displayName}</span>
+                  <div className="hub-member-meta">
+                    <div className="hub-member-name-row">
+                      <span className="hub-member-name">{selectedDirectFriend.displayName || selectedDirectFriend.name}</span>
                     </div>
-                    <div className="discord-member-sub">Offline</div>
+                    <div className="hub-member-status-line">
+                      <span className={`status-dot-mini ${selectedDirectFriend.status || 'offline'}`}></span>
+                      <span>{selectedDirectFriend.status === 'studying' ? 'Studying' : selectedDirectFriend.status === 'online' ? 'Online' : 'Offline'}</span>
+                    </div>
+                    <div className="hub-student-stats-row">
+                      <span>🔥 {selectedDirectFriend.streak || 0}d streak</span>
+                      <span>•</span>
+                      <span>🎯 {selectedDirectFriend.solvedQs || 0} Qs</span>
+                    </div>
                   </div>
                 </div>
-              ))}
+              ) : (
+                friends.map(friend => (
+                  <div 
+                    key={friend.id || friend.uid}
+                    className="hub-member-card clickable"
+                    onClick={() => onInspectFriend && onInspectFriend(friend)}
+                    title="Click to view full aspirant profile card"
+                  >
+                    <AvatarRenderer 
+                      avatar={friend.avatar}
+                      name={friend.displayName || friend.name}
+                      avatarBg={friend.avatarBg}
+                      size={36}
+                      status={friend.status || 'offline'}
+                    />
+                    <div className="hub-member-meta">
+                      <div className="hub-member-name-row">
+                        <span className="hub-member-name">{friend.displayName || friend.name}</span>
+                      </div>
+                      <div className="hub-member-status-line">
+                        <span className={`status-dot-mini ${friend.status || 'offline'}`}></span>
+                        <span>{friend.status === 'studying' ? 'Studying' : friend.status === 'online' ? 'Online' : 'Offline'}</span>
+                      </div>
+                      <div className="hub-student-stats-row">
+                        <span>🔥 {friend.streak || 0}d streak</span>
+                        <span>•</span>
+                        <span>🎯 {friend.solvedQs || 0} Qs</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-          )}
+          </div>
+        )}
 
-        </div>
       </div>
+
+      {/* ========================================================
+          IMAGE 4: MESSAGE ACTION BOTTOM SHEET
+         ======================================================== */}
+      {activeActionMessage && (
+        <div className="chat-action-backdrop fade-in" onClick={() => setActiveActionMessage(null)}>
+          <div className="chat-action-sheet animate-slide-up" onClick={(e) => e.stopPropagation()}>
+            <div className="chat-action-header-text">
+              Double tap a message to 🤠 Edit
+            </div>
+            
+            <div className="chat-action-card-container">
+              <div className="chat-action-card">
+                <button
+                  type="button"
+                  className="chat-action-row-btn"
+                  onClick={() => handleInitiateReply(activeActionMessage)}
+                >
+                  <Icons.Reply size={18} />
+                  <span>Reply</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="chat-action-row-btn"
+                  onClick={() => handleForwardMessage(activeActionMessage)}
+                >
+                  <Icons.Forward size={18} />
+                  <span>Forward</span>
+                </button>
+              </div>
+
+              <div className="chat-action-card secondary-card">
+                <button
+                  type="button"
+                  className="chat-action-row-btn"
+                  onClick={() => handleCopyText(activeActionMessage.text)}
+                >
+                  <Icons.Copy size={18} />
+                  <span>Copy Text</span>
+                </button>
+
+                {currentUser && (activeActionMessage.userId === currentUser.uid) && (
+                  <button
+                    type="button"
+                    className="chat-action-row-btn delete-btn"
+                    onClick={() => handleDeleteMsg(activeActionMessage)}
+                  >
+                    <Icons.Trash2 size={18} />
+                    <span>Delete Message</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

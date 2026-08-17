@@ -1,67 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import AvatarRenderer from './AvatarRenderer';
-import StudyContributionHeatmap from './StudyContributionHeatmap';
-import { calculateUserBadges } from '../utils/badgeUtils';
 import { Icons } from './AspirantIcons';
+import StudyContributionHeatmap from './StudyContributionHeatmap';
+import { fetchFriendProgress } from '../utils/firebase';
+import { calculateUserBadges } from '../utils/badgeUtils';
 
-export default function PeerInspectorModal({ 
-  friend, 
-  trackerData, 
-  loading, 
+export default function PeerInspectorModal({
+  peer = null,
+  friend = null,
+  trackerData: initialTrackerData = null,
+  loading: initialLoading = false,
   onClose,
-  onEditProfile,
-  currentUser
+  onEditProfile = null,
+  currentUser = null
 }) {
-  if (!friend) return null;
-
-  const isSelf = Boolean(friend.isSelf || (currentUser && (friend.id === currentUser.uid || friend.uid === currentUser.uid)));
-  const [copiedId, setCopiedId] = useState(false);
+  const activePeer = peer || friend;
+  const [trackerData, setTrackerData] = useState(initialTrackerData || null);
+  const [loading, setLoading] = useState(initialLoading);
   const [activeTab, setActiveTab] = useState('syllabus'); // 'syllabus' | 'heatmap'
+  const [copiedId, setCopiedId] = useState(false);
   const [activeBadgeTooltip, setActiveBadgeTooltip] = useState(null);
 
-  // Process detailed tracker data if available
-  let totalQuant = 0;
-  let totalLrdi = 0;
-  let totalVarc = 0;
-  let completedMocks = [];
+  useEffect(() => {
+    if (initialTrackerData) {
+      setTrackerData(initialTrackerData);
+    }
+  }, [initialTrackerData]);
 
-  if (trackerData && trackerData.tracker) {
-    for (const [_month, weeks] of Object.entries(trackerData.tracker)) {
-      weeks.forEach(week => {
-        week.days.forEach(day => {
-          totalQuant += Number(day.quantCount) || 0;
-          totalLrdi += Number(day.lrdiCount) || 0;
-          totalVarc += Number(day.varcCount) || 0;
-        });
-      });
+  useEffect(() => {
+    if (!activePeer || activePeer.isSelf) {
+      if (activePeer?.isSelf) {
+        setTrackerData(activePeer);
+      }
+      return;
     }
 
-    if (trackerData.mocks) {
-      completedMocks = trackerData.mocks.filter(m => m.status === 'Taken');
-    }
-  }
+    const peerId = activePeer.id || activePeer.uid;
+    if (!peerId) return;
 
-  const grandTargets = { quant: 3160, lrdi: 650, varc: 620, mocks: 30 };
+    setLoading(true);
+    fetchFriendProgress(peerId)
+      .then((data) => {
+        if (data) {
+          setTrackerData(data);
+        } else {
+          setTrackerData(activePeer);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching peer detailed progress:", err);
+        setTrackerData(activePeer);
+      })
+      .finally(() => setLoading(false));
+  }, [activePeer]);
 
-  const displayName = friend.displayName || friend.name || (isSelf ? 'You' : 'Study Peer');
-  const username = friend.username || (friend.email ? friend.email.split('@')[0] : (isSelf ? 'you' : 'peer'));
-  const aspirantId = friend.aspirantId || '';
-  const avatar = friend.avatar || '';
-  const avatarBg = friend.avatarBg || '#5865f2';
-  const bannerBg = friend.bannerBg || '#1e1f22';
-  const bannerUrl = friend.bannerUrl || '';
-  const bio = friend.bio || '';
-  const location = friend.location || '';
-  const streak = friend.streak !== undefined ? friend.streak : (isSelf ? 1 : 0);
-  const solvedQs = (totalQuant + totalLrdi + totalVarc) || friend.solvedQs || 0;
-  const mocksCount = completedMocks.length || friend.mocksCount || 0;
-  const status = friend.status || (friend.activity?.isRunning ? 'studying' : 'online');
+  if (!activePeer) return null;
+
+  const isSelf = activePeer.isSelf || (currentUser && (activePeer.id === currentUser.uid || activePeer.uid === currentUser.uid));
+  const displayName = trackerData?.displayName || trackerData?.name || activePeer.displayName || activePeer.name || 'Aspirant';
+  const username = trackerData?.target || activePeer.target || 'CAT 2025';
+  const location = trackerData?.location || activePeer.location || '';
+  const avatar = trackerData?.avatar || activePeer.avatar || 'rocket';
+  const avatarBg = trackerData?.avatarBg || activePeer.avatarBg || '#5865f2';
+  const bannerBg = trackerData?.bannerBg || activePeer.bannerBg || '';
+  const bannerUrl = trackerData?.bannerUrl || activePeer.bannerUrl || '';
+  const bio = trackerData?.bio || activePeer.bio || '';
+  const streak = trackerData?.streak != null ? trackerData.streak : (activePeer.streak || 0);
+  const solvedQs = trackerData?.solvedQs != null ? trackerData.solvedQs : (activePeer.solvedQs || 0);
+  const mocksCount = trackerData?.mocksCount != null ? trackerData.mocksCount : (activePeer.mocksCount || 0);
+  const status = activePeer.status || 'offline';
+  const aspirantId = trackerData?.aspirantId || activePeer.aspirantId || '';
 
   const handleCopyId = (e) => {
     e.stopPropagation();
     if (!aspirantId) return;
-    navigator.clipboard.writeText(aspirantId);
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(aspirantId);
+    }
     setCopiedId(true);
     setTimeout(() => setCopiedId(false), 2000);
   };
@@ -71,10 +87,15 @@ export default function PeerInspectorModal({
   const badges = calculateUserBadges({ streak, solvedQs, mocksCount });
   const unlockedCount = badges.filter(b => b.isUnlocked).length;
 
+  const totalQuant = trackerData?.totals?.quant || trackerData?.quant || 0;
+  const totalLrdi = trackerData?.totals?.lrdi || trackerData?.lrdi || 0;
+  const totalVarc = trackerData?.totals?.varc || trackerData?.varc || 0;
+  const grandTargets = { quant: 2500, lrdi: 500, varc: 500 };
+
   return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div 
-        className="discord-profile-card-container unified-profile-modal-card" 
+        className="profile-card-container unified-profile-modal-card" 
         onClick={(e) => {
           e.stopPropagation();
           setActiveBadgeTooltip(null);
@@ -83,7 +104,7 @@ export default function PeerInspectorModal({
         
         {/* Banner Section */}
         <div 
-          className="discord-banner" 
+          className="profile-card-banner-header" 
           style={{ 
             backgroundColor: bannerBg || '#1e1f22',
             backgroundImage: bannerUrl ? `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.5)), url("${bannerUrl}")` : `linear-gradient(135deg, ${bannerBg || avatarBg || '#1e1f22'} 0%, #0f1012 100%)`,
@@ -91,17 +112,17 @@ export default function PeerInspectorModal({
             backgroundPosition: 'center'
           }}
         >
-          {/* Aspiranto Verified Badge */}
+          {/* CATalyze Verified Badge */}
           <div className="aspiranto-verified-pill">
-            <Icons.Shield size={11} color="#22c55e" />
-            <span>Aspiranto Verified</span>
+            <Icons.Shield size={12} />
+            <span>CATalyze Verified</span>
           </div>
 
           {/* Edit Profile Button for Self */}
           {isSelf && (
             <button
               type="button"
-              className="discord-edit-btn"
+              className="profile-card-edit-btn"
               onClick={() => {
                 onClose();
                 if (onEditProfile) onEditProfile();
@@ -126,8 +147,8 @@ export default function PeerInspectorModal({
         {/* Unified Profile Body */}
         <div className="unified-profile-body">
           {/* Avatar Row */}
-          <div className="discord-avatar-row">
-            <div className="discord-avatar-wrapper">
+          <div className="profile-card-avatar-row">
+            <div className="profile-card-avatar-wrapper">
               <AvatarRenderer 
                 avatar={avatar}
                 name={displayName}
@@ -139,13 +160,13 @@ export default function PeerInspectorModal({
           </div>
 
           {/* Identity Info */}
-          <div className="discord-identity-section">
-            <div className="discord-display-name-row">
-              <h2 className="discord-display-name">{displayName}</h2>
-              {isSelf && <span className="discord-self-tag" style={{ marginLeft: '8px' }}>YOU</span>}
+          <div className="profile-card-identity-section">
+            <div className="profile-card-display-name-row">
+              <h2 className="profile-card-display-name">{displayName}</h2>
+              {isSelf && <span className="profile-card-self-pill" style={{ marginLeft: '8px' }}>YOU</span>}
             </div>
-            <div className="discord-handle-row">
-              <span className="discord-username">{handleText}</span>
+            <div className="profile-card-handle-row">
+              <span className="profile-card-username">{handleText}</span>
               {aspirantId && (
                 <button 
                   type="button"
@@ -164,8 +185,8 @@ export default function PeerInspectorModal({
               )}
               {location && (
                 <>
-                  <span className="discord-dot-separator">•</span>
-                  <span className="discord-location">
+                  <span className="profile-card-dot-separator">•</span>
+                  <span className="profile-card-location">
                     <Icons.MapPin size={10} /> {location}
                   </span>
                 </>
@@ -174,47 +195,47 @@ export default function PeerInspectorModal({
           </div>
 
           {/* Divider */}
-          <div className="discord-card-divider" />
+          <div className="profile-card-divider" />
 
           {/* About Me */}
           {bio && (
-            <div className="discord-info-block">
-              <div className="discord-section-header">ABOUT ME</div>
-              <div className="discord-bio-text">{bio || (isSelf ? 'CAT 2028' : 'CAT Aspirant')}</div>
+            <div className="profile-card-info-block">
+              <div className="profile-card-section-header">ABOUT ME</div>
+              <div className="profile-card-bio-text">{bio || (isSelf ? 'CAT 2028' : 'CAT Aspirant')}</div>
             </div>
           )}
 
           {/* 3-Column Prep Stats */}
-          <div className="discord-info-block">
-            <div className="discord-section-header">PREPARATION STATS</div>
-            <div className="discord-stats-grid-3col">
-              <div className="discord-stat-cell">
-                <div className="discord-stat-title">
+          <div className="profile-card-info-block">
+            <div className="profile-card-section-header">PREPARATION STATS</div>
+            <div className="profile-card-stats-grid-3col">
+              <div className="profile-card-stat-cell">
+                <div className="profile-card-stat-title">
                   <Icons.Flame size={11} color="#f97316" /> CURRENT STREAK
                 </div>
-                <div className="discord-stat-number">{streak} {streak === 1 ? 'Day' : 'Days'}</div>
+                <div className="profile-card-stat-number">{streak} {streak === 1 ? 'Day' : 'Days'}</div>
               </div>
 
-              <div className="discord-stat-cell">
-                <div className="discord-stat-title">
+              <div className="profile-card-stat-cell">
+                <div className="profile-card-stat-title">
                   <Icons.Target size={11} color="#3b82f6" /> QUESTIONS SOLVED
                 </div>
-                <div className="discord-stat-number">{solvedQs ? solvedQs.toLocaleString() : '0'} Qs</div>
+                <div className="profile-card-stat-number">{solvedQs ? solvedQs.toLocaleString() : '0'} Qs</div>
               </div>
 
-              <div className="discord-stat-cell">
-                <div className="discord-stat-title">
+              <div className="profile-card-stat-cell">
+                <div className="profile-card-stat-title">
                   <Icons.BookOpen size={11} color="#10b981" /> MOCKS TAKEN
                 </div>
-                <div className="discord-stat-number">{mocksCount} / 30</div>
+                <div className="profile-card-stat-number">{mocksCount} / 30</div>
               </div>
             </div>
           </div>
 
-          {/* Collectible Badges Row (Icon-Only with Animated Hover Card) */}
-          <div className="discord-info-block">
-            <div className="discord-section-header-row">
-              <span className="discord-section-header">UNLOCKED PERKS & BADGES</span>
+          {/* Collectible Badges Row */}
+          <div className="profile-card-info-block">
+            <div className="profile-card-section-header-row">
+              <span className="profile-card-section-header">UNLOCKED PERKS & BADGES</span>
               <span className="badge-count-pill">{unlockedCount} / {badges.length} Unlocked</span>
             </div>
             {unlockedCount === 0 ? (
@@ -222,7 +243,6 @@ export default function PeerInspectorModal({
                 <span className="no-badges-text">Peer has not unlocked any achievement badges yet.</span>
               </div>
             ) : unlockedCount === badges.length && badges.length > 0 ? (
-              /* Special Single Grandmaster Badge if all 10 collected */
               <div className="profile-badges-emblems-track grandmaster-mode">
                 <div className="badge-emblem-interactive-wrap">
                   <div className="profile-badge-emblem-tile grandmaster-crest-tile" style={{ '--badge-glow-color': '#eab308' }}>
@@ -253,7 +273,6 @@ export default function PeerInspectorModal({
                 <span className="grandmaster-badge-label">Omni Grandmaster (100% Mastery)</span>
               </div>
             ) : (
-              /* Only show badges the user has unlocked */
               <div className="profile-badges-emblems-track">
                 {badges.filter(b => b.isUnlocked).map((badge) => {
                   const IconComp = Icons[badge.iconName] || Icons.Award;
@@ -279,7 +298,6 @@ export default function PeerInspectorModal({
                         <span className="badge-emblem-active-pip" style={{ backgroundColor: badge.color }} />
                       </div>
 
-                      {/* Special Animated Hover Text Card */}
                       <div className="badge-animated-hover-card" style={{ '--badge-card-accent': badge.color }}>
                         <div className="hover-card-title-row">
                           <span className="hover-card-icon" style={{ color: badge.color }}>
@@ -328,17 +346,26 @@ export default function PeerInspectorModal({
 
           {/* Tab 1: Detailed Syllabus Progress Bars */}
           {activeTab === 'syllabus' && (
-            <div className="discord-info-block animate-fade-in" style={{ marginBottom: '4px' }}>
+            <div className="profile-card-info-block animate-fade-in" style={{ marginBottom: '4px' }}>
               {loading ? (
-                <div style={{ textAlign: 'center', padding: '14px 0', color: 'var(--text-secondary)', fontSize: '12px' }}>
-                  Loading peer tracker metrics...
+                <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-secondary)', fontSize: '12px' }}>
+                  <span className="btn-spinner" style={{ marginRight: '8px' }}></span> Loading peer tracker metrics...
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
-                  <div className="syllabus-progress-bar-wrap">
+                <div className="syllabus-cards-container">
+                  {/* Quant Card */}
+                  <div className="syllabus-progress-card quant-theme">
                     <div className="syllabus-label-row">
-                      <span className="syllabus-sub-title"><Icons.Book size={12} /> Quantitative Aptitude</span>
-                      <span className="syllabus-count-val">{totalQuant.toLocaleString()} / {grandTargets.quant.toLocaleString()} Qs</span>
+                      <div className="syllabus-sub-title">
+                        <span className="syllabus-icon-badge quant-badge"><Icons.Calculator size={13} /></span>
+                        <span className="syllabus-subject-name">Quantitative Aptitude</span>
+                      </div>
+                      <div className="syllabus-stats-badge">
+                        <span className="syllabus-count-val">{totalQuant.toLocaleString()} / {grandTargets.quant.toLocaleString()} Qs</span>
+                        <span className="syllabus-percent-pill quant-pill">
+                          {Math.min(100, Math.round((totalQuant / grandTargets.quant) * 100))}%
+                        </span>
+                      </div>
                     </div>
                     <div className="syllabus-track">
                       <div 
@@ -348,10 +375,19 @@ export default function PeerInspectorModal({
                     </div>
                   </div>
 
-                  <div className="syllabus-progress-bar-wrap">
+                  {/* LRDI Card */}
+                  <div className="syllabus-progress-card lrdi-theme">
                     <div className="syllabus-label-row">
-                      <span className="syllabus-sub-title"><Icons.CheckSquare size={12} /> LRDI Practice</span>
-                      <span className="syllabus-count-val">{totalLrdi.toLocaleString()} / {grandTargets.lrdi.toLocaleString()} Sets</span>
+                      <div className="syllabus-sub-title">
+                        <span className="syllabus-icon-badge lrdi-badge"><Icons.Puzzle size={13} /></span>
+                        <span className="syllabus-subject-name">LRDI Practice</span>
+                      </div>
+                      <div className="syllabus-stats-badge">
+                        <span className="syllabus-count-val">{totalLrdi.toLocaleString()} / {grandTargets.lrdi.toLocaleString()} Sets</span>
+                        <span className="syllabus-percent-pill lrdi-pill">
+                          {Math.min(100, Math.round((totalLrdi / grandTargets.lrdi) * 100))}%
+                        </span>
+                      </div>
                     </div>
                     <div className="syllabus-track">
                       <div 
@@ -361,10 +397,19 @@ export default function PeerInspectorModal({
                     </div>
                   </div>
 
-                  <div className="syllabus-progress-bar-wrap">
+                  {/* VARC Card */}
+                  <div className="syllabus-progress-card varc-theme">
                     <div className="syllabus-label-row">
-                      <span className="syllabus-sub-title"><Icons.BookOpen size={12} /> VARC Sectionals</span>
-                      <span className="syllabus-count-val">{totalVarc.toLocaleString()} / {grandTargets.varc.toLocaleString()} Articles</span>
+                      <div className="syllabus-sub-title">
+                        <span className="syllabus-icon-badge varc-badge"><Icons.BookOpen size={13} /></span>
+                        <span className="syllabus-subject-name">VARC Sectionals</span>
+                      </div>
+                      <div className="syllabus-stats-badge">
+                        <span className="syllabus-count-val">{totalVarc.toLocaleString()} / {grandTargets.varc.toLocaleString()} Articles</span>
+                        <span className="syllabus-percent-pill varc-pill">
+                          {Math.min(100, Math.round((totalVarc / grandTargets.varc) * 100))}%
+                        </span>
+                      </div>
                     </div>
                     <div className="syllabus-track">
                       <div 
@@ -378,9 +423,9 @@ export default function PeerInspectorModal({
             </div>
           )}
 
-          {/* Tab 2: GitHub-Style Study Contribution Heatmap */}
+          {/* Tab 2: Study Contribution Heatmap */}
           {activeTab === 'heatmap' && (
-            <div className="discord-info-block animate-fade-in" style={{ marginBottom: '4px' }}>
+            <div className="profile-card-info-block animate-fade-in" style={{ marginBottom: '4px' }}>
               {loading ? (
                 <div style={{ textAlign: 'center', padding: '14px 0', color: 'var(--text-secondary)', fontSize: '12px' }}>
                   Loading study matrix...

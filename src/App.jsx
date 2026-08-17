@@ -38,6 +38,7 @@ import { audioEngine } from './utils/audioUtils';
 import SettingsView from './components/SettingsView';
 import AchievementsView from './components/AchievementsView';
 import { calculateUserBadges } from './utils/badgeUtils';
+import AuthScreen from './components/AuthScreen';
 
 const Icons = {
   Logo: ({ size = 24 }) => (
@@ -206,7 +207,11 @@ export default function App() {
   const [showThemeToast, setShowThemeToast] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [isGuestMode, setIsGuestMode] = useState(() => {
+    return localStorage.getItem('aspiranto_guest_mode') === 'true';
+  });
   const [friends, setFriends] = useState([]);
+  const [peers, setPeers] = useState([]);
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [selectedFriendTracker, setSelectedFriendTracker] = useState(null);
   const [loadingFriendTracker, setLoadingFriendTracker] = useState(false);
@@ -214,6 +219,26 @@ export default function App() {
   const [isMobileScreen, setIsMobileScreen] = useState(() => {
     return typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
   });
+
+  // Restore UI Font Scale and Font on Initial Mount
+  useEffect(() => {
+    const savedScale = localStorage.getItem('aspiranto_font_scale') || '100';
+    const ratio = Number(savedScale) / 100;
+    document.documentElement.style.setProperty('--ui-scale', ratio);
+    document.documentElement.style.zoom = ratio;
+    document.documentElement.style.setProperty('--ui-font-scale', ratio);
+    document.documentElement.style.fontSize = `${14 * ratio}px`;
+
+    const savedFont = localStorage.getItem('aspiranto_font_choice');
+    if (savedFont) {
+      document.documentElement.style.setProperty('--font-sans', `'${savedFont}', -apple-system, BlinkMacSystemFont, sans-serif`);
+    }
+
+    const boldBoost = localStorage.getItem('aspiranto_bold_boost') === 'true';
+    if (boldBoost) {
+      document.documentElement.classList.add('ui-bold-boost');
+    }
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -502,15 +527,25 @@ export default function App() {
       if (liveFriends) {
         setFriends(liveFriends);
       }
+    } else {
+      setFriends([]);
     }
   };
 
-  // Real-time Live Study Lounge Listener across all peers & friends
+  useEffect(() => {
+    if (user) {
+      refreshFriendsList();
+    } else {
+      setFriends([]);
+    }
+  }, [user, userProfile?.friends]);
+
+  // Real-time Live Study Lounge Listener across all peers
   useEffect(() => {
     if (!isFirebaseConfigured) return;
 
     const unsubscribe = subscribeToStudyLounge(user?.uid, (livePeers) => {
-      setFriends(livePeers || []);
+      setPeers(livePeers || []);
     });
 
     return () => {
@@ -1074,8 +1109,25 @@ export default function App() {
         <div className="loader-bar-container">
           <div className="loader-bar-fill"></div>
         </div>
-        <span className="loader-text">Loading Aspiranto...</span>
+        <span className="loader-text">Loading CATalyze...</span>
       </div>
+    );
+  }
+
+  // Auth Gate: Require login or create account before accessing the main dashboard/app
+  if (!user && !isGuestMode) {
+    return (
+      <AuthScreen
+        onAuthSuccess={(u) => {
+          setUser(u);
+          setIsGuestMode(false);
+          localStorage.removeItem('aspiranto_guest_mode');
+        }}
+        onContinueAsGuest={() => {
+          setIsGuestMode(true);
+          localStorage.setItem('aspiranto_guest_mode', 'true');
+        }}
+      />
     );
   }
 
@@ -1084,12 +1136,14 @@ export default function App() {
       {/* Sidebar Navigation (Hidden on mobile) */}
       <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="brand-section">
-          <div className="brand-emblem-badge" title="Aspiranto Prep OS">
-            <Icons.Logo size={22} />
+          <div className="brand-emblem-badge" title="CATalyze">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round">
+              <path d="M12 3L21 19H3L12 3Z" />
+              <circle cx="12" cy="13.5" r="2" fill="currentColor" />
+            </svg>
           </div>
           <div className="brand-text-wrap">
-            <span className="brand-title-bold">Aspiranto</span>
-            <span className="brand-tagline-pill">CORE PREP OS</span>
+            <span className="brand-title-bold">CATalyze</span>
           </div>
         </div>
 
@@ -1121,7 +1175,7 @@ export default function App() {
           <button 
             className={`nav-link ${activeTab === 'lounge' ? 'active' : ''}`}
             onClick={() => setActiveTab('lounge')}
-            title="Live Peer Study Lounge & Discord Chat"
+            title="Live Aspirants Study Hub & Channels"
           >
             <span className="nav-icon"><Icons.Chat /></span>
             <span className="nav-link-text">Study Lounge</span>
@@ -1313,6 +1367,7 @@ export default function App() {
           )}
           {activeTab === 'lounge' && (
             <StudyLounge
+              peers={peers}
               friends={friends}
               onInspectFriend={handleInspectFriend}
               currentUser={user}

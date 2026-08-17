@@ -1,5 +1,12 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut,
+  GoogleAuthProvider,
+  signInWithPopup
+} from "firebase/auth";
 import { 
   getFirestore, 
   doc, 
@@ -15,7 +22,8 @@ import {
   onSnapshot,
   addDoc,
   orderBy,
-  limit
+  limit,
+  deleteDoc
 } from "firebase/firestore";
 
 // Firebase configuration keys.
@@ -87,7 +95,7 @@ export const hashStringToColor = (str = '') => {
 };
 
 // 1. Sign Up User (Creates Auth user and a matching profile document with Unique Aspirant ID)
-export const signUpUser = async (email, password, displayName) => {
+export const signUpUser = async (email, password, displayName, targetExam = 'CAT 2025') => {
   if (!isFirebaseConfigured) throw new Error("Firebase is not configured. Please follow the setup guide.");
 
   const normalizedEmail = (email || '').trim().toLowerCase();
@@ -110,7 +118,7 @@ export const signUpUser = async (email, password, displayName) => {
     avatarBg: hashStringToColor(displayName || user.uid),
     bannerBg: '#1e1f22',
     bio: '',
-    target: 'CAT 2025 (99.5+%ile • IIM-A Focus)',
+    target: targetExam || 'CAT 2025 (99.5+%ile • IIM-A Focus)',
     location: '',
     lastActive: new Date().toISOString()
   };
@@ -125,6 +133,44 @@ export const logInUser = async (email, password) => {
   const normalizedEmail = (email || '').trim().toLowerCase();
   const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
   return userCredential.user;
+};
+
+// 2.1 1-Click Google Sign In
+export const signInWithGoogle = async () => {
+  if (!isFirebaseConfigured) throw new Error("Firebase is not configured. Please check your configuration.");
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  const userCredential = await signInWithPopup(auth, provider);
+  const user = userCredential.user;
+
+  // Check if profile exists, if not create default
+  const profileRef = doc(db, "profiles", user.uid);
+  const profileSnap = await getDoc(profileRef);
+
+  if (!profileSnap.exists()) {
+    const aspirantId = generateUniqueAspirantId(user.uid);
+    const displayName = user.displayName || user.email?.split('@')[0] || 'Aspirant';
+    const profileData = {
+      uid: user.uid,
+      aspirantId: aspirantId,
+      displayName: displayName,
+      username: (user.email || '').split('@')[0],
+      email: user.email || '',
+      streak: 0,
+      solvedQs: 0,
+      friends: [],
+      avatar: 'rocket',
+      avatarBg: hashStringToColor(displayName || user.uid),
+      bannerBg: '#1e1f22',
+      bio: '',
+      target: 'CAT 2025 (99.5+%ile • IIM-A Focus)',
+      location: '',
+      lastActive: new Date().toISOString()
+    };
+    await setDoc(profileRef, profileData);
+  }
+
+  return user;
 };
 
 // 3. Log Out User
@@ -241,7 +287,7 @@ export const sendFriendRequest = async (currentUser, targetIdentifier, currentUs
 
   const targetUser = await findUserByIdentifier(input);
   if (!targetUser) {
-    throw new Error(`No CAT aspirant found matching "${input}". Make sure your friend has an active Aspiranto account and check their Unique ID!`);
+    throw new Error(`No CAT aspirant found matching "${input}". Make sure your friend has an active CATalyze account and check their Unique ID!`);
   }
 
   const targetUid = targetUser.uid || targetUser.id;
@@ -651,8 +697,32 @@ export const fetchFriendsProgress = async (currentUserId) => {
   }
 };
 
-// 13. Send Live Study Lounge Chat Message (With Payload Sanitization)
-export const sendChatMessage = async (user, text, tag = 'GENERAL', userProfile = null) => {
+// 12.1 Fetch detailed profile and tracker for a single friend / peer
+export const fetchFriendProgress = async (peerId) => {
+  if (!isFirebaseConfigured || !peerId) return null;
+  try {
+    const profile = await getUserProfile(peerId);
+    const tracker = await loadTrackerData(peerId);
+    return {
+      ...(profile || {}),
+      tracker: tracker || null
+    };
+  } catch (err) {
+    console.error("Error fetching single friend progress:", err);
+    return null;
+  }
+};
+
+// 13. Send Live Study Hub Channel Message (Clean Slate v4 Collections with Channel Routing)
+export const sendChatMessage = async (
+  user, 
+  text, 
+  tag = 'GENERAL', 
+  userProfile = null, 
+  channel = 'general-hall', 
+  replyTo = null,
+  targetFriendId = null
+) => {
   if (!isFirebaseConfigured || !user || !text) return null;
   const cleanText = text.trim().slice(0, 1000);
   if (!cleanText) return null;
@@ -663,6 +733,22 @@ export const sendChatMessage = async (user, text, tag = 'GENERAL', userProfile =
     const avatarBg = userProfile?.avatarBg || user.avatarBg || '#5865f2';
     const location = userProfile?.location || user.location || '';
     const target = userProfile?.target || user.target || 'CAT 2025';
+    const aspirantId = userProfile?.aspirantId || user.aspirantId || '';
+    const friendsList = Array.isArray(userProfile?.friends) ? userProfile.friends : [];
+
+    const isPrivateChannel = channel === 'friends' || channel === 'buddies-circle' || channel.startsWith('dm_') || targetFriendId;
+    let roomId = channel;
+    let participants = [];
+
+    if (isPrivateChannel) {
+      if (targetFriendId) {
+        roomId = `dm_${[user.uid, targetFriendId].sort().join('_')}`;
+        participants = [user.uid, targetFriendId];
+      } else {
+        roomId = 'buddies-circle';
+        participants = [user.uid, ...friendsList];
+      }
+    }
 
     const messageData = {
       userId: user.uid,
@@ -672,13 +758,26 @@ export const sendChatMessage = async (user, text, tag = 'GENERAL', userProfile =
       avatarBg: avatarBg,
       location: location,
       target: target,
+      aspirantId: aspirantId,
       text: cleanText,
       tag: tag,
+      channel: isPrivateChannel ? 'private' : channel,
+      roomId: roomId,
+      participants: participants,
+      targetFriendId: targetFriendId || null,
+      replyTo: replyTo ? {
+        id: replyTo.id || '',
+        senderName: replyTo.senderName || 'Aspirant',
+        text: (replyTo.text || '').slice(0, 150),
+        avatar: replyTo.avatar || '',
+        avatarBg: replyTo.avatarBg || '#5865f2'
+      } : null,
       timestamp: Date.now(),
       createdAt: new Date().toISOString()
     };
 
-    const docRef = await addDoc(collection(db, "study_lounge_chat"), messageData);
+    const targetCollection = isPrivateChannel ? "private_circle_messages_v4" : "hub_channel_messages_v4";
+    const docRef = await addDoc(collection(db, targetCollection), messageData);
     return { id: docRef.id, ...messageData };
   } catch (err) {
     console.error("Error sending chat message:", err);
@@ -686,36 +785,99 @@ export const sendChatMessage = async (user, text, tag = 'GENERAL', userProfile =
   }
 };
 
-// 14. Real-time Subscription to Live Study Lounge Chat
-export const subscribeToChatMessages = (onMessagesUpdate) => {
-  if (!isFirebaseConfigured || !db) return () => {};
+// 14. Real-time Subscription to Live Channel Chat (Named Public Channels vs Private Rooms)
+export const subscribeToChatMessages = (
+  channel = 'general-hall', 
+  onMessagesUpdate, 
+  currentUserId = null, 
+  friendsList = [], 
+  targetFriendId = null
+) => {
+  let targetChannel = 'general-hall';
+  let callback = onMessagesUpdate;
+  if (typeof channel === 'function') {
+    callback = channel;
+    targetChannel = 'general-hall';
+  } else if (typeof channel === 'string') {
+    targetChannel = channel;
+  }
+
+  if (!isFirebaseConfigured || !db || typeof callback !== 'function') return () => {};
 
   try {
+    const isPrivate = targetChannel === 'friends' || targetChannel === 'buddies-circle' || targetChannel.startsWith('dm_') || targetFriendId;
+    const targetCollection = isPrivate ? "private_circle_messages_v4" : "hub_channel_messages_v4";
+
     const chatQuery = query(
-      collection(db, "study_lounge_chat"),
+      collection(db, targetCollection),
       orderBy("timestamp", "desc"),
-      limit(60)
+      limit(100)
     );
 
     const unsubscribe = onSnapshot(chatQuery, (snapshot) => {
-      const messages = [];
+      const allMessages = [];
       snapshot.forEach((docSnap) => {
-        messages.push({
+        allMessages.push({
           id: docSnap.id,
           ...docSnap.data()
         });
       });
+
+      let filtered = allMessages;
+      if (isPrivate) {
+        const myFriendIds = new Set(friendsList || []);
+        
+        filtered = allMessages.filter(msg => {
+          if (targetFriendId) {
+            const expectedRoom = `dm_${[currentUserId, targetFriendId].sort().join('_')}`;
+            if (msg.roomId === expectedRoom) return true;
+            return (
+              (msg.userId === currentUserId && msg.targetFriendId === targetFriendId) ||
+              (msg.userId === targetFriendId && (msg.targetFriendId === currentUserId || !msg.targetFriendId))
+            );
+          }
+
+          // In buddies circle:
+          const isSenderSelfOrFriend = (msg.userId === currentUserId) || myFriendIds.has(msg.userId);
+          if (!isSenderSelfOrFriend) return false;
+
+          if (Array.isArray(msg.participants) && msg.participants.length > 0) {
+            return msg.participants.includes(currentUserId);
+          }
+
+          return true;
+        });
+      } else {
+        // Public channel filtering (match channel / room or fallback to general)
+        filtered = allMessages.filter(msg => {
+          if (!msg.roomId || msg.roomId === 'global') return targetChannel === 'general-hall';
+          return msg.roomId === targetChannel || msg.channel === targetChannel;
+        });
+      }
+
       // Reverse to chronological order (oldest -> newest for chat display)
-      messages.reverse();
-      onMessagesUpdate(messages);
+      filtered.reverse();
+      callback(filtered);
     }, (err) => {
-      console.error("Chat subscription error:", err);
+      console.error(`Chat subscription error [${targetChannel}]:`, err);
     });
 
     return unsubscribe;
   } catch (err) {
     console.error("Failed to initialize chat listener:", err);
     return () => {};
+  }
+};
+
+// 15. Delete Chat Message (Self-cleanup)
+export const deleteChatMessage = async (messageId, channel = 'general-hall') => {
+  if (!isFirebaseConfigured || !db || !messageId) return;
+  try {
+    const isPrivate = channel === 'friends' || channel === 'buddies-circle' || channel.startsWith('dm_');
+    const targetCollection = isPrivate ? "private_circle_messages_v4" : "hub_channel_messages_v4";
+    await deleteDoc(doc(db, targetCollection, messageId));
+  } catch (err) {
+    console.error("Error deleting chat message:", err);
   }
 };
 
