@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -81,7 +80,7 @@ class _AspirantoWebViewScreenState extends State<AspirantoWebViewScreen> {
             setState(() {
               _isLoading = false;
             });
-            // Inject helper flag
+            // Inject helper bridge
             controller.runJavaScript('window.isFlutterInAppWebView = true;');
           },
           onWebResourceError: (WebResourceError error) {
@@ -93,7 +92,7 @@ class _AspirantoWebViewScreenState extends State<AspirantoWebViewScreen> {
             }
           },
           onNavigationRequest: (NavigationRequest request) {
-            // Open external links (like discord/github) in system browser
+            // Open external links (like Discord/GitHub) in external browser
             if (!request.url.contains('cat-tracker-1538d.web.app') &&
                 !request.url.contains('cat-tracker-1538d.firebaseapp.com') &&
                 !request.url.startsWith('http://localhost')) {
@@ -131,7 +130,7 @@ class _AspirantoWebViewScreenState extends State<AspirantoWebViewScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFF0F172A),
         body: SafeArea(
-          top: false, // Edge-to-edge status bar
+          top: false, // Clean edge-to-edge status bar
           bottom: true,
           child: Stack(
             children: [

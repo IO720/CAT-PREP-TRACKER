@@ -7,6 +7,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
+// Ensure Flutter and Android SDK are in environment
+const sdkDir = 'C:\\Users\\sesmi\\AppData\\Local\\Android\\Sdk';
+const flutterBin = 'C:\\Users\\sesmi\\flutter\\bin';
+process.env.ANDROID_HOME = sdkDir;
+process.env.ANDROID_SDK_ROOT = sdkDir;
+if (!process.env.PATH.includes(flutterBin)) {
+  process.env.PATH = `${flutterBin};${sdkDir}\\cmdline-tools\\latest\\bin;${sdkDir}\\platform-tools;${process.env.PATH}`;
+}
+
 function bumpVersion() {
   console.log('🚀 Starting Automated Release & Version Bump...\n');
 

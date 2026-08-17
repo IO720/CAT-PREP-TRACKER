@@ -1,7 +1,7 @@
 name: aspiranto
 description: "Aspiranto - The Ultimate CAT & Exam Prep OS Flutter Mobile App"
 publish_to: 'none'
-version: 1.0.25+10025
+version: 1.0.26+10026
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -9,8 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  webview_flutter: ^4.10.0
-  url_launcher: ^6.3.0
+  webview_flutter: ^4.14.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
