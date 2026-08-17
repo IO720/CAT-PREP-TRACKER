@@ -1263,11 +1263,13 @@ export default function App() {
             style={isMobileScreen ? { 
               display: 'flex',
               flexDirection: 'row',
-              alignItems: 'flex-end',
+              alignItems: 'center',
               justifyContent: 'space-between',
-              height: '100px',
-              minHeight: '100px',
-              padding: '0 16px 14px 16px',
+              paddingTop: 'max(env(safe-area-inset-top, 0px), 42px)',
+              paddingBottom: '12px',
+              paddingLeft: 'max(env(safe-area-inset-left, 0px), 16px)',
+              paddingRight: 'max(env(safe-area-inset-right, 0px), 16px)',
+              minHeight: 'calc(52px + max(env(safe-area-inset-top, 0px), 42px))',
               background: 'var(--bg-secondary)',
               boxSizing: 'border-box'
             } : undefined}

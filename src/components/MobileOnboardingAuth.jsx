@@ -39,7 +39,13 @@ export default function MobileOnboardingAuth({ onAuthSuccess, onContinueOffline 
   };
 
   return (
-    <div className="mobile-onboarding-wrapper">
+    <div 
+      className="mobile-onboarding-wrapper"
+      style={{
+        paddingTop: 'max(env(safe-area-inset-top, 0px), 40px)',
+        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 24px)'
+      }}
+    >
       <div className="mobile-onboarding-card">
         {/* Brand Header */}
         <div className="mobile-onboarding-header">
