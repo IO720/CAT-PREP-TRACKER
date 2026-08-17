@@ -46,7 +46,10 @@ export default function AspirantProfileCard({
   const unlockedCount = badges.filter(b => b.isUnlocked).length;
 
   return (
-    <div className={`discord-profile-card-container ${compact ? 'compact' : ''}`}>
+    <div 
+      className={`discord-profile-card-container ${compact ? 'compact' : ''}`}
+      onClick={() => setActiveBadgeTooltip(null)}
+    >
       {/* Top Banner Header (Supports solid color, gradient, custom image, or animated GIF) */}
       {(() => {
         const isImageOrGifBanner = bannerBg && (
@@ -242,8 +245,16 @@ export default function AspirantProfileCard({
             <div className="profile-badges-emblems-track">
               {badges.filter(b => b.isUnlocked).map((badge) => {
                 const IconComp = Icons[badge.iconName] || Icons.Award;
+                const isActive = activeBadgeTooltip === badge.id;
                 return (
-                  <div key={badge.id} className="badge-emblem-interactive-wrap">
+                  <div 
+                    key={badge.id} 
+                    className={`badge-emblem-interactive-wrap ${isActive ? 'active' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveBadgeTooltip(isActive ? null : badge.id);
+                    }}
+                  >
                     <div
                       className="profile-badge-emblem-tile unlocked"
                       style={{

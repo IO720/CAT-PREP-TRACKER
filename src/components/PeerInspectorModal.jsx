@@ -18,6 +18,7 @@ export default function PeerInspectorModal({
   const isSelf = Boolean(friend.isSelf || (currentUser && (friend.id === currentUser.uid || friend.uid === currentUser.uid)));
   const [copiedId, setCopiedId] = useState(false);
   const [activeTab, setActiveTab] = useState('syllabus'); // 'syllabus' | 'heatmap'
+  const [activeBadgeTooltip, setActiveBadgeTooltip] = useState(null);
 
   // Process detailed tracker data if available
   let totalQuant = 0;
@@ -74,7 +75,10 @@ export default function PeerInspectorModal({
     <div className="modal-backdrop" onClick={onClose}>
       <div 
         className="discord-profile-card-container unified-profile-modal-card" 
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          setActiveBadgeTooltip(null);
+        }}
       >
         
         {/* Banner Section */}
@@ -253,8 +257,16 @@ export default function PeerInspectorModal({
               <div className="profile-badges-emblems-track">
                 {badges.filter(b => b.isUnlocked).map((badge) => {
                   const IconComp = Icons[badge.iconName] || Icons.Award;
+                  const isActive = activeBadgeTooltip === badge.id;
                   return (
-                    <div key={badge.id} className="badge-emblem-interactive-wrap">
+                    <div 
+                      key={badge.id} 
+                      className={`badge-emblem-interactive-wrap ${isActive ? 'active' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveBadgeTooltip(isActive ? null : badge.id);
+                      }}
+                    >
                       <div
                         className="profile-badge-emblem-tile unlocked"
                         style={{

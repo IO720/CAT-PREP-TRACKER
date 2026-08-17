@@ -8564,22 +8564,21 @@ html, body {
   border-color: var(--badge-card-accent, rgba(255, 255, 255, 0.2)) transparent transparent transparent;
 }
 
-.badge-emblem-interactive-wrap:hover .badge-animated-hover-card {
+.badge-emblem-interactive-wrap:hover .badge-animated-hover-card,
+.badge-emblem-interactive-wrap.active .badge-animated-hover-card {
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
   transform: translateY(0) scale(1);
 }
 
-/* Right-aligned tooltips for badges on the right half */
-.profile-badges-emblems-track > .badge-emblem-interactive-wrap:nth-child(n+5) .badge-animated-hover-card,
-.profile-badges-emblems-track > .badge-emblem-interactive-wrap:last-child .badge-animated-hover-card {
+/* Right-aligned tooltips ONLY for badges far on the right half (6th badge onwards) */
+.profile-badges-emblems-track > .badge-emblem-interactive-wrap:nth-child(n+7) .badge-animated-hover-card {
   left: auto;
   right: 0;
 }
 
-.profile-badges-emblems-track > .badge-emblem-interactive-wrap:nth-child(n+5) .badge-animated-hover-card::after,
-.profile-badges-emblems-track > .badge-emblem-interactive-wrap:last-child .badge-animated-hover-card::after {
+.profile-badges-emblems-track > .badge-emblem-interactive-wrap:nth-child(n+7) .badge-animated-hover-card::after {
   left: auto;
   right: 19px;
   transform: translateX(50%);
