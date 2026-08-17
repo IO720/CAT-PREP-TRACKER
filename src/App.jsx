@@ -573,8 +573,6 @@ export default function App() {
     };
   }, [user, userProfile, timerState, activeStreak, totalSolved]);
 
-
-
   // Manual notification trigger for demo
   const triggerDemoNotification = () => {
     if (Notification.permission === 'granted') {
@@ -609,14 +607,22 @@ export default function App() {
     if (!friendProfile) return;
     
     // Check if user is inspecting their own profile
-    if (friendProfile.isSelf || friendProfile.id === 'self' || friendProfile.id === 'self_user' || (user && (friendProfile.id === user.uid || friendProfile.uid === user.uid))) {
+    if (
+      friendProfile.isSelf || 
+      friendProfile.id === 'self' || 
+      friendProfile.id === 'self_user' || 
+      (user && (friendProfile.id === user.uid || friendProfile.uid === user.uid))
+    ) {
       setSelectedFriend({
         isSelf: true,
+        id: user?.uid || 'self_user',
+        uid: user?.uid || 'self_user',
         displayName: userProfile?.displayName || user?.displayName || 'You',
-        username: userProfile?.username || (user?.email ? user.email.split('@')[0] : 'aspirant'),
+        username: userProfile?.username || (user?.email ? user.email.split('@')[0] : 'you'),
         avatar: userProfile?.avatar || (user?.displayName ? user.displayName[0] : 'rocket'),
-        avatarBg: userProfile?.avatarBg || '#3b82f6',
-        bannerBg: userProfile?.bannerBg || '#18191c',
+        avatarBg: userProfile?.avatarBg || '#5865f2',
+        bannerBg: userProfile?.bannerBg || '#1e1f22',
+        bannerUrl: userProfile?.bannerUrl || '',
         bio: userProfile?.bio || '',
         target: userProfile?.target || 'CAT 2025 Aspirant',
         location: userProfile?.location || '',
@@ -626,8 +632,10 @@ export default function App() {
         mocksCount: totalMocksCount,
         status: timerState.isRunning ? 'studying' : 'online',
         activity: timerState.isRunning ? {
-          title: `${timerState.subject} Focus Session`,
-          subject: timerState.subject
+          title: `${timerState.subject || 'Quant'} Focus Session`,
+          subject: timerState.subject || 'Quant',
+          secondsLeft: timerState.secondsLeft,
+          totalSeconds: timerState.totalSeconds
         } : null
       });
       setSelectedFriendTracker({
@@ -639,13 +647,18 @@ export default function App() {
       return;
     }
 
-    setSelectedFriend(friendProfile);
+    const peerUid = friendProfile.uid || friendProfile.id;
+    setSelectedFriend({
+      ...friendProfile,
+      id: peerUid,
+      uid: peerUid
+    });
     setSelectedFriendTracker(null);
     setLoadingFriendTracker(true);
 
     try {
-      if (isFirebaseConfigured && friendProfile.id && friendProfile.id !== 'self') {
-        const cloudData = await loadTrackerFromCloud(friendProfile.id);
+      if (isFirebaseConfigured && peerUid && peerUid !== 'self' && peerUid !== 'self_user') {
+        const cloudData = await loadTrackerFromCloud(peerUid);
         if (cloudData) {
           setSelectedFriendTracker(cloudData);
         } else {

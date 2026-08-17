@@ -235,28 +235,58 @@ export default function StudyLounge({
           ) : (
             filteredMessages.map((msg) => {
               const isSelf = currentUser && (msg.userId === currentUser.uid);
-              return (
-                <div key={msg.id} className={`discord-message-row ${isSelf ? 'is-self' : ''}`}>
-                  <div className="discord-msg-avatar">
-                    <AvatarRenderer 
-                      avatar={msg.avatar}
-                      name={msg.senderName}
-                      avatarBg={msg.avatarBg}
-                      size={40}
-                    />
-                  </div>
+                const handleMessageSenderClick = () => {
+                  if (!onInspectFriend) return;
+                  if (isSelf) {
+                    onInspectFriend({ isSelf: true, ...userProfile, id: currentUser?.uid, uid: currentUser?.uid });
+                  } else {
+                    onInspectFriend({
+                      id: msg.userId,
+                      uid: msg.userId,
+                      displayName: msg.senderName,
+                      name: msg.senderName,
+                      avatar: msg.avatar,
+                      avatarBg: msg.avatarBg,
+                      location: msg.location,
+                      aspirantId: msg.aspirantId || ''
+                    });
+                  }
+                };
 
-                  <div className="discord-msg-content">
-                    <div className="discord-msg-header">
-                      <span className="discord-msg-sender">{msg.senderName}</span>
-                      {isSelf && <span className="discord-msg-self-badge">YOU</span>}
-                      {msg.location && (
-                        <span className="discord-msg-location">
-                          <Icons.MapPin size={10} /> {msg.location}
-                        </span>
-                      )}
-                      <span className="discord-msg-time">{formatMessageTime(msg.timestamp)}</span>
+                return (
+                  <div key={msg.id} className={`discord-message-row ${isSelf ? 'is-self' : ''}`}>
+                    <div 
+                      className="discord-msg-avatar clickable" 
+                      onClick={handleMessageSenderClick}
+                      title="Click to view aspirant profile"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <AvatarRenderer 
+                        avatar={msg.avatar}
+                        name={msg.senderName}
+                        avatarBg={msg.avatarBg}
+                        size={40}
+                      />
                     </div>
+
+                    <div className="discord-msg-content">
+                      <div className="discord-msg-header">
+                        <span 
+                          className="discord-msg-sender clickable" 
+                          onClick={handleMessageSenderClick}
+                          title="Click to view aspirant profile"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {msg.senderName}
+                        </span>
+                        {isSelf && <span className="discord-msg-self-badge">YOU</span>}
+                        {msg.location && (
+                          <span className="discord-msg-location">
+                            <Icons.MapPin size={10} /> {msg.location}
+                          </span>
+                        )}
+                        <span className="discord-msg-time">{formatMessageTime(msg.timestamp)}</span>
+                      </div>
 
                     <div className="discord-msg-body">{msg.text}</div>
 
