@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icons } from './AspirantIcons';
 
 export default function FloatingTimerWidget({ timerState, onPause, onResume, onFinish, onOpenTimer }) {
   const { secondsLeft, isRunning, isPaused, visualTheme, subject } = timerState;
@@ -11,16 +12,12 @@ export default function FloatingTimerWidget({ timerState, onPause, onResume, onF
     return `${String(mins).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
   };
 
-  const getIcon = () => {
-    if (visualTheme === 'forest') return '🌱';
-    if (visualTheme === 'tomato') return '🍅';
-    return '⚡';
-  };
-
   return (
     <div className="floating-timer-widget">
       <div className="floating-timer-content" onClick={onOpenTimer} title="Click to open Focus Timer">
-        <span className="floating-timer-icon">{getIcon()}</span>
+        <span className="floating-timer-icon">
+          <Icons.Clock size={16} color="#3b82f6" />
+        </span>
         <div className="floating-timer-details">
           <span className="floating-timer-time">{formatTime(secondsLeft)}</span>
           <span className="floating-timer-sub">{subject} Session</span>

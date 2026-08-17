@@ -5,7 +5,13 @@ import {
   isFirebaseConfigured, 
   saveTrackerToCloud, 
   loadTrackerFromCloud, 
-  fetchFriendsProgress 
+  fetchFriendsProgress,
+  updateUserPresence,
+  setUserOffline,
+  subscribeToStudyLounge,
+  subscribeToFriendRequests,
+  updateUserProfile,
+  getUserProfile
 } from './utils/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
@@ -22,6 +28,7 @@ import MockTrackerView from './components/MockTrackerView';
 import ErrorLogView from './components/ErrorLogView';
 import ProfileView from './components/ProfileView';
 import StudyTimerView from './components/StudyTimerView';
+import StudyLounge from './components/StudyLounge';
 import DownloadAppView from './components/DownloadAppView';
 import MobileOnboardingAuth from './components/MobileOnboardingAuth';
 import FloatingTimerWidget from './components/FloatingTimerWidget';
@@ -31,15 +38,51 @@ import UpdateNotificationToast from './components/UpdateNotificationToast';
 import { checkForAppUpdate } from './utils/versionCheck';
 import { audioEngine } from './utils/audioUtils';
 import { Capacitor } from '@capacitor/core';
+import SettingsView from './components/SettingsView';
+import AchievementsView from './components/AchievementsView';
+import { calculateUserBadges } from './utils/badgeUtils';
 
 const isNativeApp = Capacitor.isNativePlatform();
 
 const Icons = {
-  Logo: ({ size = 20 }) => (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-      <rect x="8" y="10" width="44" height="42" rx="10" fill="var(--accent-color)" stroke="currentColor" strokeWidth="3" />
-      <path d="M18 18 H42 M18 24 H34" stroke="var(--bg-primary)" strokeWidth="3" strokeLinecap="round" opacity="0.9" />
-      <path d="M32 26 L35 34 L43 35 L37 41 L39 49 L32 44 L25 49 L27 41 L21 35 L29 34 Z" fill="#fbbf24" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+  Logo: ({ size = 24 }) => (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ display: 'block', margin: 'auto' }}>
+      <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#brandGradA)" stroke="currentColor" strokeWidth="1" strokeOpacity="0.2" />
+      <path d="M16 6.5L24 23.5H19.5L16 16L12.5 23.5H8L16 6.5Z" fill="#ffffff" />
+      <path d="M13.5 19.5H18.5" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="16" cy="11.5" r="1.5" fill="#fbbf24" />
+      <defs>
+        <linearGradient id="brandGradA" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#0284c7" />
+          <stop offset="1" stopColor="#6366f1" />
+        </linearGradient>
+      </defs>
+    </svg>
+  ),
+  Settings: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
+      <circle cx="12" cy="12" r="3"></circle>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+    </svg>
+  ),
+  Chat: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+  ),
+  Award: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
+      <circle cx="12" cy="8" r="7"></circle>
+      <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+    </svg>
+  ),
+  Trophy: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-svg">
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+      <path d="M4 22h16"></path>
+      <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h10c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1h-2c-.55 0-1-.45-1-1v-2.34"></path>
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
     </svg>
   ),
   Home: () => (
@@ -167,6 +210,12 @@ export default function App() {
   const [theme, setTheme] = useState(state.settings?.theme || 'dark');
   const [showThemeToast, setShowThemeToast] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [friends, setFriends] = useState([]);
+  const [selectedFriend, setSelectedFriend] = useState(null);
+  const [selectedFriendTracker, setSelectedFriendTracker] = useState(null);
+  const [loadingFriendTracker, setLoadingFriendTracker] = useState(false);
+  const [isEditProfileDirectOpen, setIsEditProfileDirectOpen] = useState(false);
   const [mobileWebBypass, setMobileWebBypass] = useState(() => {
     return localStorage.getItem('aspiranto_mobile_web_bypass') === 'true';
   });
@@ -174,12 +223,12 @@ export default function App() {
     return localStorage.getItem('aspiranto_guest_mode') === 'true';
   });
   const [isMobileScreen, setIsMobileScreen] = useState(() => {
-    return typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+    return typeof window !== 'undefined' ? (window.innerWidth <= 768 || Capacitor.isNativePlatform()) : false;
   });
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobileScreen(window.innerWidth <= 768);
+      setIsMobileScreen(window.innerWidth <= 768 || Capacitor.isNativePlatform());
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -269,134 +318,6 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // User state
-  const [user, setUser] = useState(null);
-
-  // Selected friend inspect state
-  const [selectedFriend, setSelectedFriend] = useState(null);
-  const [selectedFriendTracker, setSelectedFriendTracker] = useState(null);
-  const [loadingFriendTracker, setLoadingFriendTracker] = useState(false);
-
-  // Inspect a study peer's detailed metrics
-  const handleInspectFriend = async (friendProfile) => {
-    setSelectedFriend(friendProfile);
-    setSelectedFriendTracker(null);
-    setLoadingFriendTracker(true);
-
-    try {
-      const data = await loadTrackerFromCloud(friendProfile.id);
-      setSelectedFriendTracker(data);
-    } catch (err) {
-      console.error("Failed to load friend tracker details:", err);
-    } finally {
-      setLoadingFriendTracker(false);
-    }
-  };
-
-  // Friends peer-sync state (Real CAT Study Peers & Live Presence)
-  const [friends, setFriends] = useState([
-    {
-      id: 1,
-      name: "Rahul S.",
-      avatar: "R",
-      avatarBg: "#3b82f6",
-      status: "studying",
-      target: "Target 99.5+ • IIM-A Focus",
-      streak: 8,
-      lastActive: "Active now",
-      progressToday: "24 / 30 Quant Questions",
-      message: "Focus Timer • Speed Maths 6 (Averages)",
-      activity: {
-        type: "TIMER",
-        subject: "Quant",
-        title: "Speed Maths & Vedic Drill - Day 6",
-        taskDetails: "Solving Average 1 Level-2 sets & ratio shortcuts",
-        timerRemaining: "18:42 left",
-        isRunning: true
-      }
-    },
-    {
-      id: 2,
-      name: "Sneha M.",
-      avatar: "S",
-      avatarBg: "#ec4899",
-      status: "studying",
-      target: "Target 99.2+ • FMS Delhi Focus",
-      streak: 12,
-      lastActive: "Active now",
-      progressToday: "4 / 4 LRDI Sets",
-      message: "Sectional Practice • Logical Venn Diagrams",
-      activity: {
-        type: "TIMER",
-        subject: "LRDI",
-        title: "Logical Venn Diagrams & Tournaments",
-        taskDetails: "Practicing 4-set Venn diagrams with max/min constraints",
-        timerRemaining: "31:15 left",
-        isRunning: true
-      }
-    },
-    {
-      id: 3,
-      name: "Amit K.",
-      avatar: "A",
-      avatarBg: "#10b981",
-      status: "online",
-      target: "Target 98.8+ • IIM-C Focus",
-      streak: 6,
-      lastActive: "Just now",
-      progressToday: "Mock #4 Analyzed (112 marks)",
-      message: "Analyzing Mock Test #4 (98.6 percentile)",
-      activity: {
-        type: "MOCK",
-        subject: "Mock",
-        title: "Mock #4 Comprehensive Error Analysis",
-        taskDetails: "Re-solving unattempted Algebra questions and reviewing VARC accuracy"
-      }
-    },
-    {
-      id: 4,
-      name: "Priya D.",
-      avatar: "P",
-      avatarBg: "#8b5cf6",
-      status: "online",
-      target: "Target 99.0+ • IIM-B Focus",
-      streak: 9,
-      lastActive: "5 mins ago",
-      progressToday: "3 RCs Completed (88% Accuracy)",
-      message: "Editing Daily Drills (RC Sectionals)",
-      activity: {
-        type: "DRILL",
-        subject: "VARC",
-        title: "Daily Drill • Science & Tech RCs",
-        taskDetails: "Completed 3 Reading Comprehension passages + Para Summaries"
-      }
-    },
-    {
-      id: 5,
-      name: "Rohan V.",
-      avatar: "R",
-      avatarBg: "#64748b",
-      status: "offline",
-      target: "Target 98.5+",
-      streak: 5,
-      lastActive: "45 mins ago",
-      progressToday: "20 Quant Solved",
-      message: "Completed Time & Work Level-2"
-    },
-    {
-      id: 6,
-      name: "Arjun M.",
-      avatar: "A",
-      avatarBg: "#64748b",
-      status: "offline",
-      target: "Target 97.8+",
-      streak: 4,
-      lastActive: "2 hours ago",
-      progressToday: "2 LRDI Sets Done",
-      message: "Practiced Games & Tournaments"
-    }
-  ]);
-
   const fileInputRef = useRef(null);
 
   // Global Progress metrics calculation
@@ -441,6 +362,14 @@ export default function App() {
       if (activeStreak > 0) break;
     }
   }
+
+  const totalMocksCount = (state?.mocks || []).filter(m => m.status === 'Taken').length;
+
+  const userBadges = calculateUserBadges({
+    streak: activeStreak,
+    solvedQs: totalSolved,
+    mocksCount: totalMocksCount
+  });
 
   // Sync theme changes to HTML
   useEffect(() => {
@@ -504,33 +433,68 @@ export default function App() {
     return () => clearInterval(interval);
   }, [state, activeMonth, activeWeek]);
 
+  const [isCloudLoaded, setIsCloudLoaded] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+
   // Listen to Firebase Auth state
   useEffect(() => {
     if (isFirebaseConfigured && auth) {
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
           setUser(firebaseUser);
-          // Fetch Cloud tracker data
-          const cloudData = await loadTrackerFromCloud(firebaseUser.uid);
-          if (cloudData) {
-            setState({
-              tracker: cloudData.tracker,
-              studyPlan: cloudData.studyPlan,
-              mocks: cloudData.mocks,
-              settings: cloudData.settings || state.settings
-            });
+          try {
+            // Fetch Profile Data
+            const prof = await getUserProfile(firebaseUser.uid);
+            if (prof) {
+              setUserProfile(prof);
+            }
+
+            // Fetch Cloud tracker data
+            const cloudData = await loadTrackerFromCloud(firebaseUser.uid);
+            if (cloudData && cloudData.tracker) {
+              setState(prev => ({
+                tracker: cloudData.tracker,
+                studyPlan: cloudData.studyPlan || prev.studyPlan,
+                mocks: cloudData.mocks || prev.mocks,
+                settings: cloudData.settings || prev.settings
+              }));
+            } else {
+              // Initial cloud state for new user
+              await saveTrackerToCloud(
+                firebaseUser.uid, 
+                state.tracker, 
+                state.studyPlan, 
+                state.mocks, 
+                activeStreak, 
+                totalSolved
+              );
+            }
+          } catch (err) {
+            console.error("Error loading initial cloud data:", err);
+          } finally {
+            setIsCloudLoaded(true);
           }
         } else {
           setUser(null);
+          setUserProfile(null);
+          setIsCloudLoaded(false);
         }
       });
       return () => unsubscribe();
     }
   }, []);
 
-  // Sync changes to Cloud in real-time when authenticated
+  // Update Profile details and broadcast live
+  const handleUpdateProfile = async (profileData) => {
+    if (!user) return;
+    await updateUserProfile(user.uid, profileData);
+    setUserProfile(prev => ({ ...prev, ...profileData }));
+    updateUserPresence(user, timerState, activeStreak, totalSolved, profileData);
+  };
+
+  // Sync changes to Cloud in real-time when authenticated (only after initial cloud load)
   useEffect(() => {
-    if (isFirebaseConfigured && user) {
+    if (isFirebaseConfigured && user && isCloudLoaded) {
       saveTrackerToCloud(
         user.uid, 
         state.tracker, 
@@ -540,123 +504,76 @@ export default function App() {
         totalSolved
       );
     }
-  }, [state, user, activeStreak, totalSolved]);
+  }, [state, user, isCloudLoaded, activeStreak, totalSolved]);
 
   // Refresh friends progress from Cloud
   const refreshFriendsList = async () => {
     if (isFirebaseConfigured && user) {
       const liveFriends = await fetchFriendsProgress(user.uid);
-      if (liveFriends && liveFriends.length > 0) {
+      if (liveFriends) {
         setFriends(liveFriends);
       }
     }
   };
 
+  // Real-time Live Study Lounge Listener across all peers & friends
   useEffect(() => {
-    if (user) {
-      refreshFriendsList();
-      const interval = setInterval(refreshFriendsList, 15000);
-      return () => clearInterval(interval);
-    }
-  }, [user]);
+    if (!isFirebaseConfigured) return;
 
-  // Simulate real-time peer server updates (only if NOT logged in / Firebase offline)
-  useEffect(() => {
-    if (user) return; // Skip simulation if logged in
-    
-    const simulateFriendsSync = () => {
-      const liveActivities = [
-        {
-          type: "TIMER",
-          subject: "Quant",
-          title: "Speed Maths & Vedic Arithmetic - Day 6",
-          taskDetails: "Solving Average 1 Level-2 sets & ratio shortcuts",
-          timerRemaining: "15:20 left",
-          status: "studying",
-          progressToday: "26 / 30 Quant Solved",
-          message: "Focus Timer • Speed Maths 6"
-        },
-        {
-          type: "TIMER",
-          subject: "LRDI",
-          title: "Logical Venn Diagrams & Tournaments",
-          taskDetails: "Practicing 4-set Venn diagrams with max/min constraints",
-          timerRemaining: "28:40 left",
-          status: "studying",
-          progressToday: "4 / 4 LRDI Sets",
-          message: "Sectional Practice • LRDI Sets"
-        },
-        {
-          type: "MOCK",
-          subject: "Mock",
-          title: "Mock #4 Comprehensive Error Analysis",
-          taskDetails: "Re-solving unattempted Algebra questions and reviewing VARC accuracy",
-          status: "online",
-          progressToday: "Mock #4 Analyzed (112 marks)",
-          message: "Analyzing Mock Test #4"
-        },
-        {
-          type: "DRILL",
-          subject: "VARC",
-          title: "Daily Drill • Science & Tech RCs",
-          taskDetails: "Completed 3 Reading Comprehension passages + Para Summaries",
-          status: "online",
-          progressToday: "3 RCs Completed (88% Accuracy)",
-          message: "Editing Daily Drills (RC Sectionals)"
-        },
-        {
-          type: "ERROR_LOG",
-          subject: "Quant",
-          title: "Error Log & Formula Revision",
-          taskDetails: "Revising Time, Speed & Distance shortcuts and Circular Tracks notes",
-          status: "online",
-          progressToday: "18 Formulas Revised",
-          message: "Added revision notes in Error Log"
-        }
-      ];
-      
-      setFriends(prev => prev.map(f => {
-        // Keep offline peers mostly offline with occasional check-in
-        if (f.status === 'offline') {
-          if (Math.random() > 0.85) {
-            return {
-              ...f,
-              status: 'online',
-              lastActive: 'Just now',
-              message: 'Logged in to start drills'
-            };
-          }
-          return f;
-        }
+    const unsubscribe = subscribeToStudyLounge(user?.uid, (livePeers) => {
+      setFriends(livePeers || []);
+    });
 
-        // Active peer updates
-        if (Math.random() > 0.4) {
-          const act = liveActivities[Math.floor(Math.random() * liveActivities.length)];
-          const isStudying = act.status === 'studying';
-          return {
-            ...f,
-            status: act.status,
-            lastActive: "Active now",
-            message: act.message,
-            progressToday: act.progressToday || f.progressToday,
-            streak: Math.random() > 0.9 ? f.streak + 1 : f.streak,
-            activity: {
-              type: act.type,
-              subject: act.subject,
-              title: act.title,
-              taskDetails: act.taskDetails,
-              timerRemaining: act.timerRemaining,
-              isRunning: isStudying
-            }
-          };
-        }
-        return f;
-      }));
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
     };
+  }, [user?.uid]);
 
-    const interval = setInterval(simulateFriendsSync, 16000);
-    return () => clearInterval(interval);
-  }, [user]);
+  // Friend requests count state for notification badge
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured || !user?.uid) {
+      setPendingRequestsCount(0);
+      return;
+    }
+
+    const unsubscribe = subscribeToFriendRequests(user.uid, (requests) => {
+      setPendingRequestsCount(requests.length);
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [user?.uid]);
+
+  // Sync user's live presence & timer state to Firestore
+  useEffect(() => {
+    if (isFirebaseConfigured && user) {
+      updateUserPresence(user, timerState, activeStreak, totalSolved, userProfile);
+    }
+  }, [user, userProfile, timerState.isRunning, timerState.isPaused, timerState.subject, timerState.mode, activeStreak, totalSolved]);
+
+  // Periodic heartbeat (every 25s) & cleanup on browser close
+  useEffect(() => {
+    if (!isFirebaseConfigured || !user) return;
+    
+    const heartbeatInterval = setInterval(() => {
+      updateUserPresence(user, timerState, activeStreak, totalSolved, userProfile);
+    }, 25000);
+
+    const handleBeforeUnload = () => {
+      setUserOffline(user.uid);
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(heartbeatInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [user, userProfile, timerState, activeStreak, totalSolved]);
+
+
 
   // Manual notification trigger for demo
   const triggerDemoNotification = () => {
@@ -684,6 +601,64 @@ export default function App() {
       const initial = getInitialState();
       setState(initial);
       saveState(initial);
+    }
+  };
+
+  // Inspect peer or self study profile modal
+  const handleInspectFriend = async (friendProfile) => {
+    if (!friendProfile) return;
+    
+    // Check if user is inspecting their own profile
+    if (friendProfile.isSelf || friendProfile.id === 'self' || friendProfile.id === 'self_user' || (user && (friendProfile.id === user.uid || friendProfile.uid === user.uid))) {
+      setSelectedFriend({
+        isSelf: true,
+        displayName: userProfile?.displayName || user?.displayName || 'You',
+        username: userProfile?.username || (user?.email ? user.email.split('@')[0] : 'aspirant'),
+        avatar: userProfile?.avatar || (user?.displayName ? user.displayName[0] : 'rocket'),
+        avatarBg: userProfile?.avatarBg || '#3b82f6',
+        bannerBg: userProfile?.bannerBg || '#18191c',
+        bio: userProfile?.bio || '',
+        target: userProfile?.target || 'CAT 2025 Aspirant',
+        location: userProfile?.location || '',
+        aspirantId: userProfile?.aspirantId || '',
+        streak: activeStreak,
+        solvedQs: totalSolved,
+        mocksCount: totalMocksCount,
+        status: timerState.isRunning ? 'studying' : 'online',
+        activity: timerState.isRunning ? {
+          title: `${timerState.subject} Focus Session`,
+          subject: timerState.subject
+        } : null
+      });
+      setSelectedFriendTracker({
+        tracker: state.tracker,
+        studyPlan: state.studyPlan,
+        mocks: state.mocks
+      });
+      setLoadingFriendTracker(false);
+      return;
+    }
+
+    setSelectedFriend(friendProfile);
+    setSelectedFriendTracker(null);
+    setLoadingFriendTracker(true);
+
+    try {
+      if (isFirebaseConfigured && friendProfile.id && friendProfile.id !== 'self') {
+        const cloudData = await loadTrackerFromCloud(friendProfile.id);
+        if (cloudData) {
+          setSelectedFriendTracker(cloudData);
+        } else {
+          setSelectedFriendTracker({ tracker: null, studyPlan: null, mocks: null });
+        }
+      } else {
+        setSelectedFriendTracker({ tracker: null, studyPlan: null, mocks: null });
+      }
+    } catch (err) {
+      console.error("Error inspecting friend tracker:", err);
+      setSelectedFriendTracker({ tracker: null, studyPlan: null, mocks: null });
+    } finally {
+      setLoadingFriendTracker(false);
     }
   };
 
@@ -913,7 +888,7 @@ export default function App() {
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const targetSecs = durationMinutes * 60;
 
-    setTimerState({
+    const nextTimerState = {
       secondsLeft: targetSecs > 0 ? targetSecs : 0,
       totalSeconds: targetSecs > 0 ? targetSecs : 1,
       isRunning: true,
@@ -925,27 +900,44 @@ export default function App() {
       startTimeMs: now.getTime(),
       lastTickMs: now.getTime(),
       sessionNotes: notes || ''
-    });
+    };
+
+    setTimerState(nextTimerState);
+    if (isFirebaseConfigured && user) {
+      updateUserPresence(user, nextTimerState, activeStreak, totalSolved);
+    }
   };
 
   const handlePauseTimer = () => {
-    setTimerState(prev => ({ ...prev, isRunning: false, isPaused: true, lastTickMs: null }));
+    const nextTimerState = { ...timerState, isRunning: false, isPaused: true, lastTickMs: null };
+    setTimerState(nextTimerState);
+    if (isFirebaseConfigured && user) {
+      updateUserPresence(user, nextTimerState, activeStreak, totalSolved);
+    }
   };
 
   const handleResumeTimer = () => {
-    setTimerState(prev => ({ ...prev, isRunning: true, isPaused: false, lastTickMs: Date.now() }));
+    const nextTimerState = { ...timerState, isRunning: true, isPaused: false, lastTickMs: Date.now() };
+    setTimerState(nextTimerState);
+    if (isFirebaseConfigured && user) {
+      updateUserPresence(user, nextTimerState, activeStreak, totalSolved);
+    }
   };
 
   const handleResetTimer = () => {
-    setTimerState(prev => ({
-      ...prev,
-      secondsLeft: prev.totalSeconds,
+    const nextTimerState = {
+      ...timerState,
+      secondsLeft: timerState.totalSeconds,
       isRunning: false,
       isPaused: false,
       startTimeStr: null,
       startTimeMs: null,
       lastTickMs: null
-    }));
+    };
+    setTimerState(nextTimerState);
+    if (isFirebaseConfigured && user) {
+      updateUserPresence(user, nextTimerState, activeStreak, totalSolved);
+    }
   };
 
   const handleFinishTimer = () => {
@@ -981,17 +973,20 @@ export default function App() {
     };
 
     addStudySession(sessionObj);
-    audioEngine.playCompletionSound();
 
-    setTimerState(prev => ({
-      ...prev,
-      secondsLeft: prev.totalSeconds,
+    const resetTimer = {
+      ...timerState,
+      secondsLeft: timerState.totalSeconds,
       isRunning: false,
       isPaused: false,
       startTimeStr: null,
       startTimeMs: null,
       lastTickMs: null
-    }));
+    };
+    setTimerState(resetTimer);
+    if (isFirebaseConfigured && user) {
+      updateUserPresence(user, resetTimer, activeStreak, totalSolved);
+    }
   };
 
   // Timer Tick Effect with Background Tab Drift & Throttle Recovery
@@ -1016,7 +1011,6 @@ export default function App() {
 
           if (prev.secondsLeft <= deltaSecs) {
             // Finished naturally
-            audioEngine.playCompletionSound();
             const now = new Date();
             const endTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const startMs = prev.startTimeMs || (now.getTime() - prev.totalSeconds * 1000);
@@ -1039,7 +1033,7 @@ export default function App() {
             addStudySession(sessionObj);
 
             if (Notification.permission === 'granted') {
-              new Notification("Focus Session Complete! 🎉", {
+              new Notification("Focus Session Complete!", {
                 body: `Awesome! You studied ${prev.subject} for ${elapsedMins} mins. Time auto-recorded.`,
                 icon: "/favicon.svg"
               });
@@ -1119,10 +1113,13 @@ export default function App() {
       {/* Sidebar Navigation (Hidden on mobile) */}
       <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="brand-section">
-          <div className="brand-logo-badge" title="Aspiranto Logo">
+          <div className="brand-emblem-badge" title="Aspiranto Prep OS">
             <Icons.Logo size={22} />
           </div>
-          <span className="brand-name">Aspiranto</span>
+          <div className="brand-text-wrap">
+            <span className="brand-title-bold">Aspiranto</span>
+            <span className="brand-tagline-pill">CORE PREP OS</span>
+          </div>
         </div>
 
         <nav className="nav-links">
@@ -1151,6 +1148,14 @@ export default function App() {
             <span className="nav-link-text">Study Timer</span>
           </button>
           <button 
+            className={`nav-link ${activeTab === 'lounge' ? 'active' : ''}`}
+            onClick={() => setActiveTab('lounge')}
+            title="Live Peer Study Lounge & Discord Chat"
+          >
+            <span className="nav-icon"><Icons.Chat /></span>
+            <span className="nav-link-text">Study Lounge</span>
+          </button>
+          <button 
             className={`nav-link ${activeTab === 'daily' ? 'active' : ''}`}
             onClick={() => setActiveTab('daily')}
             title="Daily Drills"
@@ -1167,6 +1172,14 @@ export default function App() {
             <span className="nav-link-text">Mock Tests</span>
           </button>
           <button 
+            className={`nav-link ${activeTab === 'achievements' ? 'active' : ''}`}
+            onClick={() => setActiveTab('achievements')}
+            title="Prestige Achievement Badges & Perks"
+          >
+            <span className="nav-icon"><Icons.Award /></span>
+            <span className="nav-link-text">Achievements</span>
+          </button>
+          <button 
             className={`nav-link ${activeTab === 'errors' ? 'active' : ''}`}
             onClick={() => setActiveTab('errors')}
             title="Error Log"
@@ -1177,10 +1190,24 @@ export default function App() {
           <button 
             className={`nav-link ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setActiveTab('profile')}
-            title="Cloud Sync & Maintenance"
+            title="Profile & Study Buddies"
+            style={{ position: 'relative' }}
           >
             <span className="nav-icon"><Icons.Cloud /></span>
-            <span className="nav-link-text">Cloud Sync</span>
+            <span className="nav-link-text">Profile & Buddies</span>
+            {pendingRequestsCount > 0 && (
+              <span className="sidebar-nav-badge-pill" title={`${pendingRequestsCount} new friend request(s)`}>
+                {pendingRequestsCount}
+              </span>
+            )}
+          </button>
+          <button 
+            className={`nav-link ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+            title="Application Settings & Cloud Management"
+          >
+            <span className="nav-icon"><Icons.Settings /></span>
+            <span className="nav-link-text">Settings</span>
           </button>
           {!isNativeApp && (
             <button 
@@ -1218,10 +1245,23 @@ export default function App() {
       <div className="app-main-wrapper">
         {/* Clean Global Header (Hidden when inside Focus Timer) */}
         {activeTab !== 'timer' && (
-          <header className="global-header">
+          <header 
+            className="global-header"
+            style={isMobileScreen ? { 
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'flex-end',
+              justifyContent: 'space-between',
+              height: '100px',
+              minHeight: '100px',
+              padding: '0 16px 14px 16px',
+              background: 'var(--bg-secondary)',
+              boxSizing: 'border-box'
+            } : undefined}
+          >
             <div className="header-brand-title">
               <span className="brand-dot"></span>
-              <span className="header-page-name">{activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'errors' ? 'Error Log' : activeTab === 'download' ? 'Download Mobile App' : 'Cloud Maintenance'}</span>
+              <span className="header-page-name">{activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'lounge' ? 'Live Study Lounge & Community' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'achievements' ? 'Prestige Achievements & Badges' : activeTab === 'errors' ? 'Error Log' : activeTab === 'profile' ? 'Profile & Study Buddies' : activeTab === 'settings' ? 'Settings & Cloud Management' : activeTab === 'download' ? 'Download Mobile App' : 'Dashboard'}</span>
             </div>
 
             <div className="header-stats">
@@ -1238,8 +1278,8 @@ export default function App() {
                 <span>{totalSolved.toLocaleString()}<span className="desktop-inline"> / {grandTargetTotal.toLocaleString()}</span></span>
               </div>
               
-              {/* APK Download Shortcut for Web users */}
-              {!isNativeApp && (
+              {/* APK Download Shortcut for Mobile Web users only */}
+              {isMobileScreen && !isNativeApp && (
                 <button 
                   className="header-stat-item download-header-pill" 
                   onClick={() => setActiveTab('download')}
@@ -1247,8 +1287,7 @@ export default function App() {
                   style={{ cursor: 'pointer', border: '1px solid var(--accent-color)', fontWeight: '700' }}
                 >
                   <Icons.Download size={14} />
-                  <span className="desktop-inline">Get APK</span>
-                  <span className="mobile-inline">APK</span>
+                  <span>APK</span>
                 </button>
               )}
 
@@ -1270,6 +1309,7 @@ export default function App() {
               friends={friends}
               onInspectFriend={handleInspectFriend}
               currentUser={user}
+              userProfile={userProfile}
               timerState={timerState}
             />
           )}
@@ -1321,10 +1361,24 @@ export default function App() {
               currentUser={user}
             />
           )}
+          {activeTab === 'lounge' && (
+            <StudyLounge
+              friends={friends}
+              onInspectFriend={handleInspectFriend}
+              currentUser={user}
+              userProfile={userProfile}
+              timerState={timerState}
+              fullPage={true}
+            />
+          )}
           {activeTab === 'profile' && (
             <ProfileView
               user={user}
+              userProfile={userProfile}
+              tracker={state.tracker}
+              mocks={state.mocks}
               onAuthSuccess={setUser}
+              onUpdateProfile={handleUpdateProfile}
               friends={friends}
               onAddFriendSuccess={refreshFriendsList}
               onInspectFriend={handleInspectFriend}
@@ -1336,6 +1390,36 @@ export default function App() {
               onTriggerNotification={triggerDemoNotification}
               fileInputRef={fileInputRef}
               setActiveTab={setActiveTab}
+              isEditOpen={isEditProfileDirectOpen}
+              onResetEditOpen={() => setIsEditProfileDirectOpen(false)}
+            />
+          )}
+          {activeTab === 'achievements' && (
+            <AchievementsView
+              userProfile={userProfile}
+              stats={{
+                streak: activeStreak,
+                solvedQs: totalSolved,
+                mocksCount: totalMocksCount
+              }}
+              badges={userBadges}
+              onNavigateToTab={setActiveTab}
+            />
+          )}
+          {activeTab === 'settings' && (
+            <SettingsView
+              user={user}
+              userProfile={userProfile}
+              onAuthSuccess={setUser}
+              startDate={state.settings?.startDate}
+              onUpdateStartDate={handleUpdateStartDate}
+              onExport={handleExport}
+              onImport={() => fileInputRef.current?.click()}
+              onReset={handleReset}
+              onTriggerNotification={triggerDemoNotification}
+              fileInputRef={fileInputRef}
+              currentTheme={theme}
+              onSelectTheme={handleSelectTheme}
             />
           )}
           {activeTab === 'download' && (
@@ -1345,7 +1429,14 @@ export default function App() {
       </div>
 
       {/* Streamlined Native Mobile Bottom Navigation (5 Core Tabs) */}
-      <nav className="mobile-bottom-nav">
+      <nav 
+        className="mobile-bottom-nav"
+        style={{
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
+          height: 'calc(56px + max(24px, env(safe-area-inset-bottom, 24px)))',
+          boxSizing: 'border-box'
+        }}
+      >
         <button className={`mobile-nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
           <span className="mobile-nav-icon"><Icons.Home size={20} /></span>
           <span>Home</span>
@@ -1393,6 +1484,12 @@ export default function App() {
         trackerData={selectedFriendTracker}
         loading={loadingFriendTracker}
         onClose={() => setSelectedFriend(null)}
+        onEditProfile={() => {
+          setSelectedFriend(null);
+          setIsEditProfileDirectOpen(true);
+          setActiveTab('profile');
+        }}
+        currentUser={user}
       />
 
       {/* Live Over-The-Air Update Toast */}

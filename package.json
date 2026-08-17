@@ -1,7 +1,7 @@
 {
   "name": "tracker",
   "private": true,
-  "version": "1.0.8",
+  "version": "1.0.20",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -1,6 +1,7 @@
 import React from 'react';
 import { getTodayTrackerPosition } from '../utils/dateUtils';
-import DiscordStudyLounge from './DiscordStudyLounge';
+import StudyContributionHeatmap from './StudyContributionHeatmap';
+import { Icons } from './AspirantIcons';
 import { Capacitor } from '@capacitor/core';
 
 const isNativeApp = Capacitor.isNativePlatform();
@@ -11,6 +12,7 @@ export default function DashboardView({
   friends = [], 
   onInspectFriend,
   currentUser = null,
+  userProfile = null,
   timerState = null
 }) {
   const { tracker, studyPlan, mocks, settings } = state;
@@ -211,6 +213,69 @@ export default function DashboardView({
         </div>
       </div>
 
+      {/* Activity Consistency & Streak Matrix Panel (2-Column Responsive Layout) */}
+      <div className="dashboard-card streak-heatmap-dashboard-card">
+        <div className="streak-heatmap-header">
+          <div className="streak-heatmap-title-group">
+            <div className="streak-icon-bubble">
+              <Icons.Zap size={18} />
+            </div>
+            <div>
+              <h3 className="streak-heatmap-title">Study Consistency & Streak Matrix</h3>
+              <p className="streak-heatmap-subtitle">
+                Daily preparation activity matrix. Maintain daily drills to unlock streak perks and collectible badges.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 2-Column Split: Heatmap on Left, Streak Insights on Right */}
+        <div className="dashboard-heatmap-dual-row">
+          <div className="heatmap-matrix-left-col">
+            <StudyContributionHeatmap tracker={tracker} compact={false} />
+          </div>
+
+          <div className="streak-analytics-right-col">
+            <div className="streak-analytics-tile">
+              <div className="streak-tile-header">
+                <Icons.Flame size={14} color="#f97316" />
+                <span>ACTIVE STREAK</span>
+              </div>
+              <div className="streak-tile-number">
+                {activeStreak} <span>{activeStreak === 1 ? 'Day' : 'Days'}</span>
+              </div>
+              <div className="streak-tile-desc">
+                {activeStreak > 0 ? "Momentum active! Don't break the streak." : "Complete today's drill to start your streak."}
+              </div>
+            </div>
+
+            <div className="streak-analytics-tile">
+              <div className="streak-tile-header">
+                <Icons.Calendar size={14} color="#38bdf8" />
+                <span>CONSISTENCY RECORD</span>
+              </div>
+              <div className="streak-tile-number">
+                {allDaysChronological.filter(d => d.isDone).length} <span>/ 112 Days</span>
+              </div>
+              <div className="streak-tile-desc">
+                Total active practice days logged across 4 months.
+              </div>
+            </div>
+
+            <button 
+              type="button"
+              className="streak-perks-action-btn"
+              onClick={() => setActiveTab('achievements')}
+              title="View your prestige achievement badges and custom perks"
+            >
+              <Icons.Award size={14} color="#eab308" />
+              <span>Collected Perks & Badges</span>
+              <Icons.ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Curriculum Phase & Peer Feed Grid */}
       <div className="dashboard-details-row">
         {/* Active Study Focus */}
@@ -248,13 +313,45 @@ export default function DashboardView({
           )}
         </div>
 
-        {/* Discord-Style Live Peer Study Lounge */}
-        <DiscordStudyLounge
-          friends={friends}
-          onInspectFriend={onInspectFriend}
-          currentUser={currentUser}
-          timerState={timerState}
-        />
+        {/* Inviting Live Peer Study Lounge Hub Card */}
+        <div className="dashboard-card live-lounge-hub-card">
+          <div className="live-lounge-hub-left">
+            <div className="live-lounge-icon-box">
+              <span className="live-pulse-dot"></span>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </div>
+            <div className="live-lounge-hub-text">
+              <div className="live-lounge-hub-title">
+                <span>Live Aspirants Study Lounge</span>
+                <span className="live-lounge-badge">
+                  {friends.filter(p => p.status === 'studying').length} Studying Now
+                </span>
+              </div>
+              <p className="live-lounge-hub-subtitle">
+                Join active timed focus sprints, ask doubts in real-time, and study alongside online peers.
+              </p>
+            </div>
+          </div>
+
+          <div className="live-lounge-hub-right">
+            <button 
+              type="button" 
+              className="enter-lounge-cta-btn"
+              onClick={() => setActiveTab('lounge')}
+            >
+              <span>Enter Study Lounge</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

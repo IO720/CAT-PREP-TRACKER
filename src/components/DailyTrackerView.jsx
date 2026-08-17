@@ -182,7 +182,7 @@ export default function DailyTrackerView({
                   </span>
                   {day.studyHours > 0 && (
                     <span className="day-hours-badge" title="Total hours studied logged from Timer">
-                      ⏱️ {day.studyHours.toFixed(1)} hrs studied
+                      {day.studyHours.toFixed(1)} hrs studied
                     </span>
                   )}
                 </div>

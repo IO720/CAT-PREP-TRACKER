@@ -129,6 +129,24 @@ export const THEMES = [
     name: 'Nordic Midnight', 
     IconComponent: ThemeIcons.nordic, 
     colors: ['#060b14', '#0e1726', '#2a384e', '#38bdf8']
+  },
+  { 
+    id: 'nordic-slate', 
+    name: 'Nordic Slate', 
+    IconComponent: ThemeIcons.nordic, 
+    colors: ['#162836', '#23455b', '#3c617b', '#c8b7a6']
+  },
+  { 
+    id: 'crimson-velvet', 
+    name: 'Crimson Velvet', 
+    IconComponent: ThemeIcons.sunset, 
+    colors: ['#b81432', '#18263e', '#224b6d', '#36959b']
+  },
+  { 
+    id: 'sage-frost', 
+    name: 'Sage Frost', 
+    IconComponent: ThemeIcons.emerald, 
+    colors: ['#edf6ee', '#c2f0b5', '#9be2b0', '#7daeb9']
   }
 ];
 

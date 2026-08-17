@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import DiscordStudyLounge from './DiscordStudyLounge';
 
 export default function StudyTimerView({
   timerState,
@@ -317,17 +316,6 @@ export default function StudyTimerView({
             ))}
           </div>
         )}
-      </div>
-
-      {/* Discord-Style Live Peer Study Lounge */}
-      <div className="timer-peers-lounge-section">
-        <DiscordStudyLounge
-          friends={friends}
-          onInspectFriend={onInspectFriend}
-          currentUser={currentUser}
-          timerState={timerState}
-          compact={true}
-        />
       </div>
 
     </div>

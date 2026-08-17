@@ -1,5 +1,6 @@
 import React from 'react';
 import { applyInstantUpdate } from '../utils/versionCheck';
+import { Icons } from './AspirantIcons';
 
 export default function UpdateNotificationToast({ updateData, onDismiss }) {
   if (!updateData) return null;
@@ -7,7 +8,9 @@ export default function UpdateNotificationToast({ updateData, onDismiss }) {
   return (
     <div className="update-toast-banner animate-slide-up">
       <div className="update-toast-content">
-        <div className="update-toast-icon">🚀</div>
+        <div className="update-toast-icon">
+          <Icons.Sparkles size={16} color="#3b82f6" />
+        </div>
         <div className="update-toast-text">
           <div className="update-toast-title">
             New App Update (v{updateData.version})
