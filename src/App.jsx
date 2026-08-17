@@ -1137,10 +1137,7 @@ export default function App() {
       <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="brand-section">
           <div className="brand-emblem-badge" title="CATalyze">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round">
-              <path d="M12 3L21 19H3L12 3Z" />
-              <circle cx="12" cy="13.5" r="2" fill="currentColor" />
-            </svg>
+            <Icons.Logo size={18} />
           </div>
           <div className="brand-text-wrap">
             <span className="brand-title-bold">CATalyze</span>

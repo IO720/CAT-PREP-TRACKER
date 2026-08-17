@@ -80,7 +80,7 @@ export default function AuthScreen({ onAuthSuccess, onContinueAsGuest }) {
         {/* Brand Header */}
         <div className="auth-brand-header">
           <div className="auth-brand-logo-badge">
-            <span className="auth-logo-symbol">A</span>
+            <Icons.Logo size={22} />
           </div>
           <h1 className="auth-app-title">CATalyze</h1>
           <p className="auth-app-tagline">
