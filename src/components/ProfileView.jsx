@@ -438,13 +438,37 @@ export default function ProfileView({
         <div className="profile-mobile-quick-nav">
           <button 
             type="button" 
+            className="btn-secondary mobile-nav-tile highlight-achievement-tile" 
+            onClick={() => setActiveTab('achievements')}
+          >
+            <Icons.Award size={18} />
+            <div>
+              <div className="mobile-nav-tile-title">Achievements</div>
+              <div className="mobile-nav-tile-sub">Prestige badges & perks</div>
+            </div>
+          </button>
+
+          <button 
+            type="button" 
+            className="btn-secondary mobile-nav-tile" 
+            onClick={() => setActiveTab('lounge')}
+          >
+            <Icons.Chat size={18} />
+            <div>
+              <div className="mobile-nav-tile-title">Study Lounge</div>
+              <div className="mobile-nav-tile-sub">Live peers & chat</div>
+            </div>
+          </button>
+
+          <button 
+            type="button" 
             className="btn-secondary mobile-nav-tile" 
             onClick={() => setActiveTab('timeline')}
           >
-            <Icons.BookOpen size={16} />
+            <Icons.BookOpen size={18} />
             <div>
               <div className="mobile-nav-tile-title">6-Month Plan</div>
-              <div className="mobile-nav-tile-sub">View syllabus phases</div>
+              <div className="mobile-nav-tile-sub">Syllabus breakdown</div>
             </div>
           </button>
 
@@ -453,10 +477,22 @@ export default function ProfileView({
             className="btn-secondary mobile-nav-tile" 
             onClick={() => setActiveTab('errors')}
           >
-            <Icons.Target size={16} />
+            <Icons.Target size={18} />
             <div>
               <div className="mobile-nav-tile-title">Error Log</div>
-              <div className="mobile-nav-tile-sub">Review formulas & mistakes</div>
+              <div className="mobile-nav-tile-sub">Formulas & traps</div>
+            </div>
+          </button>
+
+          <button 
+            type="button" 
+            className="btn-secondary mobile-nav-tile" 
+            onClick={() => setActiveTab('settings')}
+          >
+            <Icons.Settings size={18} />
+            <div>
+              <div className="mobile-nav-tile-title">Settings</div>
+              <div className="mobile-nav-tile-sub">Theme, cloud & data</div>
             </div>
           </button>
         </div>
@@ -516,6 +552,7 @@ export default function ProfileView({
               tracker={tracker}
               isSelf={true}
               onEditProfile={() => setIsEditModalOpen(true)}
+              onViewAchievements={() => setActiveTab('achievements')}
             />
           </div>
         </div>

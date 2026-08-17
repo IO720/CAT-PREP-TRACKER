@@ -9,6 +9,7 @@ export default function AspirantProfileCard({
   isSelf = false,
   onEditProfile = null,
   onMessagePeer = null,
+  onViewAchievements = null,
   compact = false,
   tracker = null
 }) {
@@ -200,9 +201,16 @@ export default function AspirantProfileCard({
 
         {/* Badges & Collectible Perks Section */}
         <div className="discord-info-block">
-          <div className="discord-section-header-row">
+          <div 
+            className="discord-section-header-row"
+            onClick={onViewAchievements}
+            style={onViewAchievements ? { cursor: 'pointer' } : undefined}
+            title={onViewAchievements ? "View All Achievements & Badges" : undefined}
+          >
             <span className="discord-section-header">COLLECTED PERKS & BADGES</span>
-            <span className="badge-count-pill">{unlockedCount} / {badges.length} Unlocked</span>
+            <span className="badge-count-pill" style={onViewAchievements ? { cursor: 'pointer', transition: 'all 0.2s' } : undefined}>
+              {unlockedCount} / {badges.length} Unlocked {onViewAchievements ? '→' : ''}
+            </span>
           </div>
 
           {unlockedCount === 0 ? (
