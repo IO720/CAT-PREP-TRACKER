@@ -6872,11 +6872,78 @@ html, body {
   box-shadow: var(--card-shadow);
 }
 
+.lounge-mobile-tab-switch {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .discord-lounge-full-layout {
     flex-direction: column;
-    height: auto;
-    min-height: 600px;
+    height: calc(100dvh - 180px);
+    min-height: 480px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+  }
+
+  .lounge-mobile-tab-switch {
+    display: flex;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 12px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .lounge-mobile-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .lounge-mobile-tab-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--border-color-hover);
+  }
+
+  .lounge-mobile-tab-btn.active {
+    background: #5865f2;
+    color: #ffffff;
+    border-color: #5865f2;
+    box-shadow: 0 2px 8px rgba(88, 101, 242, 0.35);
+  }
+
+  .live-studying-pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e;
+    animation: pulse 1.5s infinite;
+  }
+
+  .discord-chat-main-area.mobile-inactive,
+  .discord-members-sidebar.mobile-inactive {
+    display: none !important;
+  }
+
+  .discord-chat-main-area.mobile-active,
+  .discord-members-sidebar.mobile-active {
+    display: flex !important;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
   }
 }
 
@@ -6888,6 +6955,7 @@ html, body {
   flex-direction: column;
   background: var(--bg-primary);
   position: relative;
+  height: 100%;
 }
 
 .discord-channel-top-bar {
@@ -6899,6 +6967,17 @@ html, body {
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-secondary);
   gap: 12px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .discord-channel-top-bar {
+    height: auto;
+    padding: 10px 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
 }
 
 .discord-channel-info {
@@ -7223,7 +7302,7 @@ html, body {
     min-width: 100%;
     max-width: 100%;
     border-left: none;
-    border-top: 1px solid var(--border-color);
+    border-top: none;
   }
 }
 

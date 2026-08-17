@@ -1392,6 +1392,10 @@ export default function App() {
           <span className="mobile-nav-icon"><Icons.Drills size={20} /></span>
           <span>Drills</span>
         </button>
+        <button className={`mobile-nav-btn ${activeTab === 'lounge' ? 'active' : ''}`} onClick={() => setActiveTab('lounge')}>
+          <span className="mobile-nav-icon"><Icons.Chat size={20} /></span>
+          <span>Lounge</span>
+        </button>
         <button className={`mobile-nav-btn timer-tab-btn ${activeTab === 'timer' ? 'active' : ''}`} onClick={() => setActiveTab('timer')}>
           <span className="mobile-nav-icon timer-icon-bubble"><Icons.Timer size={22} /></span>
           <span>Timer</span>
@@ -1400,7 +1404,7 @@ export default function App() {
           <span className="mobile-nav-icon"><Icons.Mocks size={20} /></span>
           <span>Mocks</span>
         </button>
-        <button className={`mobile-nav-btn ${activeTab === 'profile' || activeTab === 'timeline' || activeTab === 'errors' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
+        <button className={`mobile-nav-btn ${activeTab === 'profile' || activeTab === 'timeline' || activeTab === 'errors' || activeTab === 'achievements' || activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
           <span className="mobile-nav-icon"><Icons.Menu size={20} /></span>
           <span>More</span>
         </button>

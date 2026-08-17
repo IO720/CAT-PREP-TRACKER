@@ -34,6 +34,7 @@ export default function StudyLounge({
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
+  const [mobileTab, setMobileTab] = useState('chat'); // 'chat' | 'peers'
   const messagesEndRef = useRef(null);
 
   // Real-time tick to update countdowns for other studying peers smoothly
@@ -184,10 +185,31 @@ export default function StudyLounge({
   return (
     <div className={`discord-lounge-full-layout ${fullPage ? 'full-page-lounge' : ''}`}>
       
+      {/* Mobile View Toggle Switch */}
+      <div className="lounge-mobile-tab-switch">
+        <button 
+          type="button" 
+          className={`lounge-mobile-tab-btn ${mobileTab === 'chat' ? 'active' : ''}`}
+          onClick={() => setMobileTab('chat')}
+        >
+          <Icons.Chat size={15} />
+          <span>Chat Stream</span>
+        </button>
+        <button 
+          type="button" 
+          className={`lounge-mobile-tab-btn ${mobileTab === 'peers' ? 'active' : ''}`}
+          onClick={() => setMobileTab('peers')}
+        >
+          <Icons.Users size={15} />
+          <span>Active Peers ({totalStudying} Studying)</span>
+          {totalStudying > 0 && <span className="live-studying-pulse-dot"></span>}
+        </button>
+      </div>
+
       {/* ========================================================
           LEFT / CENTER: CHAT CHANNEL
          ======================================================== */}
-      <div className="discord-chat-main-area">
+      <div className={`discord-chat-main-area ${mobileTab === 'chat' ? 'mobile-active' : 'mobile-inactive'}`}>
         {/* Channel Top Header */}
         <div className="discord-channel-top-bar">
           <div className="discord-channel-info">
@@ -351,7 +373,7 @@ export default function StudyLounge({
       {/* ========================================================
           RIGHT SIDE: FIXED SERVER MEMBER LIST SIDEBAR
          ======================================================== */}
-      <div className="discord-members-sidebar">
+      <div className={`discord-members-sidebar ${mobileTab === 'peers' ? 'mobile-active' : 'mobile-inactive'}`}>
         
         {/* Search Members Bar */}
         <div className="discord-member-search-box">
