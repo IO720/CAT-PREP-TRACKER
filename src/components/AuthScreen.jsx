@@ -61,7 +61,11 @@ export default function AuthScreen({ onAuthSuccess, onContinueAsGuest }) {
     } catch (err) {
       console.error("Google Auth error:", err);
       if (!err.message?.includes('popup-closed-by-user')) {
-        setAuthError(err.message || 'Google sign-in failed. Please try again.');
+        if (err.code === 'auth/operation-not-allowed' || err.message?.includes('operation-not-allowed')) {
+          setAuthError("Google Sign-In provider is currently disabled in your Firebase console. Please enable 'Google' under Firebase Console > Authentication > Sign-in method, or sign in with Email & Password / Continue as Guest below.");
+        } else {
+          setAuthError(err.message || 'Google sign-in failed. Please try again.');
+        }
       }
     } finally {
       setGoogleLoading(false);
