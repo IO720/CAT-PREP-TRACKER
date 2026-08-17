@@ -47,14 +47,14 @@ const isNativeApp = Capacitor.isNativePlatform();
 const Icons = {
   Logo: ({ size = 24 }) => (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ display: 'block', margin: 'auto' }}>
-      <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#brandGradA)" stroke="currentColor" strokeWidth="1" strokeOpacity="0.2" />
-      <path d="M16 6.5L24 23.5H19.5L16 16L12.5 23.5H8L16 6.5Z" fill="#ffffff" />
-      <path d="M13.5 19.5H18.5" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="16" cy="11.5" r="1.5" fill="#fbbf24" />
+      <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#brandGradA)" stroke="#38bdf8" strokeWidth="1" strokeOpacity="0.3" />
+      <path d="M16 6.5L23 24H19.6L17.9 19.2H14.1L12.4 24H9L16 6.5Z" fill="#ffffff" />
+      <path d="M16 11.8L14.8 16.2H17.2L16 11.8Z" fill="#0f172a" />
+      <circle cx="23" cy="8" r="1.8" fill="#38bdf8" />
       <defs>
         <linearGradient id="brandGradA" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#0284c7" />
-          <stop offset="1" stopColor="#6366f1" />
+          <stop stopColor="#0b1329" />
+          <stop offset="1" stopColor="#1e293b" />
         </linearGradient>
       </defs>
     </svg>
