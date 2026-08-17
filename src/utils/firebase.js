@@ -181,6 +181,7 @@ export const logOutUser = async () => {
   }
   await signOut(auth);
 };
+export const signOutUser = logOutUser;
 
 // 4. Save Study Tracker data to Firestore
 export const saveTrackerToCloud = async (userId, trackerState, studyPlanState, mocksState, streak, solvedQs) => {

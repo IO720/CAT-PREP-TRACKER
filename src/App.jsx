@@ -11,7 +11,8 @@ import {
   subscribeToStudyLounge,
   subscribeToFriendRequests,
   updateUserProfile,
-  getUserProfile
+  getUserProfile,
+  signOutUser
 } from './utils/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
@@ -20,6 +21,7 @@ import {
   formatDateShort 
 } from './utils/dateUtils';
 import PeerInspectorModal from './components/PeerInspectorModal';
+import HeaderProfileDropdown from './components/HeaderProfileDropdown';
 
 import DashboardView from './components/DashboardView';
 import TimelineView from './components/TimelineView';
@@ -1279,23 +1281,36 @@ export default function App() {
             </div>
 
             <div className="header-stats">
-              <div className="header-stat-item date-header-item" title="Current Live Date (OS/Web synced)">
-                <Icons.Calendar size={14} />
-                <span>{formatDateShort(currentDate)}</span>
-              </div>
-              <div className="header-stat-item" title="Consecutive active days">
-                <Icons.Zap size={14} />
+              {/* Streak Info Pill */}
+              <div className="header-stat-item header-streak-pill" title="Active Study Streak">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#f97316" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z" />
+                </svg>
                 <span>{activeStreak}<span className="desktop-inline"> Days</span><span className="mobile-inline">d</span></span>
-              </div>
-              <div className="header-stat-item" title="Practice questions solved">
-                <Icons.Target size={14} />
-                <span>{totalSolved.toLocaleString()}<span className="desktop-inline"> / {grandTargetTotal.toLocaleString()}</span></span>
               </div>
 
               {/* Custom Animated Theme Popover Dropdown */}
               <ThemeSelectorDropdown 
                 currentTheme={theme} 
                 onSelectTheme={handleSelectTheme} 
+              />
+
+              {/* Top Right Profile Shortcut & Actions Dropdown */}
+              <HeaderProfileDropdown
+                user={user}
+                userProfile={userProfile}
+                onInspectSelf={() => handleInspectFriend({ isSelf: true, ...userProfile, id: user?.uid || 'self', uid: user?.uid || 'self' })}
+                onNavigate={(tab) => setActiveTab(tab)}
+                onSignOut={async () => {
+                  if (window.confirm("Are you sure you want to sign out?")) {
+                    await signOutUser();
+                    setIsGuestMode(false);
+                  }
+                }}
+                onSignIn={() => {
+                  setIsGuestMode(false);
+                }}
+                timerState={timerState}
               />
             </div>
           </header>
