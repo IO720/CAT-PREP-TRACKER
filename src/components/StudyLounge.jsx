@@ -327,8 +327,8 @@ export default function StudyLounge({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick 1-Tap Action Sprint Chips */}
-        <div className="discord-quick-chips-bar">
+        {/* Quick 1-Tap Action Sprint Chips (Desktop Only) */}
+        <div className="discord-quick-chips-bar desktop-only-chips">
           {QUICK_CHIPS.map((chip, idx) => (
             <button
               key={idx}
@@ -344,10 +344,32 @@ export default function StudyLounge({
 
         {/* Message Input Composer */}
         <form className="discord-input-composer" onSubmit={handleSendMessage}>
+          {/* Quick Topic / Sprint Dropdown Menu */}
+          <div className="discord-topic-dropdown-wrap">
+            <select
+              className="discord-topic-select-dropdown"
+              value=""
+              onChange={(e) => {
+                const selected = QUICK_CHIPS.find(c => c.label === e.target.value);
+                if (selected) {
+                  handleQuickChipClick(selected);
+                }
+              }}
+              title="Select Topic or Quick Sprint"
+            >
+              <option value="" disabled>⚡ Topic</option>
+              {QUICK_CHIPS.map((c, i) => (
+                <option key={i} value={c.label}>
+                  {c.label} (#{c.tag})
+                </option>
+              ))}
+            </select>
+          </div>
+
           <input
             type="text"
             className="discord-composer-input"
-            placeholder="Message #aspirants-study-hall (Type #QUANT, #LRDI to tag)..."
+            placeholder="Message #aspirants-study-hall (Type #QUANT, #LRDI)..."
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             disabled={sending}

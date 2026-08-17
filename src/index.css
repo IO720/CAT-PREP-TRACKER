@@ -7247,6 +7247,20 @@ html, body {
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
   overflow-x: auto;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.discord-quick-chips-bar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+@media (max-width: 900px) {
+  .discord-quick-chips-bar.desktop-only-chips {
+    display: none !important;
+  }
 }
 
 .discord-quick-chip {
@@ -7267,12 +7281,43 @@ html, body {
   color: #ffffff;
 }
 
+/* Topic Dropdown inside message composer */
+.discord-topic-dropdown-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.discord-topic-select-dropdown {
+  background: var(--bg-tertiary);
+  color: #fb923c;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 9px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.discord-topic-select-dropdown:hover, .discord-topic-select-dropdown:focus {
+  border-color: #5865f2;
+  color: #ffffff;
+}
+
+.discord-topic-select-dropdown option {
+  background: #1e293b;
+  color: #ffffff;
+}
+
 /* Message Composer Input */
 .discord-input-composer {
-  padding: 12px 16px;
+  padding: 10px 14px;
   background: var(--bg-secondary);
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
   border-top: 1px solid var(--border-color);
 }
 
@@ -7297,6 +7342,7 @@ html, body {
   border: none;
   color: #ffffff;
   padding: 0 16px;
+  height: 38px;
   border-radius: var(--radius-md);
   cursor: pointer;
   display: flex;
@@ -7312,6 +7358,26 @@ html, body {
 .discord-send-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Scrollbar Removal */
+.discord-messages-scroll-box,
+.discord-members-list-scroll,
+.discord-tag-filters-bar,
+.discord-quick-chips-bar,
+.discord-lounge-full-layout {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.discord-messages-scroll-box::-webkit-scrollbar,
+.discord-members-list-scroll::-webkit-scrollbar,
+.discord-tag-filters-bar::-webkit-scrollbar,
+.discord-quick-chips-bar::-webkit-scrollbar,
+.discord-lounge-full-layout::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* ========================================================
