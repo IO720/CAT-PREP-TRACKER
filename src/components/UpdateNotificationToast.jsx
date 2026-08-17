@@ -32,7 +32,7 @@ export default function UpdateNotificationToast({ updateData, onDismiss }) {
           onClick={onDismiss}
           title="Dismiss for now"
         >
-          ✕
+          <Icons.X size={14} />
         </button>
       </div>
     </div>

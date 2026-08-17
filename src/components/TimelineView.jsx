@@ -167,9 +167,9 @@ export default function TimelineView({ state, updateWeekStatus, onWeekClick }) {
                             onChange={(e) => handleStatusChange(week.week, e)}
                             className={`timeline-status-select ${week.status === 'Completed' ? 'completed' : week.status === 'In Progress' ? 'in-progress' : 'not-started'}`}
                           >
-                            <option value="Not Started">⏳ Not Started</option>
-                            <option value="In Progress">⚡ In Progress</option>
-                            <option value="Completed">✓ Completed</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
                           </select>
                         </td>
 
@@ -209,9 +209,9 @@ export default function TimelineView({ state, updateWeekStatus, onWeekClick }) {
                         onChange={(e) => handleStatusChange(week.week, e)}
                         className={`week-card-select ${week.status === 'Completed' ? 'completed' : week.status === 'In Progress' ? 'in-progress' : 'not-started'}`}
                       >
-                        <option value="Not Started">⏳ Not Started</option>
-                        <option value="In Progress">⚡ In Progress</option>
-                        <option value="Completed">✓ Completed</option>
+                        <option value="Not Started">Not Started</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
                       </select>
                     </div>
 

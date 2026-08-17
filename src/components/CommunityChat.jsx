@@ -463,7 +463,7 @@ export default function CommunityChat({
         <div className="chat-action-backdrop fade-in" onClick={() => setActiveActionMessage(null)}>
           <div className="chat-action-sheet animate-slide-up" onClick={(e) => e.stopPropagation()}>
             <div className="chat-action-header-text">
-              Double tap a message to 🤠 Edit
+              Double click a message to edit
             </div>
             
             <div className="chat-action-card-container">

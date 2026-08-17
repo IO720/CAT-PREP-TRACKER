@@ -315,7 +315,9 @@ export default function StudyLounge({
       <div className={`hub-channels-sidebar ${mobileTab === 'channels' ? 'mobile-active' : 'mobile-inactive'}`}>
         <div className="hub-server-header">
           <div className="hub-server-title-row">
-            <span className="hub-server-icon-badge">⚡</span>
+            <span className="hub-server-icon-badge">
+              <Icons.Zap size={14} />
+            </span>
             <span className="hub-server-title">Aspirants Study Hall</span>
           </div>
         </div>
@@ -654,7 +656,7 @@ export default function StudyLounge({
               ) : (
                 allStudyingStudents.map((student, idx) => {
                   const timerDisplay = getPeerTimerDisplay(student);
-                  const rankIcon = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+                  const rankIcon = `#${idx + 1}`;
                   
                   return (
                     <div 
@@ -686,9 +688,15 @@ export default function StudyLounge({
                         </div>
 
                         <div className="hub-student-stats-row">
-                          <span>🔥 {student.streak || 0}d streak</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <Icons.Flame size={11} color="#f97316" />
+                            {student.streak || 0}d streak
+                          </span>
                           <span>•</span>
-                          <span>🎯 {student.solvedQs || 0} Qs</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <Icons.Target size={11} color="#38bdf8" />
+                            {student.solvedQs || 0} Qs
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -712,17 +720,17 @@ export default function StudyLounge({
               </span>
             </div>
 
-            <div className="hub-leaderboard-scroll">
+            <div className="hub-channel-members-list">
               {/* Current User Nameplate */}
               <div 
                 className="hub-member-card is-self clickable"
                 onClick={() => onInspectFriend && onInspectFriend({ isSelf: true, ...userProfile, id: currentUser?.uid, uid: currentUser?.uid })}
-                title="Click to view full aspirant profile card"
+                title="Click to view your profile card"
               >
                 <AvatarRenderer 
-                  avatar={userAvatar}
+                  avatar={userProfile?.avatar || currentUser?.photoURL}
                   name={userProfile?.displayName || 'You'}
-                  avatarBg={userAvatarBg}
+                  avatarBg={userProfile?.avatarBg || '#5865f2'}
                   size={36}
                   status={isUserStudying ? 'studying' : 'online'}
                 />
@@ -736,9 +744,15 @@ export default function StudyLounge({
                     <span>{isUserStudying ? `Studying (${userActivity?.activity?.timerText || 'Live'})` : 'Online'}</span>
                   </div>
                   <div className="hub-student-stats-row">
-                    <span>🔥 {userProfile?.streak || 0}d streak</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <Icons.Flame size={11} color="#f97316" />
+                      {userProfile?.streak || 0}d streak
+                    </span>
                     <span>•</span>
-                    <span>🎯 {userProfile?.solvedQs || 0} Qs</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <Icons.Target size={11} color="#38bdf8" />
+                      {userProfile?.solvedQs || 0} Qs
+                    </span>
                   </div>
                 </div>
               </div>
@@ -767,9 +781,15 @@ export default function StudyLounge({
                       <span>{selectedDirectFriend.status === 'studying' ? 'Studying' : selectedDirectFriend.status === 'online' ? 'Online' : 'Offline'}</span>
                     </div>
                     <div className="hub-student-stats-row">
-                      <span>🔥 {selectedDirectFriend.streak || 0}d streak</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        <Icons.Flame size={11} color="#f97316" />
+                        {selectedDirectFriend.streak || 0}d streak
+                      </span>
                       <span>•</span>
-                      <span>🎯 {selectedDirectFriend.solvedQs || 0} Qs</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        <Icons.Target size={11} color="#38bdf8" />
+                        {selectedDirectFriend.solvedQs || 0} Qs
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -797,9 +817,15 @@ export default function StudyLounge({
                         <span>{friend.status === 'studying' ? 'Studying' : friend.status === 'online' ? 'Online' : 'Offline'}</span>
                       </div>
                       <div className="hub-student-stats-row">
-                        <span>🔥 {friend.streak || 0}d streak</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <Icons.Flame size={11} color="#f97316" />
+                          {friend.streak || 0}d streak
+                        </span>
                         <span>•</span>
-                        <span>🎯 {friend.solvedQs || 0} Qs</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <Icons.Target size={11} color="#38bdf8" />
+                          {friend.solvedQs || 0} Qs
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -818,7 +844,7 @@ export default function StudyLounge({
         <div className="chat-action-backdrop fade-in" onClick={() => setActiveActionMessage(null)}>
           <div className="chat-action-sheet animate-slide-up" onClick={(e) => e.stopPropagation()}>
             <div className="chat-action-header-text">
-              Double tap a message to 🤠 Edit
+              Double click a message to edit
             </div>
             
             <div className="chat-action-card-container">

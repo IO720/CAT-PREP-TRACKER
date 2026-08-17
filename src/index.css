@@ -101,7 +101,7 @@
 }
 
 [data-theme="coffee"] {
-  /* Coffee Theme ☕: Espresso, Mocha & Latte Beige */
+  /* Coffee Theme: Espresso, Mocha & Latte Beige */
   --bg-primary: #0e0906;
   --bg-secondary: #19120c;
   --bg-tertiary: #261b12;
@@ -125,7 +125,7 @@
 }
 
 [data-theme="fall"] {
-  /* Fall Season Theme 🍁: Autumn Navy, Moss Olive & Amber Gold */
+  /* Fall Season Theme: Autumn Navy, Moss Olive & Amber Gold */
   --bg-primary: #0d1b2a;
   --bg-secondary: #162638;
   --bg-tertiary: #20354b;
@@ -149,7 +149,7 @@
 }
 
 [data-theme="warm"] {
-  /* Warm Tone Theme 🌅: Slate Teal, Copper Terracotta & Warm Peach */
+  /* Warm Tone Theme: Slate Teal, Copper Terracotta & Warm Peach */
   --bg-primary: #0b1a23;
   --bg-secondary: #152733;
   --bg-tertiary: #223847;
@@ -173,7 +173,7 @@
 }
 
 [data-theme="sunset"] {
-  /* Sun Set Theme 🌇: Deep Ocean Blue-Teal, Mauve Rose & Vibrant Coral Pink */
+  /* Sun Set Theme: Deep Ocean Blue-Teal, Mauve Rose & Vibrant Coral Pink */
   --bg-primary: #17202c;
   --bg-secondary: #232f3e;
   --bg-tertiary: #344356;
@@ -197,7 +197,7 @@
 }
 
 [data-theme="ephemeral"] {
-  /* Ephemeral Theme ✨: Deep Charcoal Blue, Muted Slate, Warm Taupe & Parchment Beige */
+  /* Ephemeral Theme: Deep Charcoal Blue, Muted Slate, Warm Taupe & Parchment Beige */
   --bg-primary: #141a21;
   --bg-secondary: #1f2730;
   --bg-tertiary: #2e3642;
@@ -221,7 +221,7 @@
 }
 
 [data-theme="emerald"] {
-  /* Emerald Forest Theme 🌲: Obsidian Pine, Emerald & Sun Gold */
+  /* Emerald Forest Theme: Obsidian Pine, Emerald & Sun Gold */
   --bg-primary: #06120a;
   --bg-secondary: #0e2113;
   --bg-tertiary: #17331f;
@@ -245,7 +245,7 @@
 }
 
 [data-theme="nordic"] {
-  /* Nordic Midnight Theme 🌌: Polar Void, Midnight Blue & Electric Cyan */
+  /* Nordic Midnight Theme: Polar Void, Midnight Blue & Electric Cyan */
   --bg-primary: #060b14;
   --bg-secondary: #0e1726;
   --bg-tertiary: #1a2438;
