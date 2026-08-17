@@ -7283,53 +7283,72 @@ html, body {
 
 /* Topic Dropdown inside message composer */
 .discord-topic-dropdown-wrap {
+  flex-shrink: 0;
   position: relative;
   display: flex;
   align-items: center;
 }
 
 .discord-topic-select-dropdown {
-  background: var(--bg-tertiary);
+  background: rgba(249, 115, 22, 0.15);
   color: #fb923c;
-  font-weight: 700;
-  font-size: 12px;
-  padding: 9px 8px;
+  font-weight: 800;
+  font-size: 15px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  text-align: center;
+  text-align-last: center;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(249, 115, 22, 0.35);
   cursor: pointer;
   outline: none;
   transition: all 0.15s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.discord-topic-select-dropdown:hover, .discord-topic-select-dropdown:focus {
-  border-color: #5865f2;
-  color: #ffffff;
+.discord-topic-select-dropdown:hover {
+  background: rgba(249, 115, 22, 0.25);
+  border-color: #fb923c;
 }
 
 .discord-topic-select-dropdown option {
   background: #1e293b;
   color: #ffffff;
+  font-size: 13px;
+  text-align: left;
 }
 
 /* Message Composer Input */
 .discord-input-composer {
-  padding: 10px 14px;
+  padding: 8px 10px;
   background: var(--bg-secondary);
   display: flex;
   align-items: center;
   gap: 8px;
   border-top: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .discord-composer-input {
   flex: 1;
-  padding: 10px 14px;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 13px;
   outline: none;
+  box-sizing: border-box;
   transition: border-color 0.15s ease;
 }
 
@@ -7338,11 +7357,13 @@ html, body {
 }
 
 .discord-send-button {
+  flex-shrink: 0;
   background: #5865f2;
   border: none;
   color: #ffffff;
-  padding: 0 16px;
+  width: 40px;
   height: 38px;
+  padding: 0;
   border-radius: var(--radius-md);
   cursor: pointer;
   display: flex;

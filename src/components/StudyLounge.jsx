@@ -355,9 +355,9 @@ export default function StudyLounge({
                   handleQuickChipClick(selected);
                 }
               }}
-              title="Select Topic or Quick Sprint"
+              title="Quick Sprint Topics"
             >
-              <option value="" disabled>⚡ Topic</option>
+              <option value="" disabled>⚡</option>
               {QUICK_CHIPS.map((c, i) => (
                 <option key={i} value={c.label}>
                   {c.label} (#{c.tag})
@@ -369,7 +369,7 @@ export default function StudyLounge({
           <input
             type="text"
             className="discord-composer-input"
-            placeholder="Message #aspirants-study-hall (Type #QUANT, #LRDI)..."
+            placeholder="Message study hall (#QUANT, #LRDI)..."
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             disabled={sending}
