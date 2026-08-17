@@ -1375,37 +1375,44 @@ export default function App() {
         </main>
       </div>
 
-      {/* Streamlined Native Mobile Bottom Navigation (5 Core Tabs) */}
+      {/* Streamlined Native Mobile Bottom Navigation */}
       <nav 
         className="mobile-bottom-nav"
         style={{
-          paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
-          height: 'calc(56px + max(24px, env(safe-area-inset-bottom, 24px)))',
+          paddingBottom: 'max(14px, env(safe-area-inset-bottom, 14px))',
+          paddingTop: '8px',
+          height: 'calc(66px + max(14px, env(safe-area-inset-bottom, 14px)))',
           boxSizing: 'border-box'
         }}
       >
         <button className={`mobile-nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-          <span className="mobile-nav-icon"><Icons.Home size={20} /></span>
+          <span className="mobile-nav-icon"><Icons.Home size={22} /></span>
           <span>Home</span>
         </button>
         <button className={`mobile-nav-btn ${activeTab === 'daily' ? 'active' : ''}`} onClick={() => setActiveTab('daily')}>
-          <span className="mobile-nav-icon"><Icons.Drills size={20} /></span>
+          <span className="mobile-nav-icon"><Icons.Drills size={22} /></span>
           <span>Drills</span>
         </button>
         <button className={`mobile-nav-btn ${activeTab === 'lounge' ? 'active' : ''}`} onClick={() => setActiveTab('lounge')}>
-          <span className="mobile-nav-icon"><Icons.Chat size={20} /></span>
+          <span className="mobile-nav-icon"><Icons.Chat size={22} /></span>
           <span>Lounge</span>
         </button>
-        <button className={`mobile-nav-btn timer-tab-btn ${activeTab === 'timer' ? 'active' : ''}`} onClick={() => setActiveTab('timer')}>
-          <span className="mobile-nav-icon timer-icon-bubble"><Icons.Timer size={22} /></span>
+        <button 
+          className={`mobile-nav-btn ${(timerState?.isRunning || timerState?.isPaused) ? 'timer-is-active' : ''} ${activeTab === 'timer' ? 'active' : ''}`} 
+          onClick={() => setActiveTab('timer')}
+        >
+          <span className="mobile-nav-icon">
+            <Icons.Timer size={22} />
+            {(timerState?.isRunning || timerState?.isPaused) && <span className="nav-timer-live-pip"></span>}
+          </span>
           <span>Timer</span>
         </button>
         <button className={`mobile-nav-btn ${activeTab === 'mocks' ? 'active' : ''}`} onClick={() => setActiveTab('mocks')}>
-          <span className="mobile-nav-icon"><Icons.Mocks size={20} /></span>
+          <span className="mobile-nav-icon"><Icons.Mocks size={22} /></span>
           <span>Mocks</span>
         </button>
         <button className={`mobile-nav-btn ${activeTab === 'profile' || activeTab === 'timeline' || activeTab === 'errors' || activeTab === 'achievements' || activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
-          <span className="mobile-nav-icon"><Icons.Menu size={20} /></span>
+          <span className="mobile-nav-icon"><Icons.Menu size={22} /></span>
           <span>More</span>
         </button>
       </nav>
