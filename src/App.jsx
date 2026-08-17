@@ -29,8 +29,6 @@ import ErrorLogView from './components/ErrorLogView';
 import ProfileView from './components/ProfileView';
 import StudyTimerView from './components/StudyTimerView';
 import StudyLounge from './components/StudyLounge';
-import DownloadAppView from './components/DownloadAppView';
-import MobileOnboardingAuth from './components/MobileOnboardingAuth';
 import FloatingTimerWidget from './components/FloatingTimerWidget';
 import ThemeSelectorDropdown from './components/ThemeSelectorDropdown';
 import ThemeSwitchToast from './components/ThemeSwitchToast';
@@ -40,12 +38,6 @@ import { audioEngine } from './utils/audioUtils';
 import SettingsView from './components/SettingsView';
 import AchievementsView from './components/AchievementsView';
 import { calculateUserBadges } from './utils/badgeUtils';
-
-const isNativeApp = typeof window !== 'undefined' && (
-  window.navigator?.userAgent?.includes('AspirantoMobile') ||
-  window.navigator?.userAgent?.includes('Flutter') ||
-  Boolean(window.isFlutterInAppWebView)
-);
 
 const Icons = {
   Logo: ({ size = 24 }) => (
@@ -219,19 +211,13 @@ export default function App() {
   const [selectedFriendTracker, setSelectedFriendTracker] = useState(null);
   const [loadingFriendTracker, setLoadingFriendTracker] = useState(false);
   const [isEditProfileDirectOpen, setIsEditProfileDirectOpen] = useState(false);
-  const [mobileWebBypass, setMobileWebBypass] = useState(() => {
-    return localStorage.getItem('aspiranto_mobile_web_bypass') === 'true';
-  });
-  const [guestMode, setGuestMode] = useState(() => {
-    return localStorage.getItem('aspiranto_guest_mode') === 'true';
-  });
   const [isMobileScreen, setIsMobileScreen] = useState(() => {
-    return typeof window !== 'undefined' ? (window.innerWidth <= 768 || isNativeApp) : false;
+    return typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
   });
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobileScreen(window.innerWidth <= 768 || isNativeApp);
+      setIsMobileScreen(window.innerWidth <= 768);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -1093,37 +1079,6 @@ export default function App() {
     );
   }
 
-  // Scenario 1: Mobile Web Browser (user opened website on phone browser - show APK download landing)
-  if (!isNativeApp && isMobileScreen && !mobileWebBypass) {
-    return (
-      <div className="app-container" style={{ minHeight: '100vh', display: 'block', padding: 0 }}>
-        <DownloadAppView 
-          onContinueToWeb={() => {
-            localStorage.setItem('aspiranto_mobile_web_bypass', 'true');
-            setMobileWebBypass(true);
-          }}
-          isMobileLanding={true}
-        />
-      </div>
-    );
-  }
-
-  // Scenario 2: Inside Native APK, but user has not created account / logged in yet
-  if (isNativeApp && !user && !guestMode) {
-    return (
-      <MobileOnboardingAuth
-        onAuthSuccess={(u) => {
-          setUser(u);
-          refreshFriendsList();
-        }}
-        onContinueOffline={() => {
-          localStorage.setItem('aspiranto_guest_mode', 'true');
-          setGuestMode(true);
-        }}
-      />
-    );
-  }
-
   return (
     <div className={`app-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       {/* Sidebar Navigation (Hidden on mobile) */}
@@ -1225,16 +1180,6 @@ export default function App() {
             <span className="nav-icon"><Icons.Settings /></span>
             <span className="nav-link-text">Settings</span>
           </button>
-          {!isNativeApp && (
-            <button 
-              className={`nav-link ${activeTab === 'download' ? 'active' : ''}`}
-              onClick={() => setActiveTab('download')}
-              title="Download Android App"
-            >
-              <span className="nav-icon"><Icons.Download /></span>
-              <span className="nav-link-text">Get App</span>
-            </button>
-          )}
         </nav>
 
         <div className="sidebar-footer">
@@ -1279,7 +1224,7 @@ export default function App() {
           >
             <div className="header-brand-title">
               <span className="brand-dot"></span>
-              <span className="header-page-name">{activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'lounge' ? 'Live Study Lounge & Community' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'achievements' ? 'Prestige Achievements & Badges' : activeTab === 'errors' ? 'Error Log' : activeTab === 'profile' ? 'Profile & Study Buddies' : activeTab === 'settings' ? 'Settings & Cloud Management' : activeTab === 'download' ? 'Download Mobile App' : 'Dashboard'}</span>
+              <span className="header-page-name">{activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'lounge' ? 'Live Study Lounge & Community' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'achievements' ? 'Prestige Achievements & Badges' : activeTab === 'errors' ? 'Error Log' : activeTab === 'profile' ? 'Profile & Study Buddies' : activeTab === 'settings' ? 'Settings & Cloud Management' : 'Dashboard'}</span>
             </div>
 
             <div className="header-stats">
@@ -1295,19 +1240,6 @@ export default function App() {
                 <Icons.Target size={14} />
                 <span>{totalSolved.toLocaleString()}<span className="desktop-inline"> / {grandTargetTotal.toLocaleString()}</span></span>
               </div>
-              
-              {/* APK Download Shortcut for Mobile Web users only */}
-              {isMobileScreen && !isNativeApp && (
-                <button 
-                  className="header-stat-item download-header-pill" 
-                  onClick={() => setActiveTab('download')}
-                  title="Download Android APK"
-                  style={{ cursor: 'pointer', border: '1px solid var(--accent-color)', fontWeight: '700' }}
-                >
-                  <Icons.Download size={14} />
-                  <span>APK</span>
-                </button>
-              )}
 
               {/* Custom Animated Theme Popover Dropdown */}
               <ThemeSelectorDropdown 
@@ -1439,9 +1371,6 @@ export default function App() {
               currentTheme={theme}
               onSelectTheme={handleSelectTheme}
             />
-          )}
-          {activeTab === 'download' && (
-            <DownloadAppView />
           )}
         </main>
       </div>
