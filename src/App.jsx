@@ -1259,22 +1259,7 @@ export default function App() {
       <div className="app-main-wrapper">
         {/* Clean Global Header (Hidden when inside Focus Timer) */}
         {activeTab !== 'timer' && (
-          <header 
-            className="global-header"
-            style={isMobileScreen ? { 
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: 'max(env(safe-area-inset-top, 0px), 42px)',
-              paddingBottom: '12px',
-              paddingLeft: 'max(env(safe-area-inset-left, 0px), 16px)',
-              paddingRight: 'max(env(safe-area-inset-right, 0px), 16px)',
-              minHeight: 'calc(52px + max(env(safe-area-inset-top, 0px), 42px))',
-              background: 'var(--bg-secondary)',
-              boxSizing: 'border-box'
-            } : undefined}
-          >
+          <header className="global-header">
             <div className="header-brand-title">
               <span className="brand-dot"></span>
               <span className="header-page-name">{activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'lounge' ? 'Live Study Lounge & Community' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'achievements' ? 'Prestige Achievements & Badges' : activeTab === 'errors' ? 'Error Log' : activeTab === 'profile' ? 'Profile & Study Buddies' : activeTab === 'settings' ? 'Settings & Cloud Management' : 'Dashboard'}</span>

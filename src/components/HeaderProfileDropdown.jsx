@@ -34,11 +34,11 @@ export default function HeaderProfileDropdown({
     }
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('pointerdown', handleClickOutside);
       document.addEventListener('keydown', handleKeyDown);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('pointerdown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
@@ -50,11 +50,25 @@ export default function HeaderProfileDropdown({
 
   return (
     <div className="header-profile-dropdown-container" ref={dropdownRef}>
+      {/* Mobile/Global Transparent Backdrop when Open */}
+      {isOpen && (
+        <div 
+          className="header-dropdown-backdrop" 
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(false);
+          }} 
+        />
+      )}
+
       {/* Trigger Button */}
       <button
         type="button"
         className={`header-profile-trigger-btn ${isOpen ? 'active' : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(prev => !prev);
+        }}
         title="Account & Profile Menu"
         aria-expanded={isOpen}
       >
@@ -73,7 +87,7 @@ export default function HeaderProfileDropdown({
 
       {/* Glassmorphic Dropdown Panel */}
       {isOpen && (
-        <div className="header-profile-dropdown-menu animate-slide-up">
+        <div className="header-profile-dropdown-menu animate-slide-up" onClick={(e) => e.stopPropagation()}>
           {/* Header User Preview Card */}
           <div className="menu-profile-preview-card">
             <div className="preview-top-row">
