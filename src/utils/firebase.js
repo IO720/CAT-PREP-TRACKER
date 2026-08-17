@@ -616,7 +616,7 @@ export const subscribeToStudyLounge = (currentUserId, onPeersUpdate) => {
   }
 };
 
-// 12. Fetch progress of all friends (with fallback)
+// 12. Fetch progress of all friends (Parallelized non-blocking batch)
 export const fetchFriendsProgress = async (currentUserId) => {
   if (!isFirebaseConfigured || !currentUserId) return [];
 
@@ -624,35 +624,38 @@ export const fetchFriendsProgress = async (currentUserId) => {
     const userProfile = await getUserProfile(currentUserId);
     if (!userProfile || !userProfile.friends || userProfile.friends.length === 0) return [];
 
-    const friendsStats = [];
-    for (const friendId of userProfile.friends) {
-      const profile = await getUserProfile(friendId);
-      if (profile) {
-        friendsStats.push({
-          id: profile.uid,
-          name: profile.displayName,
-          avatar: profile.avatar || profile.displayName.charAt(0).toUpperCase(),
-          avatarBg: profile.avatarBg || hashStringToColor(profile.displayName),
-          bio: profile.bio || '',
-          target: profile.target || 'CAT Aspirant',
-          location: profile.location || '',
-          streak: profile.streak || 0,
-          solvedQs: profile.solvedQs || 0,
-          lastActive: "Active now",
-          message: profile.bio || `Solved ${profile.solvedQs || 0} questions total (Streak: ${profile.streak || 0})`
-        });
-      }
-    }
-    return friendsStats;
+    const friendProfiles = await Promise.all(
+      userProfile.friends.map(friendId => getUserProfile(friendId).catch(() => null))
+    );
+
+    return friendProfiles
+      .filter(Boolean)
+      .map(profile => ({
+        id: profile.uid || profile.id,
+        uid: profile.uid || profile.id,
+        name: profile.displayName || 'CAT Aspirant',
+        displayName: profile.displayName || 'CAT Aspirant',
+        avatar: profile.avatar || (profile.displayName || 'P').charAt(0).toUpperCase(),
+        avatarBg: profile.avatarBg || hashStringToColor(profile.displayName),
+        bio: profile.bio || '',
+        target: profile.target || 'CAT Aspirant',
+        location: profile.location || '',
+        streak: profile.streak || 0,
+        solvedQs: profile.solvedQs || 0,
+        lastActive: "Active now",
+        message: profile.bio || `Solved ${profile.solvedQs || 0} questions total (Streak: ${profile.streak || 0})`
+      }));
   } catch (err) {
     console.error("Error fetching friends progress:", err);
     return [];
   }
 };
 
-// 13. Send Live Study Lounge Chat Message
+// 13. Send Live Study Lounge Chat Message (With Payload Sanitization)
 export const sendChatMessage = async (user, text, tag = 'GENERAL', userProfile = null) => {
-  if (!isFirebaseConfigured || !user || !text.trim()) return null;
+  if (!isFirebaseConfigured || !user || !text) return null;
+  const cleanText = text.trim().slice(0, 1000);
+  if (!cleanText) return null;
 
   try {
     const name = userProfile?.displayName || user.displayName || user.name || user.email?.split('@')[0] || 'Aspirant';
@@ -669,7 +672,7 @@ export const sendChatMessage = async (user, text, tag = 'GENERAL', userProfile =
       avatarBg: avatarBg,
       location: location,
       target: target,
-      text: text.trim(),
+      text: cleanText,
       tag: tag,
       timestamp: Date.now(),
       createdAt: new Date().toISOString()

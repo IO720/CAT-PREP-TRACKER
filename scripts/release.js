@@ -74,10 +74,10 @@ function bumpVersion() {
   fs.copyFileSync(apkSrc, apkDest);
   console.log('✓ Fresh APK copied to public/Aspiranto-v1.0.bin');
 
-  // 7. Deploy to Firebase
-  console.log('\n☁️ Deploying live hosting to Firebase...');
+  // 7. Deploy to Firebase (Hosting + Firestore Rules)
+  console.log('\n☁️ Deploying live hosting & secured Firestore rules to Firebase...');
   const firebaseBin = path.join(rootDir, 'node_modules', '.bin', process.platform === 'win32' ? 'firebase.cmd' : 'firebase');
-  execSync(`"${firebaseBin}" deploy --only hosting --non-interactive`, { cwd: rootDir, stdio: 'inherit' });
+  execSync(`"${firebaseBin}" deploy --only hosting,firestore:rules --non-interactive`, { cwd: rootDir, stdio: 'inherit' });
 
   console.log(`\n🎉 Release v${newVersion} Successfully Built, Compiled & Deployed!`);
   console.log(`👉 Web: https://cat-tracker-1538d.web.app`);
