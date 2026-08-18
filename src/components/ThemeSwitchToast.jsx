@@ -23,6 +23,35 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
         
         {/* Animated SVG Cartoon Artwork based on theme */}
         <div className="theme-toast-art">
+          {activeTheme === 'dark-olive' && (
+            <svg viewBox="0 0 100 100" className="theme-svg-art olive-anim">
+              <path d="M20 80 Q45 60 75 25" stroke="#6d8c52" strokeWidth="4" strokeLinecap="round" fill="none" />
+              <ellipse cx="36" cy="58" rx="8" ry="15" transform="rotate(-40 36 58)" fill="#556b3b" />
+              <ellipse cx="58" cy="42" rx="8" ry="15" transform="rotate(45 58 42)" fill="#829f63" />
+              <ellipse cx="76" cy="24" rx="7" ry="12" transform="rotate(-15 76 24)" fill="#829f63" />
+              <circle cx="46" cy="65" r="6" fill="#e6caa4" />
+              <circle cx="66" cy="48" r="5" fill="#e6caa4" />
+            </svg>
+          )}
+
+          {activeTheme === 'plum-velvet' && (
+            <svg viewBox="0 0 100 100" className="theme-svg-art plum-anim">
+              <polygon points="50,15 80,38 70,82 30,82 20,38" fill="#6b1d52" opacity="0.9" />
+              <polygon points="50,15 70,38 50,55 30,38" fill="#aa5482" />
+              <polygon points="50,55 70,82 30,82" fill="#3d2639" />
+              <circle cx="50" cy="50" r="4" fill="#faeef5" />
+            </svg>
+          )}
+
+          {activeTheme === 'slate-terracotta' && (
+            <svg viewBox="0 0 100 100" className="theme-svg-art terracotta-anim">
+              <circle cx="65" cy="35" r="18" fill="#e8b2a2" opacity="0.95" />
+              <path d="M10 75 L40 38 L65 65 L80 48 L95 75 Z" fill="#354c5c" />
+              <path d="M30 75 L55 46 L75 75 Z" fill="#9e6b6b" opacity="0.9" />
+              <rect x="10" y="75" width="85" height="12" fill="#223342" rx="3" />
+            </svg>
+          )}
+
           {activeTheme === 'crimson-velvet' && (
             <svg viewBox="0 0 100 100" className="theme-svg-art crimson-anim">
               <circle cx="50" cy="50" r="30" fill="#b81432" opacity="0.9" />
@@ -132,7 +161,7 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
           )}
 
           {/* Universal Fallback icon if no artwork matched */}
-          {!['crimson-velvet', 'sage-frost', 'nordic-slate', 'coffee', 'fall', 'warm', 'sunset', 'ephemeral', 'emerald', 'nordic', 'dark', 'light'].includes(activeTheme) && (
+          {!['dark-olive', 'plum-velvet', 'slate-terracotta', 'crimson-velvet', 'sage-frost', 'nordic-slate', 'coffee', 'fall', 'warm', 'sunset', 'ephemeral', 'emerald', 'nordic', 'dark', 'light'].includes(activeTheme) && (
             <div className="theme-fallback-icon-wrap" style={{ color: themeObj.colors[3] || 'var(--accent-color, #38bdf8)' }}>
               {ActiveIcon && <ActiveIcon />}
             </div>

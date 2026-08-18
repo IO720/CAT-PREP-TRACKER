@@ -72,6 +72,28 @@ const ThemeIcons = {
       <circle cx="12" cy="12" r="10"></circle>
       <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
     </svg>
+  ),
+  darkOlive: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22C12 22 20 18 20 12C20 6 12 2 12 2C12 2 4 6 4 12C4 18 12 22 12 22Z"></path>
+      <path d="M12 2V22"></path>
+      <path d="M12 7C14.5 7 17 8.5 17 11"></path>
+      <path d="M12 15C9.5 15 7 13.5 7 11"></path>
+    </svg>
+  ),
+  plumVelvet: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 3h12l4 6-10 12L2 9l4-6z"></path>
+      <path d="M10 3v6l-4 3"></path>
+      <path d="M14 3v6l4 3"></path>
+      <path d="M2 9h20"></path>
+    </svg>
+  ),
+  slateTerracotta: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m8 3 4 8 5-5 5 15H2L8 3z"></path>
+      <circle cx="17" cy="6" r="2"></circle>
+    </svg>
   )
 };
 
@@ -87,6 +109,24 @@ export const THEMES = [
     name: 'Pure Light', 
     IconComponent: ThemeIcons.light, 
     colors: ['#f8fafc', '#ffffff', '#e2e8f0', '#0f172a']
+  },
+  { 
+    id: 'dark-olive', 
+    name: 'Dark Olive', 
+    IconComponent: ThemeIcons.darkOlive, 
+    colors: ['#151a14', '#243022', '#6d8c52', '#e6caa4']
+  },
+  { 
+    id: 'plum-velvet', 
+    name: 'Plum Velvet', 
+    IconComponent: ThemeIcons.plumVelvet, 
+    colors: ['#16131a', '#36243b', '#6b1d52', '#aa5482']
+  },
+  { 
+    id: 'slate-terracotta', 
+    name: 'Slate Terracotta', 
+    IconComponent: ThemeIcons.slateTerracotta, 
+    colors: ['#1c2834', '#2b3f4f', '#9e6b6b', '#e8b2a2']
   },
   { 
     id: 'coffee', 
@@ -201,7 +241,7 @@ export default function ThemeSelectorDropdown({ currentTheme, onSelectTheme }) {
         <div className="theme-popover-menu">
           <div className="popover-header">
             <span>Color Tone Themes</span>
-            <span className="popover-sub font-mono">9 TONES</span>
+            <span className="popover-sub font-mono">{THEMES.length} TONES</span>
           </div>
 
           <div className="popover-themes-list">

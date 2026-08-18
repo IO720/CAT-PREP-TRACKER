@@ -340,6 +340,78 @@
   --heatmap-glow: rgba(43, 122, 68, 0.35);
 }
 
+[data-theme="dark-olive"] {
+  /* Dark Olive Theme: Deep Moss Olive, Forest Green & Warm Sand */
+  --bg-primary: #151a14;
+  --bg-secondary: #222b1f;
+  --bg-tertiary: #303d2c;
+  --text-primary: #f5eedf;
+  --text-secondary: #a9be9a;
+  --text-tertiary: #6b8260;
+  --border-color: #3b4c37;
+  --border-color-hover: #526b4d;
+  --accent-color: #e6caa4;
+  --accent-secondary: #6d8c52;
+  --accent-text: #151a14;
+  --accent-glow: rgba(230, 202, 164, 0.22);
+  --card-shadow: 0 0 0 1px #3b4c37;
+
+  --heatmap-level-0: #222b1f;
+  --heatmap-level-1: #384d30;
+  --heatmap-level-2: #556b3b;
+  --heatmap-level-3: #829f63;
+  --heatmap-level-4: #e6caa4;
+  --heatmap-glow: rgba(230, 202, 164, 0.45);
+}
+
+[data-theme="plum-velvet"] {
+  /* Plum Velvet Theme: Midnight Violet, Deep Plum & Orchid Rose */
+  --bg-primary: #16131a;
+  --bg-secondary: #261b2a;
+  --bg-tertiary: #3b243e;
+  --text-primary: #faedf5;
+  --text-secondary: #cba2bd;
+  --text-tertiary: #7d5b74;
+  --border-color: #4a2d4f;
+  --border-color-hover: #693b70;
+  --accent-color: #aa5482;
+  --accent-secondary: #6b1d52;
+  --accent-text: #ffffff;
+  --accent-glow: rgba(170, 84, 130, 0.25);
+  --card-shadow: 0 0 0 1px #4a2d4f;
+
+  --heatmap-level-0: #261b2a;
+  --heatmap-level-1: #3d2639;
+  --heatmap-level-2: #6b1d52;
+  --heatmap-level-3: #aa5482;
+  --heatmap-level-4: #d880b0;
+  --heatmap-glow: rgba(170, 84, 130, 0.45);
+}
+
+[data-theme="slate-terracotta"] {
+  /* Slate Terracotta Theme: Deep Slate Navy, Storm Ocean & Terracotta Peach */
+  --bg-primary: #1c2834;
+  --bg-secondary: #273847;
+  --bg-tertiary: #354b5e;
+  --text-primary: #faeee9;
+  --text-secondary: #c9aba4;
+  --text-tertiary: #7d6b67;
+  --border-color: #3f596e;
+  --border-color-hover: #547590;
+  --accent-color: #e8b2a2;
+  --accent-secondary: #9e6b6b;
+  --accent-text: #1c2834;
+  --accent-glow: rgba(232, 178, 162, 0.25);
+  --card-shadow: 0 0 0 1px #3f596e;
+
+  --heatmap-level-0: #273847;
+  --heatmap-level-1: #354c5c;
+  --heatmap-level-2: #607584;
+  --heatmap-level-3: #9e6b6b;
+  --heatmap-level-4: #e8b2a2;
+  --heatmap-glow: rgba(232, 178, 162, 0.45);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -1934,6 +2006,20 @@ button, input, select, textarea {
 .drill-text.strikethrough {
   text-decoration: line-through;
   color: var(--text-tertiary);
+}
+
+.drill-timer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(234, 179, 8, 0.12);
+  color: var(--accent-color);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  letter-spacing: 0.2px;
 }
 
 .drill-counter-row {
@@ -3738,12 +3824,7 @@ html, body {
     justify-content: space-between !important;
   }
 
-  .radial-ring-wrapper {
-    width: 230px !important;
-    height: 230px !important;
-  }
-
-  .minimal-radial-svg {
+  .static-timer-circle {
     width: 230px !important;
     height: 230px !important;
   }
@@ -3908,41 +3989,25 @@ html, body {
   border-color: var(--border-color-hover);
 }
 
-.radial-ring-wrapper {
-  position: relative;
-  width: 280px;
-  height: 280px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.minimal-radial-svg {
-  transform: rotate(-90deg);
-}
-
-.radial-ring-bg {
-  stroke: var(--bg-tertiary);
-  stroke-width: 8;
-  fill: transparent;
-}
-
-.radial-ring-fill {
-  stroke: url(#ringGrad);
-  stroke-width: 8;
-  stroke-linecap: round;
-  fill: transparent;
-  transition: stroke-dashoffset 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.radial-ring-content {
-  position: absolute;
+.static-timer-circle {
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 3px solid var(--border-color);
+  background: radial-gradient(circle, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  pointer-events: none;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+}
+
+.minimal-timer-stage.is-running .static-timer-circle {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 25px var(--accent-glow), inset 0 0 15px rgba(234, 179, 8, 0.05);
 }
 
 .minimal-time-readout {
@@ -4855,6 +4920,64 @@ html, body {
 .theme-svg-art {
   width: 100%;
   height: 100%;
+}
+
+/* Unique Theme Artwork Keyframe Animations */
+.olive-anim {
+  animation: oliveSway 2.4s ease-in-out infinite alternate;
+  transform-origin: 20px 80px;
+}
+
+@keyframes oliveSway {
+  0% { transform: rotate(-6deg) scale(0.96); }
+  50% { transform: rotate(5deg) scale(1.04); }
+  100% { transform: rotate(-2deg) scale(1); }
+}
+
+.plum-anim {
+  animation: plumPulse 2s ease-in-out infinite;
+}
+
+@keyframes plumPulse {
+  0% { transform: scale(0.92) rotate(0deg); filter: drop-shadow(0 0 2px rgba(170, 84, 130, 0.4)); }
+  50% { transform: scale(1.08) rotate(4deg); filter: drop-shadow(0 0 10px rgba(170, 84, 130, 0.9)); }
+  100% { transform: scale(0.92) rotate(0deg); filter: drop-shadow(0 0 2px rgba(170, 84, 130, 0.4)); }
+}
+
+.terracotta-anim {
+  animation: terracottaRise 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes terracottaRise {
+  0% { transform: translateY(3px) scale(0.96); }
+  100% { transform: translateY(-3px) scale(1.04); }
+}
+
+.crimson-anim {
+  animation: crimsonPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes crimsonPulse {
+  0%, 100% { transform: scale(0.95); filter: drop-shadow(0 0 3px rgba(201, 24, 59, 0.4)); }
+  50% { transform: scale(1.06); filter: drop-shadow(0 0 12px rgba(201, 24, 59, 0.8)); }
+}
+
+.sage-anim {
+  animation: sageFloat 2s ease-in-out infinite alternate;
+}
+
+@keyframes sageFloat {
+  0% { transform: rotate(-4deg) translateY(2px); }
+  100% { transform: rotate(4deg) translateY(-2px); }
+}
+
+.slate-anim {
+  animation: slateSlide 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes slateSlide {
+  0% { transform: translateY(2px) scale(0.98); }
+  100% { transform: translateY(-2px) scale(1.02); }
 }
 
 .toast-tag {

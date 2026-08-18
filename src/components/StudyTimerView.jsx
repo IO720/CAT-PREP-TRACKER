@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { stripEmojis } from '../utils/textUtils';
 
 export default function StudyTimerView({
   timerState,
@@ -7,6 +8,7 @@ export default function StudyTimerView({
   onResumeTimer,
   onResetTimer,
   onFinishTimer,
+  onUpdateNotes,
   todaySessions = [],
   todayTotalHours = 0,
   onDeleteSession,
@@ -31,7 +33,7 @@ export default function StudyTimerView({
   const [customMinutes, setCustomMinutes] = useState(45);
   const [timerMode, setTimerMode] = useState(mode || 'pomodoro');
   const [currentSubject, setCurrentSubject] = useState(subject || 'Quant');
-  const [notes, setNotes] = useState(sessionNotes || '');
+  const [notes, setNotes] = useState(stripEmojis(sessionNotes || ''));
 
   useEffect(() => {
     if (!isRunning && !isPaused) {
@@ -45,14 +47,6 @@ export default function StudyTimerView({
     const remainder = secs % 60;
     return `${String(mins).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
   };
-
-  const progress = totalSeconds > 0 ? (totalSeconds - secondsLeft) / totalSeconds : 0;
-  const progressPercent = Math.min(100, Math.max(0, Math.round(progress * 100)));
-
-  // Circle dimensions for 260px SVG ring
-  const circleRadius = 110;
-  const circumference = 2 * Math.PI * circleRadius;
-  const strokeOffset = circumference - (progress * circumference);
 
   const handleStart = () => {
     let targetMins = selectedDuration;
@@ -89,49 +83,13 @@ export default function StudyTimerView({
         </div>
       </div>
 
-      {/* Main Center Stage: Pure Circular Progression */}
+      {/* Main Center Stage: Pure Static Circular Counter */}
       <div className={`minimal-timer-stage ${isRunning ? 'is-running' : ''}`}>
         
-        {/* Sleek SVG Radial Progress Ring */}
-        <div className="radial-ring-wrapper">
-          <svg width="280" height="280" viewBox="0 0 260 260" className="minimal-radial-svg">
-            <defs>
-              <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="var(--accent-color)" />
-                <stop offset="100%" stopColor="var(--accent-secondary)" />
-              </linearGradient>
-              <filter id="ringGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="6" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-            </defs>
-
-            {/* Background Track Circle */}
-            <circle
-              cx="130"
-              cy="130"
-              r={circleRadius}
-              className="radial-ring-bg"
-            />
-
-            {/* Dynamic Progress Circle */}
-            <circle
-              cx="130"
-              cy="130"
-              r={circleRadius}
-              className="radial-ring-fill"
-              style={{
-                strokeDasharray: circumference,
-                strokeDashoffset: strokeOffset
-              }}
-              filter="url(#ringGlow)"
-            />
-          </svg>
-
-          {/* Time Typography inside the Ring */}
-          <div className="radial-ring-content">
-            <div className="minimal-time-readout">{formatTime(secondsLeft)}</div>
-            <div className="minimal-sub-readout">{currentSubject} Focus • {progressPercent}% Completed</div>
+        <div className="static-timer-circle">
+          <div className="minimal-time-readout">{formatTime(secondsLeft)}</div>
+          <div className="minimal-sub-readout">
+            {currentSubject} Focus {timerMode === 'stopwatch' ? '• Stopwatch' : ''}
           </div>
         </div>
 
@@ -153,7 +111,7 @@ export default function StudyTimerView({
                 </svg>
                 <span>Pause</span>
               </button>
-              <button className="btn-primary finish-btn control-btn" onClick={onFinishTimer}>
+              <button className="btn-primary finish-btn control-btn" onClick={() => onFinishTimer(notes)}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
@@ -168,7 +126,7 @@ export default function StudyTimerView({
                 </svg>
                 <span>Resume</span>
               </button>
-              <button className="btn-primary finish-btn control-btn" onClick={onFinishTimer}>
+              <button className="btn-primary finish-btn control-btn" onClick={() => onFinishTimer(notes)}>
                 <span>Log Time</span>
               </button>
               <button className="btn-secondary control-btn reset-control-btn" onClick={onResetTimer}>
@@ -256,7 +214,11 @@ export default function StudyTimerView({
             className="day-textarea minimal-notes-input"
             placeholder="e.g. Practicing Time & Work Level-2 sets..."
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={(e) => {
+              const clean = stripEmojis(e.target.value);
+              setNotes(clean);
+              if (onUpdateNotes) onUpdateNotes(clean);
+            }}
           />
         </div>
 

@@ -20,6 +20,7 @@ import {
   fetchWebOrOsDate, 
   formatDateShort 
 } from './utils/dateUtils';
+import { stripEmojis } from './utils/textUtils';
 import PeerInspectorModal from './components/PeerInspectorModal';
 import HeaderProfileDropdown from './components/HeaderProfileDropdown';
 
@@ -859,23 +860,68 @@ export default function App() {
 
   // Add recorded study session to today's tracker day
   const addStudySession = (session) => {
+    const cleanNotes = session.notes ? stripEmojis(session.notes) : '';
+    const cleanSubject = stripEmojis(session.subject || 'General');
+    const cleanSession = {
+      ...session,
+      subject: cleanSubject,
+      notes: cleanNotes
+    };
+
     setState(prev => {
       const todayPosition = getTodayTrackerPosition(prev.settings?.startDate);
       const updatedTracker = { ...prev.tracker };
       const monthWeeks = updatedTracker[todayPosition.activeMonth] || [];
+      const subjKey = cleanSubject.toLowerCase().trim();
 
       updatedTracker[todayPosition.activeMonth] = monthWeeks.map(week => {
         if (week.week === todayPosition.activeWeek) {
           const updatedDays = week.days.map(day => {
             if (day.day === todayPosition.dayName) {
               const prevSessions = day.sessions || [];
-              const newSessions = [session, ...prevSessions];
+              const newSessions = [cleanSession, ...prevSessions];
               const prevHours = day.studyHours || 0;
-              const addedHours = (session.durationMinutes || 0) / 60;
+              const addedHours = (cleanSession.durationMinutes || 0) / 60;
+
+              // Subject drill synchronization
+              let newQuantCompleted = day.quantCompleted;
+              let newQuantCount = day.quantCount;
+              let newLrdiCompleted = day.lrdiCompleted;
+              let newLrdiCount = day.lrdiCount;
+              let newVarcCompleted = day.varcCompleted;
+              let newVarcCount = day.varcCount;
+
+              if (subjKey === 'quant') {
+                newQuantCompleted = true;
+                if (!newQuantCount || newQuantCount === 0) newQuantCount = 18;
+              } else if (subjKey === 'lrdi') {
+                newLrdiCompleted = true;
+                if (!newLrdiCount || newLrdiCount === 0) newLrdiCount = 4;
+              } else if (subjKey === 'varc') {
+                newVarcCompleted = true;
+                if (!newVarcCount || newVarcCount === 0) newVarcCount = 4;
+              }
+
+              // Append session note to day.notes without emojis
+              let updatedNotes = day.notes || '';
+              if (cleanNotes) {
+                const noteEntry = `[${cleanSubject} Session (${cleanSession.durationMinutes}m)]: ${cleanNotes}`;
+                updatedNotes = updatedNotes.trim()
+                  ? `${updatedNotes.trim()}\n${noteEntry}`
+                  : noteEntry;
+              }
+
               return {
                 ...day,
                 studyHours: Math.round((prevHours + addedHours) * 10) / 10,
-                sessions: newSessions
+                sessions: newSessions,
+                quantCompleted: newQuantCompleted,
+                quantCount: newQuantCount,
+                lrdiCompleted: newLrdiCompleted,
+                lrdiCount: newLrdiCount,
+                varcCompleted: newVarcCompleted,
+                varcCount: newVarcCount,
+                notes: updatedNotes
               };
             }
             return day;
@@ -979,7 +1025,15 @@ export default function App() {
     }
   };
 
-  const handleFinishTimer = () => {
+  const handleUpdateTimerNotes = (notes) => {
+    setTimerState(prev => ({ ...prev, sessionNotes: notes }));
+  };
+
+  const handleFinishTimer = (overrideNotes) => {
+    const finalNotes = typeof overrideNotes === 'string'
+      ? overrideNotes
+      : (timerState.sessionNotes || '');
+
     const now = new Date();
     const endTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const startMs = timerState.startTimeMs || (now.getTime() - (timerState.totalSeconds - timerState.secondsLeft) * 1000);
@@ -1007,7 +1061,7 @@ export default function App() {
       subject: timerState.subject,
       mode: timerState.mode,
       visualTheme: timerState.visualTheme,
-      notes: timerState.sessionNotes,
+      notes: finalNotes,
       timestamp: Date.now()
     };
 
@@ -1020,13 +1074,79 @@ export default function App() {
       isPaused: false,
       startTimeStr: null,
       startTimeMs: null,
-      lastTickMs: null
+      lastTickMs: null,
+      sessionNotes: ''
     };
     setTimerState(resetTimer);
     if (isFirebaseConfigured && user) {
       updateUserPresence(user, resetTimer, activeStreak, totalSolved);
     }
   };
+
+  // Tab visibility synchronization - immediate wall-clock reconciliation on tab refocus
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && timerState.isRunning) {
+        setTimerState(prev => {
+          if (!prev.isRunning) return prev;
+          const nowMs = Date.now();
+          const lastMs = prev.lastTickMs || nowMs;
+          const deltaSecs = Math.max(0, Math.floor((nowMs - lastMs) / 1000));
+          if (deltaSecs <= 0) return prev;
+
+          if (prev.mode === 'stopwatch') {
+            return {
+              ...prev,
+              secondsLeft: prev.secondsLeft + deltaSecs,
+              lastTickMs: nowMs
+            };
+          }
+
+          if (prev.secondsLeft <= deltaSecs) {
+            const now = new Date();
+            const endTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const startMs = prev.startTimeMs || (now.getTime() - prev.totalSeconds * 1000);
+            const startObj = new Date(startMs);
+            const startTimeStr = prev.startTimeStr || startObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const elapsedMins = Math.max(1, Math.round(prev.totalSeconds / 60));
+
+            const sessionObj = {
+              id: 'sess_' + Date.now(),
+              startTime: startTimeStr,
+              endTime: endTimeStr,
+              durationMinutes: elapsedMins,
+              subject: prev.subject,
+              mode: prev.mode,
+              visualTheme: prev.visualTheme,
+              notes: prev.sessionNotes,
+              timestamp: Date.now()
+            };
+
+            addStudySession(sessionObj);
+
+            return {
+              ...prev,
+              secondsLeft: 0,
+              isRunning: false,
+              isPaused: false,
+              startTimeStr: null,
+              startTimeMs: null,
+              lastTickMs: null
+            };
+          }
+
+          return {
+            ...prev,
+            secondsLeft: prev.secondsLeft - deltaSecs,
+            lastTickMs: nowMs
+          };
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [timerState.isRunning]);
 
   // Timer Tick Effect with Background Tab Drift & Throttle Recovery
   useEffect(() => {
@@ -1352,6 +1472,7 @@ export default function App() {
               onResumeTimer={handleResumeTimer}
               onResetTimer={handleResetTimer}
               onFinishTimer={handleFinishTimer}
+              onUpdateNotes={handleUpdateTimerNotes}
               todaySessions={todaySessions}
               todayTotalHours={todayTotalHours}
               onDeleteSession={handleDeleteSession}

@@ -5,6 +5,7 @@ import {
   isToday, 
   getTodayTrackerPosition 
 } from '../utils/dateUtils';
+import { stripEmojis } from '../utils/textUtils';
 
 export default function DailyTrackerView({ 
   state, 
@@ -157,6 +158,15 @@ export default function DailyTrackerView({
           const dayDateFormatted = formatDateMonthDay(dayCalculatedDate);
           const dayIsToday = isToday(activeMonth, activeWeek, day.day, startDateStr);
 
+          // Subject-specific timer minutes
+          const quantSessions = (day.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'quant');
+          const lrdiSessions = (day.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'lrdi');
+          const varcSessions = (day.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'varc');
+
+          const quantMins = quantSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+          const lrdiMins = lrdiSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+          const varcMins = varcSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+
           return (
             <div key={dIdx} className={`day-panel ${dayIsToday ? 'today-panel' : ''}`}>
               <div className="day-header">
@@ -199,7 +209,8 @@ export default function DailyTrackerView({
                   <div className="sessions-chips-list">
                     {day.sessions.map((s, sIdx) => (
                       <span key={s.id || sIdx} className="day-session-chip">
-                        {s.startTime} - {s.endTime} ({s.durationMinutes}m {s.subject})
+                        {s.startTime} - {s.endTime} ({s.durationMinutes}m {stripEmojis(s.subject)})
+                        {s.notes && ` - "${stripEmojis(s.notes)}"`}
                       </span>
                     ))}
                   </div>
@@ -219,7 +230,14 @@ export default function DailyTrackerView({
                       onChange={(e) => handleCheckboxChange(activeMonth, activeWeek, day.day, 'quant', e.target.checked, e)}
                     />
                     <div className="drill-text">
-                      <div style={{ fontWeight: 600 }}>Quant Practice</div>
+                      <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <span>Quant Practice</span>
+                        {quantMins > 0 && (
+                          <span className="drill-timer-chip" title="Total Quant time studied from Timer">
+                            Timer: {quantMins}m
+                          </span>
+                        )}
+                      </div>
                       <div className={`drill-text ${day.quantCompleted ? 'strikethrough' : ''}`} style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
                         {day.quantTarget}
                       </div>
@@ -248,7 +266,14 @@ export default function DailyTrackerView({
                       onChange={(e) => handleCheckboxChange(activeMonth, activeWeek, day.day, 'lrdi', e.target.checked, e)}
                     />
                     <div className="drill-text">
-                      <div style={{ fontWeight: 600 }}>LRDI Practice</div>
+                      <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <span>LRDI Practice</span>
+                        {lrdiMins > 0 && (
+                          <span className="drill-timer-chip" title="Total LRDI time studied from Timer">
+                            Timer: {lrdiMins}m
+                          </span>
+                        )}
+                      </div>
                       <div className={`drill-text ${day.lrdiCompleted ? 'strikethrough' : ''}`} style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
                         {day.lrdiTarget}
                       </div>
@@ -277,7 +302,14 @@ export default function DailyTrackerView({
                       onChange={(e) => handleCheckboxChange(activeMonth, activeWeek, day.day, 'varc', e.target.checked, e)}
                     />
                     <div className="drill-text">
-                      <div style={{ fontWeight: 600 }}>VARC Practice</div>
+                      <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <span>VARC Practice</span>
+                        {varcMins > 0 && (
+                          <span className="drill-timer-chip" title="Total VARC time studied from Timer">
+                            Timer: {varcMins}m
+                          </span>
+                        )}
+                      </div>
                       <div className={`drill-text ${day.varcCompleted ? 'strikethrough' : ''}`} style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
                         {day.varcTarget}
                       </div>
@@ -306,7 +338,7 @@ export default function DailyTrackerView({
                   className="day-textarea"
                   placeholder="e.g., Silly mistake in Percentage formula logic. Need to focus on Games & Tournaments set constraints..."
                   value={day.notes}
-                  onChange={(e) => updateDayNotes(activeMonth, activeWeek, day.day, e.target.value)}
+                  onChange={(e) => updateDayNotes(activeMonth, activeWeek, day.day, stripEmojis(e.target.value))}
                 />
               </div>
             </div>
