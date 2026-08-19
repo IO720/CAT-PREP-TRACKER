@@ -380,9 +380,21 @@ export default function DashboardView({
                           )}
                         </div>
                         <div className="buddy-live-stats">
-                          <span>🔥 {friend.streak || 0}d streak</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="#f97316" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z" />
+                            </svg>
+                            {friend.streak || 0}d streak
+                          </span>
                           <span>•</span>
-                          <span>🎯 {friend.solvedQs || 0} Qs solved</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10"></circle>
+                              <circle cx="12" cy="12" r="6"></circle>
+                              <circle cx="12" cy="12" r="2"></circle>
+                            </svg>
+                            {friend.solvedQs || 0} Qs solved
+                          </span>
                         </div>
                       </div>
                     </div>

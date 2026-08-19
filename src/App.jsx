@@ -37,6 +37,8 @@ import StudyLounge from './components/StudyLounge';
 import FloatingTimerWidget from './components/FloatingTimerWidget';
 import ThemeSelectorDropdown from './components/ThemeSelectorDropdown';
 import ThemeSwitchToast from './components/ThemeSwitchToast';
+import ThemeRedeemModal from './components/ThemeRedeemModal';
+import { getUnlockedThemes } from './utils/themeRedemption';
 import UpdateNotificationToast from './components/UpdateNotificationToast';
 import { checkForAppUpdate } from './utils/versionCheck';
 import { audioEngine } from './utils/audioUtils';
@@ -212,6 +214,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [theme, setTheme] = useState(state.settings?.theme || 'dark');
   const [showThemeToast, setShowThemeToast] = useState(false);
+  const [unlockedThemes, setUnlockedThemes] = useState(() => getUnlockedThemes());
+  const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
+  const [redeemPreselectTheme, setRedeemPreselectTheme] = useState(null);
   const [appLoading, setAppLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [isGuestMode, setIsGuestMode] = useState(() => {
@@ -441,6 +446,22 @@ export default function App() {
     solvedQs: totalSolved,
     mocksCount: totalMocksCount
   });
+
+  const handleOpenRedeemModal = (themeId = null) => {
+    setRedeemPreselectTheme(themeId);
+    setIsRedeemModalOpen(true);
+  };
+
+  const handleThemeUnlocked = (newUnlockedList, appliedThemeId = null, shouldApply = false) => {
+    if (newUnlockedList) {
+      setUnlockedThemes(newUnlockedList);
+    } else {
+      setUnlockedThemes(getUnlockedThemes());
+    }
+    if (shouldApply && appliedThemeId) {
+      handleSelectTheme(appliedThemeId);
+    }
+  };
 
   // Sync theme changes to HTML
   useEffect(() => {
@@ -1538,7 +1559,9 @@ export default function App() {
               {/* Custom Animated Theme Popover Dropdown */}
               <ThemeSelectorDropdown 
                 currentTheme={theme} 
-                onSelectTheme={handleSelectTheme} 
+                onSelectTheme={handleSelectTheme}
+                unlockedThemes={unlockedThemes}
+                onOpenRedeemModal={handleOpenRedeemModal}
               />
 
               {/* Top Right Profile Shortcut & Actions Dropdown */}
@@ -1696,6 +1719,9 @@ export default function App() {
               fileInputRef={fileInputRef}
               currentTheme={theme}
               onSelectTheme={handleSelectTheme}
+              unlockedThemes={unlockedThemes}
+              onOpenRedeemModal={handleOpenRedeemModal}
+              onThemeUnlocked={handleThemeUnlocked}
             />
           )}
         </main>
@@ -1792,6 +1818,15 @@ export default function App() {
       <TermsAndPrivacyModal 
         isOpen={isTermsModalOpen} 
         onClose={() => setIsTermsModalOpen(false)} 
+      />
+
+      {/* Premium Theme VIP Code Redemption Modal */}
+      <ThemeRedeemModal
+        isOpen={isRedeemModalOpen}
+        onClose={() => setIsRedeemModalOpen(false)}
+        preselectedThemeId={redeemPreselectTheme}
+        unlockedThemes={unlockedThemes}
+        onThemeUnlocked={handleThemeUnlocked}
       />
     </div>
   );

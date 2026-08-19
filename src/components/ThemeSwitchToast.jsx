@@ -112,6 +112,98 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
             </svg>
           )}
 
+          {activeTheme === 'sunset-magenta' && (
+            <svg viewBox="0 0 100 100" className="theme-svg-art sunset-anim">
+              <defs>
+                <linearGradient id="smGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#fcc8f0" />
+                  <stop offset="35%" stopColor="#ff5a57" />
+                  <stop offset="70%" stopColor="#e02f75" />
+                  <stop offset="100%" stopColor="#6700a3" />
+                </linearGradient>
+              </defs>
+              <circle cx="50" cy="50" r="30" fill="url(#smGrad)" />
+              <path d="M20 70 Q50 50 80 70 L80 88 L20 88 Z" fill="#22102e" opacity="0.85" />
+              <circle cx="50" cy="38" r="8" fill="#fcc8f0" />
+            </svg>
+          )}
+
+          {activeTheme === 'crimson-twilight' && (
+            <svg viewBox="0 0 100 100" className="theme-svg-art crimson-anim">
+              <defs>
+                <linearGradient id="ctGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#ff5a57" />
+                  <stop offset="40%" stopColor="#e02f75" />
+                  <stop offset="75%" stopColor="#6700a3" />
+                  <stop offset="100%" stopColor="#050c38" />
+                </linearGradient>
+              </defs>
+              <rect x="15" y="15" width="70" height="70" rx="35" fill="url(#ctGrad)" />
+              <path d="M15 65 Q50 48 85 65 L85 85 L15 85 Z" fill="#050c38" />
+              <circle cx="50" cy="40" r="7" fill="#ff5a57" />
+            </svg>
+          )}
+
+          {activeTheme === 'cosmic-nebula' && (
+            <svg viewBox="0 0 100 100" className="theme-svg-art plum-anim">
+              <defs>
+                <radialGradient id="cnGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#a855f7" />
+                  <stop offset="45%" stopColor="#6700a3" />
+                  <stop offset="75%" stopColor="#1b2062" />
+                  <stop offset="100%" stopColor="#050c38" />
+                </radialGradient>
+              </defs>
+              <circle cx="50" cy="50" r="32" fill="url(#cnGrad)" />
+              <ellipse cx="50" cy="50" rx="42" ry="14" fill="none" stroke="#a855f7" strokeWidth="2.5" transform="rotate(-25 50 50)" />
+              <circle cx="50" cy="50" r="5" fill="#ffffff" />
+            </svg>
+          )}
+
+          {activeTheme === 'electric-lilac' && (
+            <svg viewBox="0 0 100 100" className="theme-svg-art sparkle-anim">
+              <defs>
+                <linearGradient id="elGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#efccf2" />
+                  <stop offset="50%" stopColor="#977dff" />
+                  <stop offset="100%" stopColor="#0033ff" />
+                </linearGradient>
+              </defs>
+              <polygon points="50,12 62,38 90,50 62,62 50,88 38,62 10,50 38,38" fill="url(#elGrad)" />
+              <circle cx="50" cy="50" r="5" fill="#ffffff" />
+            </svg>
+          )}
+
+          {activeTheme === 'royal-cobalt' && (
+            <svg viewBox="0 0 100 100" className="theme-svg-art aurora-anim">
+              <defs>
+                <linearGradient id="rcGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#977dff" />
+                  <stop offset="50%" stopColor="#0033ff" />
+                  <stop offset="100%" stopColor="#0600ab" />
+                </linearGradient>
+              </defs>
+              <polygon points="50,15 85,38 72,82 28,82 15,38" fill="url(#rcGrad)" />
+              <polygon points="50,26 73,44 63,73 37,73 27,44" fill="#0600ab" opacity="0.6" />
+              <circle cx="50" cy="50" r="6" fill="#977dff" />
+            </svg>
+          )}
+
+          {activeTheme === 'deep-abyss' && (
+            <svg viewBox="0 0 100 100" className="theme-svg-art slate-anim">
+              <defs>
+                <linearGradient id="daGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#0033ff" />
+                  <stop offset="50%" stopColor="#0600ab" />
+                  <stop offset="100%" stopColor="#00033d" />
+                </linearGradient>
+              </defs>
+              <circle cx="50" cy="50" r="32" fill="url(#daGrad)" />
+              <path d="M18 55 Q34 45 50 55 T82 55" fill="none" stroke="#60a5fa" strokeWidth="3" strokeLinecap="round" />
+              <path d="M22 68 Q36 58 50 68 T78 68" fill="none" stroke="#0033ff" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+          )}
+
           {activeTheme === 'ephemeral' && (
             <svg viewBox="0 0 100 100" className="theme-svg-art sparkle-anim">
               <polygon points="50,15 58,40 85,50 58,60 50,85 42,60 15,50 42,40" fill="#e3d6c3" />
@@ -161,7 +253,7 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
           )}
 
           {/* Universal Fallback icon if no artwork matched */}
-          {!['dark-olive', 'plum-velvet', 'slate-terracotta', 'crimson-velvet', 'sage-frost', 'nordic-slate', 'coffee', 'fall', 'warm', 'sunset', 'ephemeral', 'emerald', 'nordic', 'dark', 'light'].includes(activeTheme) && (
+          {!['dark-olive', 'plum-velvet', 'slate-terracotta', 'crimson-velvet', 'sage-frost', 'nordic-slate', 'coffee', 'fall', 'warm', 'sunset', 'sunset-magenta', 'crimson-twilight', 'cosmic-nebula', 'electric-lilac', 'royal-cobalt', 'deep-abyss', 'ephemeral', 'emerald', 'nordic', 'dark', 'light'].includes(activeTheme) && (
             <div className="theme-fallback-icon-wrap" style={{ color: themeObj.colors[3] || 'var(--accent-color, #38bdf8)' }}>
               {ActiveIcon && <ActiveIcon />}
             </div>

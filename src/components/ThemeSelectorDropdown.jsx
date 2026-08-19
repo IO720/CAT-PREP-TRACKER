@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { isThemeUnlocked, PREMIUM_THEME_IDS } from '../utils/themeRedemption';
 
 // Professional SVG Icons for Themes
 const ThemeIcons = {
@@ -94,6 +95,57 @@ const ThemeIcons = {
       <path d="m8 3 4 8 5-5 5 15H2L8 3z"></path>
       <circle cx="17" cy="6" r="2"></circle>
     </svg>
+  ),
+  sunsetMagenta: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="4"></circle>
+      <path d="M12 2v2"></path>
+      <path d="M12 20v2"></path>
+      <path d="m4.93 4.93 1.41 1.41"></path>
+      <path d="m17.66 17.66 1.41 1.41"></path>
+      <path d="M2 12h2"></path>
+      <path d="M20 12h2"></path>
+      <path d="m6.34 17.66-1.41 1.41"></path>
+      <path d="m19.07 4.93-1.41 1.41"></path>
+    </svg>
+  ),
+  crimsonTwilight: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 18a5 5 0 0 0-10 0"></path>
+      <line x1="12" y1="2" x2="12" y2="9"></line>
+      <line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line>
+      <line x1="1" y1="18" x2="23" y2="18"></line>
+      <line x1="18.36" y1="11.64" x2="19.78" y2="10.22"></line>
+      <line x1="23" y1="22" x2="1" y2="22"></line>
+    </svg>
+  ),
+  cosmicNebula: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3"></circle>
+      <ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-30 12 12)"></ellipse>
+    </svg>
+  ),
+  electricLilac: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+    </svg>
+  ),
+  royalCobalt: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 3h12l4 7-10 11L2 10l4-7z"></path>
+      <line x1="2" y1="10" x2="22" y2="10"></line>
+      <line x1="12" y1="21" x2="8.5" y2="10"></line>
+      <line x1="12" y1="21" x2="15.5" y2="10"></line>
+      <line x1="6" y1="3" x2="8.5" y2="10"></line>
+      <line x1="18" y1="3" x2="15.5" y2="10"></line>
+    </svg>
+  ),
+  deepAbyss: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
+      <path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
+      <path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
+    </svg>
   )
 };
 
@@ -153,6 +205,48 @@ export const THEMES = [
     colors: ['#1e2633', '#3c4a5c', '#b8657d', '#f46b78']
   },
   { 
+    id: 'sunset-magenta', 
+    name: 'Sunset Magenta', 
+    IconComponent: ThemeIcons.sunsetMagenta, 
+    colors: ['#6700a3', '#e02f75', '#ff5a57', '#fcc8f0'],
+    isPremium: true
+  },
+  { 
+    id: 'crimson-twilight', 
+    name: 'Crimson Twilight', 
+    IconComponent: ThemeIcons.crimsonTwilight, 
+    colors: ['#050c38', '#6700a3', '#e02f75', '#ff5a57'],
+    isPremium: true
+  },
+  { 
+    id: 'cosmic-nebula', 
+    name: 'Cosmic Nebula', 
+    IconComponent: ThemeIcons.cosmicNebula, 
+    colors: ['#050c38', '#1b2062', '#6700a3', '#a855f7'],
+    isPremium: true
+  },
+  { 
+    id: 'electric-lilac', 
+    name: 'Electric Lilac', 
+    IconComponent: ThemeIcons.electricLilac, 
+    colors: ['#0c0e29', '#0033ff', '#977dff', '#efccf2'],
+    isPremium: true
+  },
+  { 
+    id: 'royal-cobalt', 
+    name: 'Royal Cobalt', 
+    IconComponent: ThemeIcons.royalCobalt, 
+    colors: ['#040720', '#0600ab', '#0033ff', '#977dff'],
+    isPremium: true
+  },
+  { 
+    id: 'deep-abyss', 
+    name: 'Deep Abyss', 
+    IconComponent: ThemeIcons.deepAbyss, 
+    colors: ['#00033d', '#0600ab', '#0033ff', '#60a5fa'],
+    isPremium: true
+  },
+  { 
     id: 'ephemeral', 
     name: 'Ephemeral', 
     IconComponent: ThemeIcons.ephemeral, 
@@ -190,7 +284,12 @@ export const THEMES = [
   }
 ];
 
-export default function ThemeSelectorDropdown({ currentTheme, onSelectTheme }) {
+export default function ThemeSelectorDropdown({ 
+  currentTheme, 
+  onSelectTheme, 
+  unlockedThemes = [], 
+  onOpenRedeemModal = () => {} 
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -208,8 +307,21 @@ export default function ThemeSelectorDropdown({ currentTheme, onSelectTheme }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handlePickTheme = (themeId) => {
-    onSelectTheme(themeId);
+  const handlePickTheme = (t) => {
+    const isUnlocked = isThemeUnlocked(t.id, unlockedThemes);
+    if (!isUnlocked) {
+      // Prompt redemption modal
+      onOpenRedeemModal(t.id);
+      setIsOpen(false);
+      return;
+    }
+    onSelectTheme(t.id);
+    setIsOpen(false);
+  };
+
+  const handleOpenRedeem = (e) => {
+    e.stopPropagation();
+    onOpenRedeemModal();
     setIsOpen(false);
   };
 
@@ -248,15 +360,33 @@ export default function ThemeSelectorDropdown({ currentTheme, onSelectTheme }) {
             {THEMES.map((t) => {
               const isSelected = t.id === currentTheme;
               const OptionIcon = t.IconComponent;
+              const isUnlocked = isThemeUnlocked(t.id, unlockedThemes);
+              const isPrem = t.isPremium;
+
               return (
                 <button
                   key={t.id}
-                  className={`theme-option-item ${isSelected ? 'selected' : ''}`}
-                  onClick={() => handlePickTheme(t.id)}
+                  className={`theme-option-item ${isSelected ? 'selected' : ''} ${isPrem && !isUnlocked ? 'theme-locked-item' : ''}`}
+                  onClick={() => handlePickTheme(t)}
+                  title={isPrem && !isUnlocked ? `${t.name} (Requires Code to Unlock)` : t.name}
                 >
                   <div className="item-left">
                     <span className="item-icon"><OptionIcon /></span>
-                    <span className="item-name">{t.name}</span>
+                    <span className="item-name">
+                      {t.name}
+                      {isPrem && (
+                        <span className={`theme-vip-tag ${isUnlocked ? 'unlocked' : 'locked'}`}>
+                          {isUnlocked ? (
+                            'VIP'
+                          ) : (
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                          )}
+                        </span>
+                      )}
+                    </span>
                   </div>
 
                   <div className="item-right">
@@ -272,13 +402,37 @@ export default function ThemeSelectorDropdown({ currentTheme, onSelectTheme }) {
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     )}
+
+                    {!isUnlocked && isPrem && !isSelected && (
+                      <span className="item-lock-pill" title="Locked Theme">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                      </span>
+                    )}
                   </div>
                 </button>
               );
             })}
+          </div>
+
+          {/* Footer: Redeem Theme Code button */}
+          <div className="popover-footer-action">
+            <button 
+              type="button" 
+              className="popover-redeem-btn" 
+              onClick={handleOpenRedeem}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              <span>Redeem Theme Code</span>
+            </button>
           </div>
         </div>
       )}
     </div>
   );
 }
+

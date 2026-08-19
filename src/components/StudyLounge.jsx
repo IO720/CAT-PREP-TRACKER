@@ -182,8 +182,20 @@ export default function StudyLounge({
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="arena-user-name">{userProfile?.displayName || 'You'}</span>
               <span className="hub-self-tag">YOU</span>
-              <span className={`status-pill ${isUserStudying ? 'studying' : 'online'}`}>
-                {isUserStudying ? '🔥 Actively Studying' : '🟢 Ready to Study'}
+              <span className={`status-pill ${isUserStudying ? 'studying' : 'online'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                {isUserStudying ? (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="#f97316" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z" />
+                    </svg>
+                    <span>Actively Studying</span>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
+                    <span>Ready to Study</span>
+                  </>
+                )}
               </span>
             </div>
             <p className="arena-user-desc">
@@ -457,8 +469,34 @@ export default function StudyLounge({
                       className={`arena-leaderboard-card ${student.isSelf ? 'is-self' : ''} ${isTop1 ? 'rank-gold' : isTop2 ? 'rank-silver' : isTop3 ? 'rank-bronze' : ''}`}
                     >
                       {/* Rank Tag */}
-                      <div className="arena-rank-crown">
-                        {isTop1 ? '🥇 #1' : isTop2 ? '🥈 #2' : isTop3 ? '🥉 #3' : `#${idx + 1}`}
+                      <div className="arena-rank-crown" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {isTop1 ? (
+                          <>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b" stroke="currentColor" strokeWidth="2">
+                              <circle cx="12" cy="8" r="7"></circle>
+                              <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                            </svg>
+                            <span>#1</span>
+                          </>
+                        ) : isTop2 ? (
+                          <>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="#94a3b8" stroke="currentColor" strokeWidth="2">
+                              <circle cx="12" cy="8" r="7"></circle>
+                              <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                            </svg>
+                            <span>#2</span>
+                          </>
+                        ) : isTop3 ? (
+                          <>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="#d97706" stroke="currentColor" strokeWidth="2">
+                              <circle cx="12" cy="8" r="7"></circle>
+                              <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                            </svg>
+                            <span>#3</span>
+                          </>
+                        ) : (
+                          <span>#{idx + 1}</span>
+                        )}
                       </div>
 
                       <div className="arena-leaderboard-card-body">
