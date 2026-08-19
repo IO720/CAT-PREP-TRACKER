@@ -10,6 +10,7 @@ export default function DashboardView({
   friends = [], 
   onInspectFriend,
   onMessagePeer = null,
+  onManageBuddies = null,
   currentUser = null,
   userProfile = null,
   timerState = null
@@ -288,7 +289,7 @@ export default function DashboardView({
             <button 
               type="button" 
               className="view-all-buddies-btn"
-              onClick={() => setActiveTab('profile')}
+              onClick={onManageBuddies || (() => setActiveTab('profile'))}
               title="Manage your study buddies network"
             >
               <span>Manage Buddies</span>
@@ -306,7 +307,7 @@ export default function DashboardView({
               <button 
                 type="button" 
                 className="btn-secondary add-buddies-empty-btn"
-                onClick={() => setActiveTab('profile')}
+                onClick={onManageBuddies || (() => setActiveTab('profile'))}
               >
                 <Icons.UserPlus size={14} />
                 <span>Add Friends on Profile</span>

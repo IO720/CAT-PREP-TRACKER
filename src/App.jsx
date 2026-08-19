@@ -223,6 +223,7 @@ export default function App() {
   const [selectedFriendTracker, setSelectedFriendTracker] = useState(null);
   const [loadingFriendTracker, setLoadingFriendTracker] = useState(false);
   const [isEditProfileDirectOpen, setIsEditProfileDirectOpen] = useState(false);
+  const [profileSubTab, setProfileSubTab] = useState('profile');
   const [loungeTargetFriend, setLoungeTargetFriend] = useState(null);
   const [isMobileScreen, setIsMobileScreen] = useState(() => {
     return typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
@@ -1557,6 +1558,10 @@ export default function App() {
               friends={friends}
               onInspectFriend={handleInspectFriend}
               onMessagePeer={handleOpenDirectMessage}
+              onManageBuddies={() => {
+                setProfileSubTab('friends');
+                setActiveTab('profile');
+              }}
               currentUser={user}
               userProfile={userProfile}
               timerState={timerState}
@@ -1644,6 +1649,8 @@ export default function App() {
               onTriggerNotification={triggerDemoNotification}
               fileInputRef={fileInputRef}
               setActiveTab={setActiveTab}
+              initialSubTab={profileSubTab}
+              onResetSubTab={() => setProfileSubTab('profile')}
               isEditOpen={isEditProfileDirectOpen}
               onResetEditOpen={() => setIsEditProfileDirectOpen(false)}
             />

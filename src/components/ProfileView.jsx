@@ -33,11 +33,19 @@ export default function ProfileView({
   onReset,
   fileInputRef,
   setActiveTab,
+  initialSubTab = 'profile',
+  onResetSubTab = null,
   isEditOpen = false,
   onResetEditOpen = null
 }) {
   // Sub-tabs: 'profile' (View Profile & Edit) | 'friends' (Add Friends & Buddy Network)
-  const [activeSubTab, setActiveSubTab] = useState('profile');
+  const [activeSubTab, setActiveSubTab] = useState(initialSubTab || 'profile');
+
+  useEffect(() => {
+    if (initialSubTab) {
+      setActiveSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
 
   // Edit Profile Hover / Modal Pop-up State
   const [isEditModalOpen, setIsEditModalOpen] = useState(isEditOpen);

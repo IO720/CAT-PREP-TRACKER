@@ -841,8 +841,8 @@ export default function StudyLounge({
                     <div 
                       key={fId}
                       className={`hub-member-card clickable ${isCurrentDm ? 'is-active-dm' : ''}`}
-                      onClick={() => handleSelectDirectFriend(friend)}
-                      title={`Click to open 1-on-1 chat with ${friend.displayName || friend.name}`}
+                      onClick={() => onInspectFriend && onInspectFriend(friend)}
+                      title={`Click to view ${friend.displayName || friend.name}'s aspirant profile`}
                     >
                       <AvatarRenderer 
                         avatar={friend.avatar}
@@ -884,11 +884,13 @@ export default function StudyLounge({
                             className="hub-inspect-inline-btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (onInspectFriend) onInspectFriend(friend);
+                              handleSelectDirectFriend(friend);
                             }}
-                            title="Inspect Profile & Tracker"
+                            title="Chat in Direct Message"
+                            style={{ marginLeft: 'auto', background: isCurrentDm ? '#38bdf8' : 'rgba(56, 189, 248, 0.15)', color: isCurrentDm ? '#000' : '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.3)' }}
                           >
-                            <Icons.Target size={11} />
+                            <Icons.MessageSquare size={11} />
+                            <span style={{ fontSize: '10px', marginLeft: '3px' }}>Chat</span>
                           </button>
                         </div>
                       </div>
