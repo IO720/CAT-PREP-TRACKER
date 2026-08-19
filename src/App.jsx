@@ -652,13 +652,24 @@ export default function App() {
     }
   }, [user, userProfile, timerState.isRunning, timerState.isPaused, timerState.subject, timerState.mode, activeStreak, totalSolved]);
 
-  // Periodic heartbeat (every 25s) & cleanup on browser close
+  // Periodic heartbeat (every 15s) & visibility/focus sync
   useEffect(() => {
     if (!isFirebaseConfigured || !user) return;
     
+    // Immediate heartbeat on mount/state update
+    updateUserPresence(user, timerState, activeStreak, totalSolved, userProfile);
+
     const heartbeatInterval = setInterval(() => {
       updateUserPresence(user, timerState, activeStreak, totalSolved, userProfile);
-    }, 25000);
+    }, 15000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        updateUserPresence(user, timerState, activeStreak, totalSolved, userProfile);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleVisibility);
 
     const handleBeforeUnload = () => {
       setUserOffline(user.uid);
@@ -667,6 +678,8 @@ export default function App() {
 
     return () => {
       clearInterval(heartbeatInterval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleVisibility);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [user, userProfile, timerState, activeStreak, totalSolved]);

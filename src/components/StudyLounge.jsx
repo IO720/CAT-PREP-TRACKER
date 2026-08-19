@@ -227,6 +227,11 @@ export default function StudyLounge({
     setReplyingTo(null);
     setSending(true);
 
+    // Timeout safety fallback to prevent permanently stuck sending states on slow mobile networks
+    const safetyTimeout = setTimeout(() => {
+      setSending(false);
+    }, 4000);
+
     let tag = 'GENERAL';
     if (activeChannelId === 'quant-sprints' || text.toUpperCase().includes('#QUANT')) tag = 'QUANT';
     else if (activeChannelId === 'varc-reading' || text.toUpperCase().includes('#VARC')) tag = 'VARC';
@@ -242,6 +247,7 @@ export default function StudyLounge({
       setCopyToast("Error sending message. Please try again.");
       setTimeout(() => setCopyToast(''), 3000);
     } finally {
+      clearTimeout(safetyTimeout);
       setSending(false);
       setTimeout(() => {
         inputRef.current?.focus();
@@ -722,16 +728,17 @@ export default function StudyLounge({
 
           <button
             type="submit"
-            className="hub-send-btn"
+            className={`hub-send-btn ${inputText.trim() ? 'has-text' : ''}`}
             disabled={!inputText.trim() || sending}
             title="Send Message (Enter)"
+            aria-label="Send Message"
           >
             {sending ? (
               <span className="btn-spinner"></span>
             ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'translateX(1px)' }}>
                 <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                <polygon points="22 2 15 22 11 13 2 9 22 2" fill="currentColor" fillOpacity="0.25"></polygon>
               </svg>
             )}
           </button>

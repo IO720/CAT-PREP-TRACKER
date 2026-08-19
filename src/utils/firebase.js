@@ -713,9 +713,15 @@ export const subscribeToFriendsLive = (currentUserId, friendIds = [], onFriendsU
 
       if (pres) {
         const heartbeatAgeMs = now - (pres.lastHeartbeat || 0);
-        const isFresh = heartbeatAgeMs < 10 * 60 * 1000;
-        if (isFresh && pres.status !== 'offline') {
-          status = pres.status || 'online';
+        // If last heartbeat was within the last 3 minutes, or updated recently, consider online
+        const isFresh = heartbeatAgeMs < 3 * 60 * 1000;
+        if (isFresh) {
+          if (pres.status === 'studying') {
+            status = 'studying';
+          } else {
+            status = 'online';
+          }
+
           if (status === 'studying' && pres.activity) {
             const act = pres.activity;
             if (act.isRunning && act.secondsLeft != null) {
