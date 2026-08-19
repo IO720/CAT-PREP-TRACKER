@@ -242,6 +242,28 @@ export const getUserProfile = async (userId) => {
   return null;
 };
 
+// 6.1 Real-time Subscription to User's Own Profile
+export const subscribeToUserProfile = (userId, onProfileUpdate) => {
+  if (!isFirebaseConfigured || !db || !userId) return () => {};
+  try {
+    const profileRef = doc(db, "profiles", userId);
+    const unsubscribe = onSnapshot(profileRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (typeof onProfileUpdate === 'function') {
+          onProfileUpdate(data);
+        }
+      }
+    }, (err) => {
+      console.error("Profile snapshot error:", err);
+    });
+    return unsubscribe;
+  } catch (err) {
+    console.error("Failed to subscribe to user profile:", err);
+    return () => {};
+  }
+};
+
 // 7. Find User Profile by Unique Aspirant ID, Email, or Username
 export const findUserByIdentifier = async (rawIdentifier) => {
   if (!isFirebaseConfigured || !db) return null;
@@ -568,7 +590,7 @@ export const updateUserPresence = async (user, timerState = null, streak = 0, so
   }
 };
 
-// 10. Mark user offline in Firestore
+// 15. Mark user offline in Firestore
 export const setUserOffline = async (userId) => {
   if (!isFirebaseConfigured || !userId) return;
   try {
@@ -584,7 +606,7 @@ export const setUserOffline = async (userId) => {
   }
 };
 
-// 11. Real-time Study Lounge Listener (Subscribes to live peers and timers)
+// 16. Real-time Study Lounge Listener (Subscribes to live peers and timers)
 export const subscribeToStudyLounge = (currentUserId, onPeersUpdate) => {
   if (!isFirebaseConfigured || !db) return () => {};
 
@@ -630,6 +652,8 @@ export const subscribeToStudyLounge = (currentUserId, onPeersUpdate) => {
           email: data.email || '',
           avatar: data.avatar || (data.name || data.displayName || 'P').charAt(0).toUpperCase(),
           avatarBg: data.avatarBg || hashStringToColor(data.name || docSnap.id),
+          bannerBg: data.bannerBg || '#1e1f22',
+          bannerUrl: data.bannerUrl || '',
           bio: data.bio || '',
           target: data.target || 'CAT 2025 Aspirant',
           location: data.location || '',
@@ -663,7 +687,124 @@ export const subscribeToStudyLounge = (currentUserId, onPeersUpdate) => {
   }
 };
 
-// 12. Fetch progress of all friends (Parallelized non-blocking batch)
+// 17. Real-Time Listener for Friend Profiles & Live Online Presence
+export const subscribeToFriendsLive = (currentUserId, friendIds = [], onFriendsUpdate) => {
+  if (!isFirebaseConfigured || !db || typeof onFriendsUpdate !== 'function') return () => {};
+  
+  const rawList = Array.isArray(friendIds) ? friendIds.filter(Boolean) : [];
+  const friendIdSet = new Set(rawList);
+
+  if (friendIdSet.size === 0) {
+    onFriendsUpdate([]);
+    return () => {};
+  }
+
+  const friendProfilesMap = {};
+  const presenceMap = {};
+
+  const computeAndEmit = () => {
+    const now = Date.now();
+    const result = Array.from(friendIdSet).map(fId => {
+      const prof = friendProfilesMap[fId] || {};
+      const pres = presenceMap[fId] || null;
+
+      let status = 'offline';
+      let activity = null;
+
+      if (pres) {
+        const heartbeatAgeMs = now - (pres.lastHeartbeat || 0);
+        const isFresh = heartbeatAgeMs < 10 * 60 * 1000;
+        if (isFresh && pres.status !== 'offline') {
+          status = pres.status || 'online';
+          if (status === 'studying' && pres.activity) {
+            const act = pres.activity;
+            if (act.isRunning && act.secondsLeft != null) {
+              const elapsedSecs = Math.floor((now - (act.updatedMs || now)) / 1000);
+              const currentSecsLeft = Math.max(0, act.secondsLeft - elapsedSecs);
+              const mins = Math.floor(currentSecsLeft / 60);
+              const remSecs = currentSecsLeft % 60;
+              activity = {
+                ...act,
+                secondsLeft: currentSecsLeft,
+                timerRemaining: `${String(mins).padStart(2, '0')}:${String(remSecs).padStart(2, '0')} left`
+              };
+            } else {
+              activity = act;
+            }
+          }
+        }
+      }
+
+      const name = prof.displayName || prof.name || pres?.name || pres?.displayName || 'CAT Aspirant';
+      const avatar = prof.avatar || pres?.avatar || 'rocket';
+      const avatarBg = prof.avatarBg || pres?.avatarBg || hashStringToColor(name);
+      const bio = prof.bio !== undefined ? prof.bio : (pres?.bio || '');
+      const target = prof.target || pres?.target || 'CAT Aspirant';
+      const location = prof.location || pres?.location || '';
+      const streak = prof.streak !== undefined ? prof.streak : (pres?.streak || 0);
+      const solvedQs = prof.solvedQs !== undefined ? prof.solvedQs : (pres?.solvedQs || 0);
+      const aspirantId = prof.aspirantId || pres?.aspirantId || '';
+
+      return {
+        id: fId,
+        uid: fId,
+        name: name,
+        displayName: name,
+        avatar: avatar,
+        avatarBg: avatarBg,
+        bannerBg: prof.bannerBg || pres?.bannerBg || '#1e1f22',
+        bannerUrl: prof.bannerUrl || pres?.bannerUrl || '',
+        bio: bio,
+        target: target,
+        location: location,
+        streak: streak,
+        solvedQs: solvedQs,
+        aspirantId: aspirantId,
+        status: status,
+        activity: activity,
+        lastActive: status === 'studying' || status === 'online' ? 'Active now' : 'Offline'
+      };
+    });
+
+    // Sort: studying first, then online, then offline
+    result.sort((a, b) => {
+      const order = { studying: 0, online: 1, offline: 2 };
+      return (order[a.status] ?? 3) - (order[b.status] ?? 3);
+    });
+
+    onFriendsUpdate(result);
+  };
+
+  // Initial fetch of friend profile documents
+  Promise.all(
+    Array.from(friendIdSet).map(async fId => {
+      try {
+        const p = await getUserProfile(fId);
+        if (p) friendProfilesMap[fId] = p;
+      } catch (e) {}
+    })
+  ).then(() => {
+    computeAndEmit();
+  });
+
+  // Listen to live presence collection
+  const presenceUnsubscribe = onSnapshot(collection(db, "presence"), (snapshot) => {
+    snapshot.forEach(docSnap => {
+      if (friendIdSet.has(docSnap.id)) {
+        presenceMap[docSnap.id] = docSnap.data();
+      }
+    });
+    computeAndEmit();
+  }, (err) => {
+    console.error("Presence subscription for friends error:", err);
+  });
+
+  return () => {
+    if (typeof presenceUnsubscribe === 'function') presenceUnsubscribe();
+  };
+};
+
+// 18. Fetch progress of all friends (with real-time presence fallback)
 export const fetchFriendsProgress = async (currentUserId) => {
   if (!isFirebaseConfigured || !currentUserId) return [];
 
@@ -675,38 +816,77 @@ export const fetchFriendsProgress = async (currentUserId) => {
       userProfile.friends.map(friendId => getUserProfile(friendId).catch(() => null))
     );
 
+    // Also fetch presence docs for friends in parallel
+    const presenceSnaps = await Promise.all(
+      userProfile.friends.map(friendId => getDoc(doc(db, "presence", friendId)).catch(() => null))
+    );
+
+    const now = Date.now();
+    const presenceMap = {};
+    presenceSnaps.forEach(snap => {
+      if (snap && snap.exists && snap.exists()) {
+        presenceMap[snap.id] = snap.data();
+      }
+    });
+
     return friendProfiles
       .filter(Boolean)
-      .map(profile => ({
-        id: profile.uid || profile.id,
-        uid: profile.uid || profile.id,
-        name: profile.displayName || 'CAT Aspirant',
-        displayName: profile.displayName || 'CAT Aspirant',
-        avatar: profile.avatar || (profile.displayName || 'P').charAt(0).toUpperCase(),
-        avatarBg: profile.avatarBg || hashStringToColor(profile.displayName),
-        bio: profile.bio || '',
-        target: profile.target || 'CAT Aspirant',
-        location: profile.location || '',
-        streak: profile.streak || 0,
-        solvedQs: profile.solvedQs || 0,
-        lastActive: "Active now",
-        message: profile.bio || `Solved ${profile.solvedQs || 0} questions total (Streak: ${profile.streak || 0})`
-      }));
+      .map(profile => {
+        const fId = profile.uid || profile.id;
+        const pres = presenceMap[fId] || null;
+
+        let status = 'offline';
+        let activity = null;
+
+        if (pres) {
+          const heartbeatAgeMs = now - (pres.lastHeartbeat || 0);
+          const isFresh = heartbeatAgeMs < 10 * 60 * 1000;
+          if (isFresh && pres.status !== 'offline') {
+            status = pres.status || 'online';
+            if (status === 'studying' && pres.activity) {
+              activity = pres.activity;
+            }
+          }
+        }
+
+        return {
+          id: fId,
+          uid: fId,
+          name: profile.displayName || 'CAT Aspirant',
+          displayName: profile.displayName || 'CAT Aspirant',
+          avatar: profile.avatar || (profile.displayName || 'P').charAt(0).toUpperCase(),
+          avatarBg: profile.avatarBg || hashStringToColor(profile.displayName),
+          bannerBg: profile.bannerBg || '#1e1f22',
+          bannerUrl: profile.bannerUrl || '',
+          bio: profile.bio || '',
+          target: profile.target || 'CAT Aspirant',
+          location: profile.location || '',
+          streak: profile.streak || 0,
+          solvedQs: profile.solvedQs || 0,
+          aspirantId: profile.aspirantId || '',
+          status: status,
+          activity: activity,
+          lastActive: status === 'studying' || status === 'online' ? 'Active now' : 'Offline',
+          message: profile.bio || `Solved ${profile.solvedQs || 0} questions total (Streak: ${profile.streak || 0})`
+        };
+      });
   } catch (err) {
     console.error("Error fetching friends progress:", err);
     return [];
   }
 };
 
-// 12.1 Fetch detailed profile and tracker for a single friend / peer
+// 19. Fetch detailed profile and tracker for a single friend / peer
 export const fetchFriendProgress = async (peerId) => {
   if (!isFirebaseConfigured || !peerId) return null;
   try {
     const profile = await getUserProfile(peerId);
-    const tracker = await loadTrackerData(peerId);
+    const tracker = await loadTrackerFromCloud(peerId);
     return {
       ...(profile || {}),
-      tracker: tracker || null
+      tracker: tracker?.tracker || null,
+      studyPlan: tracker?.studyPlan || null,
+      mocks: tracker?.mocks || null
     };
   } catch (err) {
     console.error("Error fetching single friend progress:", err);
@@ -714,13 +894,13 @@ export const fetchFriendProgress = async (peerId) => {
   }
 };
 
-// 13. Send Live Study Hub Channel Message (Clean Slate v4 Collections with Channel Routing)
+// 20. Send Live Study Hub Channel Message (Deterministic DMs & Buddy Rooms)
 export const sendChatMessage = async (
   user, 
   text, 
   tag = 'GENERAL', 
   userProfile = null, 
-  channel = 'general-hall', 
+  channel = 'buddies-circle', 
   replyTo = null,
   targetFriendId = null
 ) => {
@@ -737,7 +917,7 @@ export const sendChatMessage = async (
     const aspirantId = userProfile?.aspirantId || user.aspirantId || '';
     const friendsList = Array.isArray(userProfile?.friends) ? userProfile.friends : [];
 
-    const isPrivateChannel = channel === 'friends' || channel === 'buddies-circle' || channel.startsWith('dm_') || targetFriendId;
+    const isPrivateChannel = channel === 'friends' || channel === 'buddies-circle' || channel.startsWith('dm_') || !!targetFriendId;
     let roomId = channel;
     let participants = [];
 
@@ -762,7 +942,7 @@ export const sendChatMessage = async (
       aspirantId: aspirantId,
       text: cleanText,
       tag: tag,
-      channel: isPrivateChannel ? 'private' : channel,
+      channel: isPrivateChannel ? (targetFriendId ? `dm_${targetFriendId}` : 'buddies-circle') : channel,
       roomId: roomId,
       participants: participants,
       targetFriendId: targetFriendId || null,
@@ -786,19 +966,19 @@ export const sendChatMessage = async (
   }
 };
 
-// 14. Real-time Subscription to Live Channel Chat (Named Public Channels vs Private Rooms)
+// 21. Real-time Subscription to Live Channel Chat
 export const subscribeToChatMessages = (
-  channel = 'general-hall', 
+  channel = 'buddies-circle', 
   onMessagesUpdate, 
   currentUserId = null, 
   friendsList = [], 
   targetFriendId = null
 ) => {
-  let targetChannel = 'general-hall';
+  let targetChannel = 'buddies-circle';
   let callback = onMessagesUpdate;
   if (typeof channel === 'function') {
     callback = channel;
-    targetChannel = 'general-hall';
+    targetChannel = 'buddies-circle';
   } else if (typeof channel === 'string') {
     targetChannel = channel;
   }
@@ -806,7 +986,7 @@ export const subscribeToChatMessages = (
   if (!isFirebaseConfigured || !db || typeof callback !== 'function') return () => {};
 
   try {
-    const isPrivate = targetChannel === 'friends' || targetChannel === 'buddies-circle' || targetChannel.startsWith('dm_') || targetFriendId;
+    const isPrivate = targetChannel === 'friends' || targetChannel === 'buddies-circle' || targetChannel.startsWith('dm_') || !!targetFriendId;
     const targetCollection = isPrivate ? "private_circle_messages_v4" : "hub_channel_messages_v4";
 
     const chatQuery = query(
@@ -839,14 +1019,17 @@ export const subscribeToChatMessages = (
           }
 
           // In buddies circle:
-          const isSenderSelfOrFriend = (msg.userId === currentUserId) || myFriendIds.has(msg.userId);
-          if (!isSenderSelfOrFriend) return false;
+          if (msg.roomId === 'buddies-circle' || msg.channel === 'buddies-circle' || msg.channel === 'private') {
+            const isSenderSelfOrFriend = (msg.userId === currentUserId) || myFriendIds.has(msg.userId);
+            if (!isSenderSelfOrFriend) return false;
 
-          if (Array.isArray(msg.participants) && msg.participants.length > 0) {
-            return msg.participants.includes(currentUserId);
+            if (Array.isArray(msg.participants) && msg.participants.length > 0) {
+              return msg.participants.includes(currentUserId);
+            }
+            return true;
           }
 
-          return true;
+          return false;
         });
       } else {
         // Public channel filtering (match channel / room or fallback to general)
@@ -870,8 +1053,8 @@ export const subscribeToChatMessages = (
   }
 };
 
-// 15. Delete Chat Message (Self-cleanup)
-export const deleteChatMessage = async (messageId, channel = 'general-hall') => {
+// 22. Delete Chat Message (Self-cleanup)
+export const deleteChatMessage = async (messageId, channel = 'buddies-circle') => {
   if (!isFirebaseConfigured || !db || !messageId) return;
   try {
     const isPrivate = channel === 'friends' || channel === 'buddies-circle' || channel.startsWith('dm_');

@@ -10,6 +10,8 @@ import {
   setUserOffline,
   subscribeToStudyLounge,
   subscribeToFriendRequests,
+  subscribeToUserProfile,
+  subscribeToFriendsLive,
   updateUserProfile,
   getUserProfile,
   signOutUser
@@ -219,9 +221,17 @@ export default function App() {
   const [selectedFriendTracker, setSelectedFriendTracker] = useState(null);
   const [loadingFriendTracker, setLoadingFriendTracker] = useState(false);
   const [isEditProfileDirectOpen, setIsEditProfileDirectOpen] = useState(false);
+  const [loungeTargetFriend, setLoungeTargetFriend] = useState(null);
   const [isMobileScreen, setIsMobileScreen] = useState(() => {
     return typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
   });
+
+  const handleOpenDirectMessage = (friend) => {
+    if (!friend) return;
+    setLoungeTargetFriend(friend);
+    setSelectedFriend(null);
+    setActiveTab('lounge');
+  };
 
   // Restore UI Font Scale and Font on Initial Mount
   useEffect(() => {
@@ -523,25 +533,42 @@ export default function App() {
     }
   }, [state, user, isCloudLoaded, activeStreak, totalSolved]);
 
-  // Refresh friends progress from Cloud
-  const refreshFriendsList = async () => {
-    if (isFirebaseConfigured && user) {
-      const liveFriends = await fetchFriendsProgress(user.uid);
-      if (liveFriends) {
-        setFriends(liveFriends);
-      }
-    } else {
-      setFriends([]);
-    }
-  };
-
+  // Real-time listener for current user's profile document (syncs friends list, display name, target, etc.)
   useEffect(() => {
-    if (user) {
-      refreshFriendsList();
-    } else {
+    if (!isFirebaseConfigured || !user?.uid) return;
+
+    const unsubscribe = subscribeToUserProfile(user.uid, (freshProfile) => {
+      if (freshProfile) {
+        setUserProfile(freshProfile);
+      }
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [user?.uid]);
+
+  // Real-time listener for friends' progress and live online/studying presence
+  useEffect(() => {
+    if (!isFirebaseConfigured || !user?.uid) {
       setFriends([]);
+      return;
     }
-  }, [user, userProfile?.friends]);
+
+    const friendIds = Array.isArray(userProfile?.friends) ? userProfile.friends : [];
+    if (friendIds.length === 0) {
+      setFriends([]);
+      return;
+    }
+
+    const unsubscribe = subscribeToFriendsLive(user.uid, friendIds, (liveFriends) => {
+      setFriends(liveFriends || []);
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [user?.uid, userProfile?.friends]);
 
   // Real-time Live Study Lounge Listener across all peers
   useEffect(() => {
@@ -1429,6 +1456,7 @@ export default function App() {
               setActiveTab={setActiveTab} 
               friends={friends}
               onInspectFriend={handleInspectFriend}
+              onMessagePeer={handleOpenDirectMessage}
               currentUser={user}
               userProfile={userProfile}
               timerState={timerState}
@@ -1492,6 +1520,8 @@ export default function App() {
               userProfile={userProfile}
               timerState={timerState}
               fullPage={true}
+              initialTargetFriend={loungeTargetFriend}
+              onResetTargetFriend={() => setLoungeTargetFriend(null)}
             />
           )}
           {activeTab === 'profile' && (
@@ -1503,8 +1533,9 @@ export default function App() {
               onAuthSuccess={setUser}
               onUpdateProfile={handleUpdateProfile}
               friends={friends}
-              onAddFriendSuccess={refreshFriendsList}
+              onAddFriendSuccess={() => {}}
               onInspectFriend={handleInspectFriend}
+              onMessagePeer={handleOpenDirectMessage}
               startDate={state.settings?.startDate}
               onUpdateStartDate={handleUpdateStartDate}
               onExport={handleExport}
@@ -1620,6 +1651,7 @@ export default function App() {
           setIsEditProfileDirectOpen(true);
           setActiveTab('profile');
         }}
+        onMessagePeer={handleOpenDirectMessage}
         currentUser={user}
       />
 

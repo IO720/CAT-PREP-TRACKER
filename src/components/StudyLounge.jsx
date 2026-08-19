@@ -27,10 +27,23 @@ export default function StudyLounge({
   userProfile = null,
   timerState = null,
   compact = false,
-  fullPage = true
+  fullPage = true,
+  initialTargetFriend = null,
+  onResetTargetFriend = null
 }) {
-  const [activeChannelId, setActiveChannelId] = useState('general-hall'); // 'general-hall' | 'quant-sprints' | ... | 'buddies-circle' | 'dm_[uid]'
-  const [selectedDirectFriend, setSelectedDirectFriend] = useState(null); // null | friend object
+  const [activeChannelId, setActiveChannelId] = useState(() => {
+    if (initialTargetFriend) {
+      const fId = initialTargetFriend.id || initialTargetFriend.uid;
+      return `dm_${fId}`;
+    }
+    // If user has friends, open buddies-circle; otherwise default to general-hall
+    if (friends && friends.length > 0) {
+      return 'buddies-circle';
+    }
+    return 'general-hall';
+  });
+  const [selectedDirectFriend, setSelectedDirectFriend] = useState(() => initialTargetFriend || null);
+  const [rightSidebarTab, setRightSidebarTab] = useState(() => (friends && friends.length > 0) ? 'buddies' : 'leaderboard'); // 'buddies' | 'leaderboard'
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
@@ -43,6 +56,17 @@ export default function StudyLounge({
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Sync when initialTargetFriend is updated externally
+  useEffect(() => {
+    if (initialTargetFriend) {
+      const fId = initialTargetFriend.id || initialTargetFriend.uid;
+      setActiveChannelId(`dm_${fId}`);
+      setSelectedDirectFriend(initialTargetFriend);
+      setMobileTab('chat');
+      if (onResetTargetFriend) onResetTargetFriend();
+    }
+  }, [initialTargetFriend]);
 
   // Real-time tick to update countdowns for studying students smoothly
   useEffect(() => {
@@ -171,7 +195,7 @@ export default function StudyLounge({
   const currentChannelInfo = isPrivateChannel
     ? selectedDirectFriend
       ? { name: `@${selectedDirectFriend.displayName || selectedDirectFriend.name}`, desc: `Direct 1-on-1 private discussion with ${selectedDirectFriend.displayName || selectedDirectFriend.name}.` }
-      : { name: 'study-buddies', desc: `Private discussion room exclusively for you and your ${friends.length} connected buddies.` }
+      : { name: 'study-buddies', desc: `Private discussion room exclusively for you and your ${friends.length} connected study buddies.` }
     : PUBLIC_CHANNELS.find(c => c.id === activeChannelId) || PUBLIC_CHANNELS[0];
 
   const handleSendMessage = async (e) => {
@@ -198,6 +222,13 @@ export default function StudyLounge({
     inputRef.current?.focus();
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   const handleQuickChipClick = async (chip) => {
     if (sending) return;
     const targetFriendId = selectedDirectFriend ? (selectedDirectFriend.id || selectedDirectFriend.uid) : null;
@@ -206,6 +237,26 @@ export default function StudyLounge({
     await sendChatMessage(currentUser, chip.text, chip.tag, userProfile, activeChannelId, replyingTo, targetFriendId);
     setReplyingTo(null);
     setSending(false);
+  };
+
+  const handleQuickChip = handleQuickChipClick;
+
+  // Tag styling helper for chat badges
+  const getTagStyle = (tag) => {
+    switch ((tag || '').toUpperCase()) {
+      case 'QUANT':
+        return { bg: 'rgba(59, 130, 246, 0.18)', color: '#60a5fa' };
+      case 'VARC':
+        return { bg: 'rgba(168, 85, 247, 0.18)', color: '#c084fc' };
+      case 'LRDI':
+        return { bg: 'rgba(234, 179, 8, 0.18)', color: '#facc15' };
+      case 'MILESTONE':
+        return { bg: 'rgba(34, 197, 94, 0.18)', color: '#4ade80' };
+      case 'BREAK':
+        return { bg: 'rgba(244, 63, 94, 0.18)', color: '#fb7185' };
+      default:
+        return { bg: 'rgba(255, 255, 255, 0.08)', color: 'var(--text-secondary)' };
+    }
   };
 
   // Initiate reply
@@ -248,16 +299,18 @@ export default function StudyLounge({
     setActiveActionMessage(null);
   };
 
-  // Jump to referenced replied message
+  // Jump / scroll to referenced replied message
   const handleJumpToMessage = (targetMsgId) => {
     if (!targetMsgId) return;
-    const elem = document.getElementById(`channel-msg-${targetMsgId}`);
+    const elem = document.getElementById(`msg-${targetMsgId}`) || document.getElementById(`channel-msg-${targetMsgId}`);
     if (elem) {
       elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setHighlightedMsgId(targetMsgId);
       setTimeout(() => setHighlightedMsgId(null), 2500);
     }
   };
+
+  const handleScrollToMessage = handleJumpToMessage;
 
   const formatMessageTime = (isoString) => {
     if (!isoString) return '';
@@ -324,10 +377,57 @@ export default function StudyLounge({
 
         <div className="hub-channels-list-scroll">
           
-          {/* SECTION 1: PUBLIC STUDY CHANNELS */}
+          {/* SECTION 1: PERSONAL CONNECTIONS & BUDDIES (PRIMARY DEFAULT) */}
           <div className="hub-channel-category">
             <div className="hub-category-label">
-              <span>TEXT CHANNELS</span>
+              <span>PERSONAL CONNECTIONS</span>
+            </div>
+
+            {/* Buddies Circle Room */}
+            <button
+              type="button"
+              className={`hub-channel-btn ${activeChannelId === 'buddies-circle' && !selectedDirectFriend ? 'active' : ''}`}
+              onClick={handleSelectBuddiesCircle}
+            >
+              <Icons.Users size={14} className="hub-channel-icon" />
+              <span className="hub-channel-name">study-buddies</span>
+              {friends.length > 0 && <span className="hub-badge-count">{friends.length}</span>}
+            </button>
+
+            {/* Direct 1-on-1 Friends Rooms */}
+            {friends.map(friend => {
+              const fId = friend.id || friend.uid;
+              const isActive = selectedDirectFriend && ((selectedDirectFriend.id === fId) || (selectedDirectFriend.uid === fId));
+              const timerDisplay = getPeerTimerDisplay(friend);
+              return (
+                <button
+                  key={fId}
+                  type="button"
+                  className={`hub-channel-btn dm-channel-btn ${isActive ? 'active' : ''}`}
+                  onClick={() => handleSelectDirectFriend(friend)}
+                >
+                  <span className={`status-dot-mini ${friend.status || 'offline'}`}></span>
+                  <span className="hub-channel-name">{friend.displayName || friend.name}</span>
+                  {friend.status === 'studying' && (
+                    <span className="hub-studying-timer-chip">
+                      {timerDisplay ? timerDisplay.split(' ')[0] : 'Study'}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+            {friends.length === 0 && (
+              <div className="hub-empty-friends-hint">
+                No buddies added yet. Add friends from your Profile tab to start 1-on-1 study sessions!
+              </div>
+            )}
+          </div>
+
+          {/* SECTION 2: PUBLIC STUDY CHANNELS */}
+          <div className="hub-channel-category">
+            <div className="hub-category-label">
+              <span>PUBLIC STUDY HALL</span>
             </div>
 
             {PUBLIC_CHANNELS.map(channel => {
@@ -347,47 +447,6 @@ export default function StudyLounge({
             })}
           </div>
 
-          {/* SECTION 2: PRIVATE CIRCLES & DIRECT DMS */}
-          <div className="hub-channel-category">
-            <div className="hub-category-label">
-              <span>PRIVATE & BUDDIES</span>
-            </div>
-
-            {/* Buddies Circle Room */}
-            <button
-              type="button"
-              className={`hub-channel-btn ${activeChannelId === 'buddies-circle' && !selectedDirectFriend ? 'active' : ''}`}
-              onClick={handleSelectBuddiesCircle}
-            >
-              <Icons.Users size={14} className="hub-channel-icon" />
-              <span className="hub-channel-name">study-buddies</span>
-              {friends.length > 0 && <span className="hub-badge-count">{friends.length}</span>}
-            </button>
-
-            {/* Direct 1-on-1 Friends Rooms */}
-            {friends.map(friend => {
-              const fId = friend.id || friend.uid;
-              const isActive = selectedDirectFriend && ((selectedDirectFriend.id === fId) || (selectedDirectFriend.uid === fId));
-              return (
-                <button
-                  key={fId}
-                  type="button"
-                  className={`hub-channel-btn ${isActive ? 'active' : ''}`}
-                  onClick={() => handleSelectDirectFriend(friend)}
-                >
-                  <span className={`status-dot-mini ${friend.status || 'offline'}`}></span>
-                  <span className="hub-channel-name">{friend.displayName || friend.name}</span>
-                </button>
-              );
-            })}
-
-            {friends.length === 0 && (
-              <div className="hub-empty-friends-hint">
-                No buddies added yet. Add friends from Profile!
-              </div>
-            )}
-          </div>
-
         </div>
       </div>
 
@@ -396,7 +455,7 @@ export default function StudyLounge({
          ======================================================== */}
       <div className={`hub-chat-area ${mobileTab === 'chat' ? 'mobile-active' : 'mobile-inactive'}`}>
         
-        {/* Channel Top Header Bar (Clean, no redundant studying pill) */}
+        {/* Channel Top Header Bar */}
         <div className="hub-chat-header-bar">
           <div className="hub-chat-header-info">
             <span className="hub-header-hash">{isPrivateChannel && selectedDirectFriend ? '@' : '#'}</span>
@@ -412,140 +471,148 @@ export default function StudyLounge({
           {messages.length === 0 ? (
             <div className="hub-messages-empty-state">
               <div className="hub-empty-icon-wrap">
-                <Icons.MessageSquare size={38} />
+                {isPrivateChannel ? (
+                  <Icons.Users size={36} color="#38bdf8" />
+                ) : (
+                  <Icons.MessageSquare size={36} />
+                )}
               </div>
-              <h4 className="hub-empty-title">
-                Welcome to #{currentChannelInfo.name}!
-              </h4>
-              <p className="hub-empty-desc">
+              <h3>Welcome to #{currentChannelInfo.name}!</h3>
+              <p>
                 {isPrivateChannel
-                  ? selectedDirectFriend 
-                    ? `This is the direct private room with ${selectedDirectFriend.displayName || selectedDirectFriend.name}. Send your first message!`
-                    : `This is the start of your private buddies circle with ${friends.length} study friends!`
-                  : `This is the start of the #${currentChannelInfo.name} channel. Share a question, study tip, or discuss doubts!`}
+                  ? selectedDirectFriend
+                    ? `This is your 1-on-1 private study chat with ${selectedDirectFriend.displayName || selectedDirectFriend.name}. Send your first message!`
+                    : friends.length === 0
+                      ? "This is your private group study room for you and your study buddies. Add friends using their Unique Aspirant ID to study together here!"
+                      : `This is your private group study room with your ${friends.length} study buddies. Start a sprint or share notes!`
+                  : `This is the start of real-time discussion in #${currentChannelInfo.name}. Share your targets, ask doubts, or motivate your peers!`
+                }
               </p>
+              {isPrivateChannel && !selectedDirectFriend && friends.length === 0 && (
+                <div style={{ display: 'flex', gap: '10px', marginTop: '12px', justifyContent: 'center' }}>
+                  <button 
+                    type="button" 
+                    className="btn-secondary"
+                    onClick={() => handleSelectPublicChannel(PUBLIC_CHANNELS[0])}
+                    style={{ fontSize: '12px', padding: '6px 14px' }}
+                  >
+                    Go to #general-hall
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
-            messages.map((msg) => {
+            messages.map((msg, index) => {
               const isSelf = currentUser && (msg.userId === currentUser.uid);
+              const tagStyle = getTagStyle(msg.tag);
+              const prevMsg = index > 0 ? messages[index - 1] : null;
+              const isGrouped = prevMsg && (prevMsg.userId === msg.userId) && (msg.timestamp - prevMsg.timestamp < 3 * 60 * 1000);
               const isHighlighted = highlightedMsgId === msg.id;
-
-              const handleSenderInspect = (e) => {
-                e.stopPropagation();
-                if (!onInspectFriend) return;
-                if (isSelf) {
-                  onInspectFriend({ isSelf: true, ...userProfile, id: currentUser?.uid, uid: currentUser?.uid });
-                } else {
-                  onInspectFriend({
-                    id: msg.userId,
-                    uid: msg.userId,
-                    displayName: msg.senderName,
-                    name: msg.senderName,
-                    avatar: msg.avatar,
-                    avatarBg: msg.avatarBg,
-                    location: msg.location,
-                    aspirantId: msg.aspirantId || ''
-                  });
-                }
-              };
 
               return (
                 <div 
-                  key={msg.id} 
-                  id={`channel-msg-${msg.id}`}
-                  className={`hub-message-row ${isSelf ? 'is-self' : ''} ${isHighlighted ? 'message-highlight-pulse' : ''}`}
-                  onDoubleClick={() => setActiveActionMessage(msg)}
-                  onTouchStart={(e) => {
-                    const now = Date.now();
-                    if (msg._lastTouch && (now - msg._lastTouch < 350)) {
-                      setActiveActionMessage(msg);
-                    }
-                    msg._lastTouch = now;
-                  }}
+                  key={msg.id || index} 
+                  id={`msg-${msg.id}`}
+                  className={`hub-message-row ${isSelf ? 'is-self' : ''} ${isGrouped ? 'grouped' : ''} ${isHighlighted ? 'highlighted-msg' : ''}`}
                 >
-                  <div 
-                    className="hub-msg-avatar clickable" 
-                    onClick={handleSenderInspect}
-                    title="View aspirant profile"
-                  >
-                    <AvatarRenderer 
-                      avatar={msg.avatar}
-                      name={msg.senderName}
-                      avatarBg={msg.avatarBg}
-                      size={40}
-                    />
-                  </div>
+                  {!isGrouped && (
+                    <div className="hub-msg-avatar-col">
+                      <AvatarRenderer 
+                        avatar={msg.avatar}
+                        name={msg.senderName}
+                        avatarBg={msg.avatarBg}
+                        size={38}
+                      />
+                    </div>
+                  )}
 
-                  <div className="hub-msg-body-wrapper">
-                    <div className="hub-msg-header">
-                      <span 
-                        className="hub-msg-sender clickable" 
-                        onClick={handleSenderInspect}
-                        title="View profile"
-                      >
-                        {msg.senderName}
-                      </span>
-                      {isSelf && <span className="hub-self-badge">YOU</span>}
-                      {msg.location && (
-                        <span className="hub-msg-location">
-                          <Icons.MapPin size={10} /> {msg.location}
+                  <div className="hub-msg-content-col">
+                    {!isGrouped && (
+                      <div className="hub-msg-header">
+                        <span 
+                          className="hub-sender-name clickable"
+                          onClick={() => onInspectFriend && onInspectFriend({
+                            id: msg.userId,
+                            uid: msg.userId,
+                            displayName: msg.senderName,
+                            name: msg.senderName,
+                            avatar: msg.avatar,
+                            avatarBg: msg.avatarBg,
+                            target: msg.target,
+                            location: msg.location,
+                            aspirantId: msg.aspirantId
+                          })}
+                        >
+                          {msg.senderName}
                         </span>
-                      )}
-                      <span className="hub-msg-timestamp">{formatMessageTime(msg.timestamp)}</span>
 
-                      {/* Quick Action Buttons on Hover */}
+                        {isSelf && <span className="hub-self-tag">YOU</span>}
+
+                        {msg.tag && (
+                          <span 
+                            className="hub-msg-tag-badge"
+                            style={{ backgroundColor: tagStyle.bg, color: tagStyle.color }}
+                          >
+                            {msg.tag}
+                          </span>
+                        )}
+
+                        <span className="hub-msg-time">{formatMessageTime(msg.timestamp)}</span>
+                      </div>
+                    )}
+
+                    {/* Quoted / Replied message preview */}
+                    {msg.replyTo && (
+                      <div 
+                        className="hub-replied-preview-box clickable"
+                        onClick={() => handleScrollToMessage(msg.replyTo.id)}
+                        title="Click to jump to quoted message"
+                      >
+                        <div className="hub-reply-left-bar"></div>
+                        <AvatarRenderer 
+                          avatar={msg.replyTo.avatar}
+                          name={msg.replyTo.senderName}
+                          avatarBg={msg.replyTo.avatarBg}
+                          size={16}
+                        />
+                        <span className="hub-reply-sender">@{msg.replyTo.senderName}</span>
+                        <span className="hub-reply-snippet">{msg.replyTo.text}</span>
+                      </div>
+                    )}
+
+                    <div className="hub-msg-text-row">
+                      <div className="hub-msg-text">
+                        {msg.text}
+                      </div>
+
+                      {/* Desktop Hover Quick Action Bar */}
                       <div className="hub-msg-hover-actions">
-                        <button
-                          type="button"
-                          className="hub-hover-btn"
+                        <button 
+                          type="button" 
+                          className="hub-hover-action-btn"
+                          title="Reply to message"
                           onClick={() => handleInitiateReply(msg)}
-                          title="Reply"
                         >
                           <Icons.Reply size={13} />
                         </button>
-                        <button
-                          type="button"
-                          className="hub-hover-btn"
-                          onClick={() => handleCopyText(msg.text)}
+                        <button 
+                          type="button" 
+                          className="hub-hover-action-btn"
                           title="Copy text"
+                          onClick={() => handleCopyText(msg.text)}
                         >
                           <Icons.Copy size={13} />
                         </button>
-                        <button
-                          type="button"
-                          className="hub-hover-btn"
-                          onClick={() => setActiveActionMessage(msg)}
+                        <button 
+                          type="button" 
+                          className="hub-hover-action-btn"
                           title="More options"
+                          onClick={() => setActiveActionMessage(msg)}
                         >
                           <Icons.MoreVertical size={13} />
                         </button>
                       </div>
                     </div>
-
-                    {/* Quoted Replied Message Bubble */}
-                    {msg.replyTo && (
-                      <div 
-                        className="hub-quoted-reply-box clickable"
-                        onClick={() => handleJumpToMessage(msg.replyTo.id)}
-                        title="Jump to original message"
-                      >
-                        <div className="hub-reply-line"></div>
-                        <div className="hub-reply-meta">
-                          <span className="hub-reply-user">@{msg.replyTo.senderName}</span>
-                          <span className="hub-reply-snippet">{msg.replyTo.text}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="hub-msg-text">{msg.text}</div>
-
-                    {msg.tag && msg.tag !== 'GENERAL' && (
-                      <div className="hub-msg-tags-row">
-                        <span className={`hub-tag-chip tag-${msg.tag.toLowerCase()}`}>
-                          #{msg.tag}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
               );
@@ -554,59 +621,69 @@ export default function StudyLounge({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* 1-Tap Quick Action Sprint Chips (Desktop Only) */}
+        {/* Replying Banner Bar */}
+        {replyingTo && (
+          <div className="hub-replying-active-bar">
+            <div className="hub-replying-info">
+              <Icons.Reply size={14} color="#38bdf8" />
+              <span>Replying to <strong>@{replyingTo.senderName}</strong>:</span>
+              <span className="hub-replying-text-snip">"{replyingTo.text}"</span>
+            </div>
+            <button 
+              type="button" 
+              className="hub-reply-cancel-btn"
+              onClick={() => setReplyingTo(null)}
+              title="Cancel reply"
+            >
+              <Icons.Close size={13} />
+            </button>
+          </div>
+        )}
+
+        {/* Copy Toast */}
+        {copyToast && (
+          <div className="hub-copy-toast animate-slide-up">
+            <Icons.Check size={13} />
+            <span>{copyToast}</span>
+          </div>
+        )}
+
+        {/* Quick Suggestion Chips */}
         <div className="hub-quick-chips-bar">
           {QUICK_CHIPS.map((chip, idx) => (
             <button
               key={idx}
               type="button"
-              className="hub-quick-chip"
-              onClick={() => handleQuickChipClick(chip)}
-              disabled={sending}
+              className="hub-quick-chip-btn"
+              onClick={() => handleQuickChip(chip)}
+              title={chip.text}
             >
+              <span className="chip-plus">+</span>
               <span>{chip.label}</span>
             </button>
           ))}
         </div>
 
-        {/* Reply Indicator Preview Bar */}
-        {replyingTo && (
-          <div className="composer-reply-preview-bar animate-slide-up">
-            <div className="composer-reply-left">
-              <Icons.Reply size={14} className="composer-reply-icon" />
-              <div className="composer-reply-meta">
-                <span className="composer-reply-title">Replying to <strong>@{replyingTo.senderName}</strong></span>
-                <span className="composer-reply-text">{replyingTo.text}</span>
-              </div>
-            </div>
-            <button 
-              type="button" 
-              className="composer-reply-close-btn"
-              onClick={() => setReplyingTo(null)}
-              title="Cancel reply"
-            >
-              <Icons.Close size={14} />
-            </button>
-          </div>
-        )}
-
-        {/* Input Composer */}
+        {/* Composer Form */}
         <form className="hub-composer-form" onSubmit={handleSendMessage}>
           <input
             ref={inputRef}
             type="text"
-            className="hub-composer-input"
+            className="hub-chat-input"
             placeholder={
-              replyingTo 
-                ? `Reply to @${replyingTo.senderName}...` 
+              isPrivateChannel 
+                ? (selectedDirectFriend ? `Message @${selectedDirectFriend.displayName || selectedDirectFriend.name}...` : `Message #study-buddies...`)
                 : `Message #${currentChannelInfo.name}...`
             }
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            maxLength={1000}
             disabled={sending}
           />
-          <button 
-            type="submit" 
+
+          <button
+            type="submit"
             className="hub-send-btn"
             disabled={!inputText.trim() || sending}
             title="Send Message (Enter)"
@@ -625,14 +702,167 @@ export default function StudyLounge({
 
       {/* ========================================================
           RIGHT: DYNAMIC SIDEBAR
-          - In Public Channels: LIVE STUDYING LEADERBOARD (Only actively studying students)
-          - In Private / DM Channels: THAT CHANNEL'S STUDENTS ONLY
+          - Toggle between "My Study Buddies" (All friends with live online/studying status)
+          - And "Global Leaderboard" (Only actively studying students)
          ======================================================== */}
       <div className={`hub-right-sidebar ${mobileTab === 'sidebar' ? 'mobile-active' : 'mobile-inactive'}`}>
         
-        {!isPrivateChannel ? (
+        {/* Right Sidebar Header Navigation Tabs */}
+        <div className="hub-right-sidebar-nav">
+          <button
+            type="button"
+            className={`hub-right-nav-tab ${rightSidebarTab === 'buddies' ? 'active' : ''}`}
+            onClick={() => setRightSidebarTab('buddies')}
+          >
+            <Icons.Users size={14} />
+            <span>Study Buddies</span>
+            {friends.length > 0 && <span className="hub-tab-count">{friends.length}</span>}
+          </button>
+
+          <button
+            type="button"
+            className={`hub-right-nav-tab ${rightSidebarTab === 'leaderboard' ? 'active' : ''}`}
+            onClick={() => setRightSidebarTab('leaderboard')}
+          >
+            <Icons.Trophy size={14} />
+            <span>Studying</span>
+            {allStudyingStudents.length > 0 && (
+              <span className="hub-tab-count active-pulse">{allStudyingStudents.length}</span>
+            )}
+          </button>
+        </div>
+
+        {rightSidebarTab === 'buddies' ? (
           /* ====================================================
-             DEFAULT PUBLIC VIEW: LIVE STUDYING LEADERBOARD
+             TAB 1: MY STUDY BUDDIES (Real-time Live Online & Studying Statuses)
+             ==================================================== */
+          <div className="hub-channel-members-container">
+            <div className="hub-leaderboard-header">
+              <div className="hub-leaderboard-title-row">
+                <Icons.Users size={16} color="#38bdf8" />
+                <span className="hub-leaderboard-title">STUDY BUDDY NETWORK</span>
+              </div>
+              <span className="hub-leaderboard-badge">
+                {friends.filter(f => f.status === 'studying' || f.status === 'online').length} Online
+              </span>
+            </div>
+
+            <div className="hub-channel-members-list">
+              {/* Current User Nameplate */}
+              <div 
+                className="hub-member-card is-self clickable"
+                onClick={() => onInspectFriend && onInspectFriend({ isSelf: true, ...userProfile, id: currentUser?.uid, uid: currentUser?.uid })}
+                title="Click to view your profile card"
+              >
+                <AvatarRenderer 
+                  avatar={userProfile?.avatar || currentUser?.photoURL}
+                  name={userProfile?.displayName || 'You'}
+                  avatarBg={userProfile?.avatarBg || '#5865f2'}
+                  size={36}
+                  status={isUserStudying ? 'studying' : 'online'}
+                />
+                <div className="hub-member-meta">
+                  <div className="hub-member-name-row">
+                    <span className="hub-member-name">{userProfile?.displayName || 'You'}</span>
+                    <span className="hub-self-tag">YOU</span>
+                  </div>
+                  <div className="hub-member-status-line">
+                    <span className={`status-dot-mini ${isUserStudying ? 'studying' : 'online'}`}></span>
+                    <span>{isUserStudying ? `Studying (${userActivity?.activity?.timerText || 'Live'})` : 'Online'}</span>
+                  </div>
+                  <div className="hub-student-stats-row">
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <Icons.Flame size={11} color="#f97316" />
+                      {userProfile?.streak || 0}d streak
+                    </span>
+                    <span>•</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <Icons.Target size={11} color="#38bdf8" />
+                      {userProfile?.solvedQs || 0} Qs
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* All Friends List */}
+              {friends.length === 0 ? (
+                <div className="hub-empty-friends-sidebar">
+                  <Icons.Users size={28} color="#64748b" />
+                  <p>No study buddies added yet.</p>
+                  <span>Add friends by Unique ID from your Profile tab!</span>
+                </div>
+              ) : (
+                friends.map(friend => {
+                  const fId = friend.id || friend.uid;
+                  const isCurrentDm = selectedDirectFriend && ((selectedDirectFriend.id === fId) || (selectedDirectFriend.uid === fId));
+                  const timerDisplay = getPeerTimerDisplay(friend);
+                  const isStudying = friend.status === 'studying';
+                  const isOnline = friend.status === 'online';
+
+                  return (
+                    <div 
+                      key={fId}
+                      className={`hub-member-card clickable ${isCurrentDm ? 'is-active-dm' : ''}`}
+                      onClick={() => handleSelectDirectFriend(friend)}
+                      title={`Click to open 1-on-1 chat with ${friend.displayName || friend.name}`}
+                    >
+                      <AvatarRenderer 
+                        avatar={friend.avatar}
+                        name={friend.displayName || friend.name}
+                        avatarBg={friend.avatarBg}
+                        size={36}
+                        status={friend.status || 'offline'}
+                      />
+                      <div className="hub-member-meta">
+                        <div className="hub-member-name-row">
+                          <span className="hub-member-name">{friend.displayName || friend.name}</span>
+                          {isCurrentDm && <span className="hub-active-chat-pill">ACTIVE CHAT</span>}
+                        </div>
+
+                        <div className="hub-member-status-line">
+                          <span className={`status-dot-mini ${friend.status || 'offline'}`}></span>
+                          {isStudying ? (
+                            <span className="studying-status-text">
+                              Studying {friend.activity?.subject ? `(${friend.activity.subject})` : ''} {timerDisplay ? `• ${timerDisplay}` : ''}
+                            </span>
+                          ) : (
+                            <span>{isOnline ? 'Online' : 'Offline'}</span>
+                          )}
+                        </div>
+
+                        <div className="hub-student-stats-row">
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <Icons.Flame size={11} color="#f97316" />
+                            {friend.streak || 0}d streak
+                          </span>
+                          <span>•</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <Icons.Target size={11} color="#38bdf8" />
+                            {friend.solvedQs || 0} Qs
+                          </span>
+
+                          <button
+                            type="button"
+                            className="hub-inspect-inline-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onInspectFriend) onInspectFriend(friend);
+                            }}
+                            title="Inspect Profile & Tracker"
+                          >
+                            <Icons.Target size={11} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        ) : (
+          /* ====================================================
+             TAB 2: GLOBAL LIVE STUDYING LEADERBOARD
              ==================================================== */
           <div className="hub-leaderboard-container">
             <div className="hub-leaderboard-header">
@@ -705,136 +935,7 @@ export default function StudyLounge({
               )}
             </div>
           </div>
-        ) : (
-          /* ====================================================
-             PRIVATE / DM VIEW: CHANNEL STUDENTS ONLY (EVEN IF OFFLINE)
-             ==================================================== */
-          <div className="hub-channel-members-container">
-            <div className="hub-leaderboard-header">
-              <div className="hub-leaderboard-title-row">
-                <Icons.Users size={16} color="#38bdf8" />
-                <span className="hub-leaderboard-title">CHANNEL STUDENTS</span>
-              </div>
-              <span className="hub-leaderboard-badge">
-                {selectedDirectFriend ? '2 Members' : `${friends.length + 1} Members`}
-              </span>
-            </div>
-
-            <div className="hub-channel-members-list">
-              {/* Current User Nameplate */}
-              <div 
-                className="hub-member-card is-self clickable"
-                onClick={() => onInspectFriend && onInspectFriend({ isSelf: true, ...userProfile, id: currentUser?.uid, uid: currentUser?.uid })}
-                title="Click to view your profile card"
-              >
-                <AvatarRenderer 
-                  avatar={userProfile?.avatar || currentUser?.photoURL}
-                  name={userProfile?.displayName || 'You'}
-                  avatarBg={userProfile?.avatarBg || '#5865f2'}
-                  size={36}
-                  status={isUserStudying ? 'studying' : 'online'}
-                />
-                <div className="hub-member-meta">
-                  <div className="hub-member-name-row">
-                    <span className="hub-member-name">{userProfile?.displayName || 'You'}</span>
-                    <span className="hub-self-tag">YOU</span>
-                  </div>
-                  <div className="hub-member-status-line">
-                    <span className={`status-dot-mini ${isUserStudying ? 'studying' : 'online'}`}></span>
-                    <span>{isUserStudying ? `Studying (${userActivity?.activity?.timerText || 'Live'})` : 'Online'}</span>
-                  </div>
-                  <div className="hub-student-stats-row">
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                      <Icons.Flame size={11} color="#f97316" />
-                      {userProfile?.streak || 0}d streak
-                    </span>
-                    <span>•</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                      <Icons.Target size={11} color="#38bdf8" />
-                      {userProfile?.solvedQs || 0} Qs
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Direct friend or all buddies in circle */}
-              {selectedDirectFriend ? (
-                <div 
-                  key={selectedDirectFriend.id || selectedDirectFriend.uid}
-                  className="hub-member-card clickable"
-                  onClick={() => onInspectFriend && onInspectFriend(selectedDirectFriend)}
-                  title="Click to view full aspirant profile card"
-                >
-                  <AvatarRenderer 
-                    avatar={selectedDirectFriend.avatar}
-                    name={selectedDirectFriend.displayName || selectedDirectFriend.name}
-                    avatarBg={selectedDirectFriend.avatarBg}
-                    size={36}
-                    status={selectedDirectFriend.status || 'offline'}
-                  />
-                  <div className="hub-member-meta">
-                    <div className="hub-member-name-row">
-                      <span className="hub-member-name">{selectedDirectFriend.displayName || selectedDirectFriend.name}</span>
-                    </div>
-                    <div className="hub-member-status-line">
-                      <span className={`status-dot-mini ${selectedDirectFriend.status || 'offline'}`}></span>
-                      <span>{selectedDirectFriend.status === 'studying' ? 'Studying' : selectedDirectFriend.status === 'online' ? 'Online' : 'Offline'}</span>
-                    </div>
-                    <div className="hub-student-stats-row">
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                        <Icons.Flame size={11} color="#f97316" />
-                        {selectedDirectFriend.streak || 0}d streak
-                      </span>
-                      <span>•</span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                        <Icons.Target size={11} color="#38bdf8" />
-                        {selectedDirectFriend.solvedQs || 0} Qs
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                friends.map(friend => (
-                  <div 
-                    key={friend.id || friend.uid}
-                    className="hub-member-card clickable"
-                    onClick={() => onInspectFriend && onInspectFriend(friend)}
-                    title="Click to view full aspirant profile card"
-                  >
-                    <AvatarRenderer 
-                      avatar={friend.avatar}
-                      name={friend.displayName || friend.name}
-                      avatarBg={friend.avatarBg}
-                      size={36}
-                      status={friend.status || 'offline'}
-                    />
-                    <div className="hub-member-meta">
-                      <div className="hub-member-name-row">
-                        <span className="hub-member-name">{friend.displayName || friend.name}</span>
-                      </div>
-                      <div className="hub-member-status-line">
-                        <span className={`status-dot-mini ${friend.status || 'offline'}`}></span>
-                        <span>{friend.status === 'studying' ? 'Studying' : friend.status === 'online' ? 'Online' : 'Offline'}</span>
-                      </div>
-                      <div className="hub-student-stats-row">
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                          <Icons.Flame size={11} color="#f97316" />
-                          {friend.streak || 0}d streak
-                        </span>
-                        <span>•</span>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                          <Icons.Target size={11} color="#38bdf8" />
-                          {friend.solvedQs || 0} Qs
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
         )}
-
       </div>
 
       {/* ========================================================

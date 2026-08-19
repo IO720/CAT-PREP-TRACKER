@@ -25,6 +25,7 @@ export default function ProfileView({
   friends = [], 
   onAddFriendSuccess, 
   onInspectFriend,
+  onMessagePeer = null,
   startDate = "",
   onUpdateStartDate,
   onExport,
@@ -862,6 +863,18 @@ export default function ProfileView({
                     </div>
 
                     <div className="buddy-modern-actions">
+                      {onMessagePeer && (
+                        <button
+                          type="button"
+                          className="buddy-inspect-action-btn message-accent"
+                          onClick={() => onMessagePeer(friend)}
+                          title={`Direct message with ${friend.displayName || friend.name}`}
+                          style={{ borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38bdf8' }}
+                        >
+                          <Icons.MessageSquare size={13} />
+                          <span>Message</span>
+                        </button>
+                      )}
                       {onInspectFriend && (
                         <button
                           type="button"

@@ -1,6 +1,7 @@
 import React from 'react';
 import { getTodayTrackerPosition } from '../utils/dateUtils';
 import StudyContributionHeatmap from './StudyContributionHeatmap';
+import AvatarRenderer from './AvatarRenderer';
 import { Icons } from './AspirantIcons';
 
 export default function DashboardView({ 
@@ -8,6 +9,7 @@ export default function DashboardView({
   setActiveTab, 
   friends = [], 
   onInspectFriend,
+  onMessagePeer = null,
   currentUser = null,
   userProfile = null,
   timerState = null
@@ -73,6 +75,9 @@ export default function DashboardView({
   const todayStudyHours = todayDayObj?.studyHours || (todayDayObj?.sessions || []).reduce((acc, s) => acc + (s.durationMinutes || 0) / 60, 0);
   const todaySessions = todayDayObj?.sessions || [];
   const todayDoneTasks = (todayDayObj?.quantCompleted ? 1 : 0) + (todayDayObj?.lrdiCompleted ? 1 : 0) + (todayDayObj?.varcCompleted ? 1 : 0);
+
+  // Online and studying buddies
+  const onlineFriends = friends.filter(f => f.status === 'studying' || f.status === 'online');
 
   return (
     <div className="dashboard-clean-container">
@@ -260,6 +265,156 @@ export default function DashboardView({
               <Icons.ChevronRight size={14} />
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* REAL-TIME ONLINE STUDY BUDDIES NETWORK SECTION */}
+      <div className="dashboard-card dashboard-online-buddies-card">
+        <div className="online-buddies-header">
+          <div className="online-buddies-title-group">
+            <div className="online-buddies-icon-box">
+              <Icons.Users size={18} color="#38bdf8" />
+            </div>
+            <div>
+              <h3 className="online-buddies-title">Study Buddy Network</h3>
+              <p className="online-buddies-sub">Real-time status & active focus sessions of your study friends</p>
+            </div>
+          </div>
+          <div className="online-buddies-header-actions">
+            <span className="online-status-badge">
+              <span className="live-pulse-dot"></span>
+              {onlineFriends.length} Active Now
+            </span>
+            <button 
+              type="button" 
+              className="view-all-buddies-btn"
+              onClick={() => setActiveTab('profile')}
+              title="Manage your study buddies network"
+            >
+              <span>Manage Buddies</span>
+              <Icons.ChevronRight size={13} />
+            </button>
+          </div>
+        </div>
+
+        <div className="online-buddies-content">
+          {friends.length === 0 ? (
+            <div className="dashboard-no-buddies-empty">
+              <Icons.Users size={32} color="#64748b" />
+              <h4>No Study Buddies Added Yet</h4>
+              <p>Connect with fellow CAT aspirants by Unique ID or Email to study together and see when they come online!</p>
+              <button 
+                type="button" 
+                className="btn-secondary add-buddies-empty-btn"
+                onClick={() => setActiveTab('profile')}
+              >
+                <Icons.UserPlus size={14} />
+                <span>Add Friends on Profile</span>
+              </button>
+            </div>
+          ) : onlineFriends.length === 0 ? (
+            <div className="dashboard-all-offline-box">
+              <div className="offline-notice-text">
+                <span className="offline-dot"></span>
+                <span>All your {friends.length} study buddies are currently offline. Check their progress below or chat in Study Lounge:</span>
+              </div>
+              <div className="dashboard-buddies-compact-grid">
+                {friends.slice(0, 6).map(friend => (
+                  <div 
+                    key={friend.id || friend.uid} 
+                    className="dashboard-buddy-chip clickable"
+                    onClick={() => onInspectFriend && onInspectFriend(friend)}
+                    title="Click to inspect tracker"
+                  >
+                    <AvatarRenderer 
+                      avatar={friend.avatar} 
+                      name={friend.displayName || friend.name} 
+                      avatarBg={friend.avatarBg} 
+                      size={28} 
+                      status="offline"
+                    />
+                    <span className="chip-name">{friend.displayName || friend.name}</span>
+                    <span className="chip-streak">{friend.streak || 0}d streak</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="dashboard-buddies-live-grid">
+              {onlineFriends.map(friend => {
+                const isStudying = friend.status === 'studying';
+                return (
+                  <div 
+                    key={friend.id || friend.uid} 
+                    className={`dashboard-buddy-live-card ${isStudying ? 'is-studying' : ''}`}
+                  >
+                    <div 
+                      className="buddy-live-info clickable"
+                      onClick={() => onInspectFriend && onInspectFriend(friend)}
+                      title="Click to view full aspirant profile"
+                    >
+                      <AvatarRenderer 
+                        avatar={friend.avatar}
+                        name={friend.displayName || friend.name}
+                        avatarBg={friend.avatarBg}
+                        size={40}
+                        status={friend.status}
+                      />
+                      <div className="buddy-live-meta">
+                        <div className="buddy-live-name-row">
+                          <span className="buddy-live-name">{friend.displayName || friend.name}</span>
+                          {friend.aspirantId && (
+                            <span className="buddy-id-tag">#{friend.aspirantId}</span>
+                          )}
+                        </div>
+                        <div className="buddy-live-status-pill">
+                          <span className={`status-dot-mini ${friend.status}`}></span>
+                          {isStudying ? (
+                            <span className="studying-text">
+                              Studying {friend.activity?.subject ? `(${friend.activity.subject})` : 'Focus Session'}
+                              {friend.activity?.timerRemaining ? ` • ${friend.activity.timerRemaining}` : ''}
+                            </span>
+                          ) : (
+                            <span className="online-text">Online & Active</span>
+                          )}
+                        </div>
+                        <div className="buddy-live-stats">
+                          <span>🔥 {friend.streak || 0}d streak</span>
+                          <span>•</span>
+                          <span>🎯 {friend.solvedQs || 0} Qs solved</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="buddy-live-actions">
+                      {onMessagePeer && (
+                        <button 
+                          type="button"
+                          className="buddy-live-btn message-btn"
+                          onClick={() => onMessagePeer(friend)}
+                          title={`Chat with ${friend.displayName || friend.name}`}
+                        >
+                          <Icons.MessageSquare size={13} />
+                          <span>Message</span>
+                        </button>
+                      )}
+                      {onInspectFriend && (
+                        <button 
+                          type="button"
+                          className="buddy-live-btn inspect-btn"
+                          onClick={() => onInspectFriend(friend)}
+                          title="Inspect Tracker & Analytics"
+                        >
+                          <Icons.Target size={13} />
+                          <span>Inspect</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

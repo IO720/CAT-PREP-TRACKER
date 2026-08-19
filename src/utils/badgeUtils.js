@@ -3,6 +3,17 @@
 export const BADGE_DEFINITIONS = [
   // Streak Badges
   {
+    id: 'streak-1',
+    category: 'streak',
+    name: 'First Step',
+    perkTitle: 'Day 1 Starter Perk',
+    description: 'Took the first step on the CAT journey by completing your first study session',
+    threshold: 1,
+    metricType: 'streak',
+    iconName: 'Zap',
+    color: '#38bdf8'
+  },
+  {
     id: 'streak-3',
     category: 'streak',
     name: 'Focus Spark',
@@ -48,6 +59,28 @@ export const BADGE_DEFINITIONS = [
   },
 
   // Problem Solving Milestones
+  {
+    id: 'solved-10',
+    category: 'solved',
+    name: 'Ignition',
+    perkTitle: '10 Questions Solved',
+    description: 'Solved your first 10 preparation drill questions',
+    threshold: 10,
+    metricType: 'solvedQs',
+    iconName: 'Sparkles',
+    color: '#a855f7'
+  },
+  {
+    id: 'solved-25',
+    category: 'solved',
+    name: 'Momentum Builder',
+    perkTitle: '25 Questions Solved',
+    description: 'Completed 25 practice questions across drills',
+    threshold: 25,
+    metricType: 'solvedQs',
+    iconName: 'Target',
+    color: '#6366f1'
+  },
   {
     id: 'solved-50',
     category: 'solved',
@@ -150,7 +183,7 @@ export const PRESTIGE_BADGE = {
   id: 'omni-grandmaster',
   name: 'Omni-Aspirant Grandmaster',
   perkTitle: 'Complete Preparation Mastery',
-  description: 'Unlocked all 10 consistency, problem-solving, and mock test badges. Pure excellence!',
+  description: 'Unlocked all consistency, problem-solving, and mock test badges. Pure excellence!',
   iconName: 'Trophy',
   color: '#eab308',
   gradient: 'linear-gradient(135deg, #ffd700 0%, #ff8800 50%, #ec4899 100%)'

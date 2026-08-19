@@ -236,12 +236,12 @@ export default function AspirantProfileCard({
                       Omni Grandmaster Crest
                     </span>
                     <span className="hover-card-status-tag unlocked">
-                      10/10 UNLOCKED
+                      {badges.length}/{badges.length} UNLOCKED
                     </span>
                   </div>
                   <div className="hover-card-perk-title">Complete Preparation Mastery</div>
                   <div className="hover-card-description">
-                    Collected all 10 consistency, drill, and mock test achievement badges!
+                    Collected all {badges.length} consistency, drill, and mock test achievement badges!
                   </div>
                 </div>
               </div>

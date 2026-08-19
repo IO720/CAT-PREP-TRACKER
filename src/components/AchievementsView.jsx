@@ -13,21 +13,21 @@ export default function AchievementsView({
   const [selectedBadge, setSelectedBadge] = useState(null);
 
   const unlockedBadges = badges.filter(b => b.isUnlocked);
-  const totalBadges = badges.length || 10;
+  const totalBadges = badges.length || 13;
   const unlockedCount = unlockedBadges.length;
   const isGrandmaster = unlockedCount === totalBadges && totalBadges > 0;
   const completionPercent = Math.round((unlockedCount / totalBadges) * 100);
 
   // Prestige Rank Calculation
-  const getPrestigeRank = (count) => {
-    if (count === 10) return { title: 'Omni Grandmaster', tier: 'Pinnacle Master', color: '#eab308' };
-    if (count >= 7) return { title: 'Elite Tactician', tier: 'Diamond Tier', color: '#38bdf8' };
-    if (count >= 4) return { title: 'Discipline Master', tier: 'Gold Tier', color: '#10b981' };
+  const getPrestigeRank = (count, total) => {
+    if (count === total && total > 0) return { title: 'Omni Grandmaster', tier: 'Pinnacle Master', color: '#eab308' };
+    if (count >= Math.round(total * 0.75)) return { title: 'Elite Tactician', tier: 'Diamond Tier', color: '#38bdf8' };
+    if (count >= Math.round(total * 0.45)) return { title: 'Discipline Master', tier: 'Gold Tier', color: '#10b981' };
     if (count >= 1) return { title: 'Rising Aspirant', tier: 'Silver Tier', color: '#818cf8' };
     return { title: 'Novice Aspirant', tier: 'Bronze Tier', color: '#94a3b8' };
   };
 
-  const currentRank = getPrestigeRank(unlockedCount);
+  const currentRank = getPrestigeRank(unlockedCount, totalBadges);
 
   const filteredBadges = activeCategory === 'ALL'
     ? badges
@@ -90,7 +90,7 @@ export default function AchievementsView({
               {isGrandmaster && <div className="crest-shine-ring" />}
             </div>
             <div className="crest-caption">
-              {isGrandmaster ? 'Grandmaster Crest Unlocked' : 'Grandmaster Crest (10/10)'}
+              {isGrandmaster ? 'Grandmaster Crest Unlocked' : `Grandmaster Crest (${unlockedCount}/${totalBadges})`}
             </div>
           </div>
         </div>

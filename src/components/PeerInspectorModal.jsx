@@ -157,6 +157,39 @@ export default function PeerInspectorModal({
                 status={status}
               />
             </div>
+
+            {/* Action Buttons */}
+            <div className="profile-card-top-actions">
+              {isSelf ? (
+                onEditProfile && (
+                  <button 
+                    type="button" 
+                    className="profile-card-action-btn primary"
+                    onClick={() => {
+                      onClose();
+                      onEditProfile();
+                    }}
+                  >
+                    <Icons.Edit3 size={13} />
+                    <span>Edit Profile</span>
+                  </button>
+                )
+              ) : (
+                onMessagePeer && (
+                  <button 
+                    type="button" 
+                    className="profile-card-action-btn primary"
+                    onClick={() => {
+                      onClose();
+                      onMessagePeer(activePeer);
+                    }}
+                  >
+                    <Icons.MessageSquare size={13} />
+                    <span>Message Buddy</span>
+                  </button>
+                )
+              )}
+            </div>
           </div>
 
           {/* Identity Info */}
@@ -261,12 +294,12 @@ export default function PeerInspectorModal({
                         Omni Grandmaster Crest
                       </span>
                       <span className="hover-card-status-tag unlocked">
-                        10/10 UNLOCKED
+                        {badges.length}/{badges.length} UNLOCKED
                       </span>
                     </div>
                     <div className="hover-card-perk-title">Complete Preparation Mastery</div>
                     <div className="hover-card-description">
-                      Peer has collected every single consistency, drill, and mock test achievement badge!
+                      Peer has collected every single {badges.length} consistency, drill, and mock test achievement badge!
                     </div>
                   </div>
                 </div>
