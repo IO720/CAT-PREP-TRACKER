@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import AvatarRenderer from './AvatarRenderer';
 import { Icons } from './AspirantIcons';
 import StudyContributionHeatmap from './StudyContributionHeatmap';
@@ -13,6 +12,7 @@ export default function PeerInspectorModal({
   loading: initialLoading = false,
   onClose,
   onEditProfile = null,
+  onMessagePeer = null,
   currentUser = null
 }) {
   const activePeer = peer || friend;
@@ -92,7 +92,7 @@ export default function PeerInspectorModal({
   const totalVarc = trackerData?.totals?.varc || trackerData?.varc || 0;
   const grandTargets = { quant: 2500, lrdi: 500, varc: 500 };
 
-  return createPortal(
+  return (
     <div className="modal-backdrop" onClick={onClose}>
       <div 
         className="profile-card-container unified-profile-modal-card" 
@@ -475,7 +475,6 @@ export default function PeerInspectorModal({
 
         </div>
       </div>
-    </div>,
-    document.body
+    </div>
   );
 }

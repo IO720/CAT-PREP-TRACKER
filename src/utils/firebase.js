@@ -1012,20 +1012,17 @@ export const subscribeToChatMessages = (
           if (targetFriendId) {
             const expectedRoom = `dm_${[currentUserId, targetFriendId].sort().join('_')}`;
             if (msg.roomId === expectedRoom) return true;
+            if (Array.isArray(msg.participants) && msg.participants.includes(currentUserId) && msg.participants.includes(targetFriendId)) return true;
             return (
-              (msg.userId === currentUserId && msg.targetFriendId === targetFriendId) ||
-              (msg.userId === targetFriendId && (msg.targetFriendId === currentUserId || !msg.targetFriendId))
+              (msg.userId === currentUserId && (msg.targetFriendId === targetFriendId || msg.channel === `dm_${targetFriendId}`)) ||
+              (msg.userId === targetFriendId && (msg.targetFriendId === currentUserId || msg.channel === `dm_${currentUserId}` || !msg.targetFriendId))
             );
           }
 
-          // In buddies circle:
-          if (msg.roomId === 'buddies-circle' || msg.channel === 'buddies-circle' || msg.channel === 'private') {
-            const isSenderSelfOrFriend = (msg.userId === currentUserId) || myFriendIds.has(msg.userId);
-            if (!isSenderSelfOrFriend) return false;
-
-            if (Array.isArray(msg.participants) && msg.participants.length > 0) {
-              return msg.participants.includes(currentUserId);
-            }
+          // In buddies circle (All Connected Study Friends Group Room):
+          if (msg.roomId === 'buddies-circle' || msg.channel === 'buddies-circle' || msg.channel === 'friends' || msg.channel === 'private') {
+            if (msg.userId === currentUserId || myFriendIds.has(msg.userId)) return true;
+            if (Array.isArray(msg.participants) && (msg.participants.includes(currentUserId) || msg.participants.length === 0)) return true;
             return true;
           }
 

@@ -830,13 +830,14 @@ export default function ProfileView({
               <div className="buddies-modern-grid">
                 {friends.map((friend) => (
                   <div key={friend.id || friend.uid} className="buddy-modern-card">
+                    {/* Top Row: Avatar, Identity, and Top-Right Remove Button */}
                     <div className="buddy-modern-top">
                       <div className="buddy-avatar-col">
                         <AvatarRenderer 
                           avatar={friend.avatar || 'rocket'}
                           name={friend.displayName || friend.name}
                           avatarBg={friend.avatarBg || '#5865f2'}
-                          size={46}
+                          size={44}
                           status={friend.status || 'offline'}
                         />
                       </div>
@@ -845,7 +846,7 @@ export default function ProfileView({
                           <span className="buddy-display-name">{friend.displayName || friend.name}</span>
                           {friend.aspirantId && (
                             <span className="buddy-aspirant-tag">
-                              <Icons.Hash size={9} /> {friend.aspirantId}
+                              #{friend.aspirantId}
                             </span>
                           )}
                         </div>
@@ -857,8 +858,18 @@ export default function ProfileView({
                           </span>
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        className="buddy-remove-action-btn"
+                        onClick={() => handleRemoveFriend(friend)}
+                        disabled={removingFriendId === (friend.id || friend.uid)}
+                        title="Remove buddy from your network"
+                      >
+                        <Icons.UserX size={15} />
+                      </button>
                     </div>
 
+                    {/* Middle Row: Prep Stats Badges */}
                     <div className="buddy-stats-strip">
                       <div className="buddy-stat-badge">
                         <Icons.Flame size={12} color="#f97316" />
@@ -866,18 +877,18 @@ export default function ProfileView({
                       </div>
                       <div className="buddy-stat-badge">
                         <Icons.Target size={12} color="#38bdf8" />
-                        <span>{friend.solvedQs || 0} Qs</span>
+                        <span>{friend.solvedQs || 0} Qs solved</span>
                       </div>
                     </div>
 
+                    {/* Bottom Row: 2 Clean Full-Width Actions */}
                     <div className="buddy-modern-actions">
                       {onMessagePeer && (
                         <button
                           type="button"
-                          className="buddy-inspect-action-btn message-accent"
+                          className="buddy-action-cta-btn primary"
                           onClick={() => onMessagePeer(friend)}
                           title={`Direct message with ${friend.displayName || friend.name}`}
-                          style={{ borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38bdf8' }}
                         >
                           <Icons.MessageSquare size={13} />
                           <span>Message</span>
@@ -886,22 +897,14 @@ export default function ProfileView({
                       {onInspectFriend && (
                         <button
                           type="button"
-                          className="buddy-inspect-action-btn"
+                          className="buddy-action-cta-btn secondary"
                           onClick={() => onInspectFriend(friend)}
+                          title={`Inspect ${friend.displayName || friend.name}'s progress`}
                         >
                           <Icons.Target size={13} />
-                          <span>Inspect Tracker</span>
+                          <span>Inspect</span>
                         </button>
                       )}
-                      <button
-                        type="button"
-                        className="buddy-remove-action-btn"
-                        onClick={() => handleRemoveFriend(friend)}
-                        disabled={removingFriendId === (friend.id || friend.uid)}
-                        title="Remove buddy"
-                      >
-                        <Icons.UserX size={14} />
-                      </button>
                     </div>
                   </div>
                 ))}

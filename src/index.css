@@ -7800,34 +7800,36 @@ html, body {
 
 .buddies-modern-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 16px;
 }
 
 .buddy-modern-card {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 14px 16px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .buddy-modern-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(56, 189, 248, 0.35);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 14px rgba(56, 189, 248, 0.15);
-  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 16px rgba(56, 189, 248, 0.15);
+  background: rgba(15, 23, 42, 0.85);
 }
 
 .buddy-modern-top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+  position: relative;
 }
 
 .buddy-avatar-col {
@@ -7837,21 +7839,24 @@ html, body {
 .buddy-info-col {
   flex: 1;
   min-width: 0;
+  padding-right: 4px;
 }
 
 .buddy-name-line {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .buddy-display-name {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 800;
   color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 140px;
 }
 
 .buddy-aspirant-tag {
@@ -7859,10 +7864,12 @@ html, body {
   font-family: monospace;
   background: rgba(56, 189, 248, 0.15);
   color: #38bdf8;
-  padding: 1px 5px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 1px 6px;
   border-radius: 4px;
   font-weight: 700;
   letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
 
 .buddy-target-line {
@@ -7871,14 +7878,14 @@ html, body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .buddy-live-status {
   display: flex;
   align-items: center;
   gap: 5px;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
 .buddy-live-status .status-dot {
@@ -7894,6 +7901,7 @@ html, body {
 
 .buddy-live-status .status-dot.online {
   background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
 }
 
 .buddy-live-status .status-dot.offline {
@@ -7901,9 +7909,30 @@ html, body {
 }
 
 .buddy-live-status .status-text {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 10.5px;
+  font-weight: 600;
   color: #94a3b8;
+}
+
+.buddy-remove-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.buddy-remove-action-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #ef4444;
 }
 
 .buddy-stats-strip {
@@ -7919,7 +7948,7 @@ html, body {
   gap: 5px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.07);
-  padding: 5px 8px;
+  padding: 6px 10px;
   border-radius: 8px;
   font-size: 11px;
   font-weight: 700;
@@ -7929,45 +7958,47 @@ html, body {
 .buddy-modern-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-.buddy-inspect-action-btn {
+.buddy-action-cta-btn {
   flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  padding: 7px 12px;
-  border-radius: 8px;
-  font-size: 11px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid transparent;
 }
 
-.buddy-inspect-action-btn:hover {
-  background: var(--accent-color, #38bdf8);
-  color: var(--accent-text, #060b14);
+.buddy-action-cta-btn.primary {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.25) 0%, rgba(56, 189, 248, 0.25) 100%);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+}
+
+.buddy-action-cta-btn.primary:hover {
+  background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
+  color: #060b14;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
   border-color: transparent;
 }
 
-.buddy-remove-action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
+.buddy-action-cta-btn.secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+}
+
+.buddy-action-cta-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .buddy-remove-action-btn:hover {
