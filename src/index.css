@@ -8389,9 +8389,10 @@ html, body {
 @media (max-width: 960px) {
   .hub-layout {
     flex-direction: column;
-    height: calc(100dvh - 180px);
+    height: calc(100dvh - 160px);
     min-height: 480px;
     border-radius: 12px;
+    margin-bottom: 75px;
   }
 
   .hub-mobile-tabs-bar {

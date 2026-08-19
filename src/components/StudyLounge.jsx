@@ -194,7 +194,7 @@ export default function StudyLounge({
 
   const currentChannelInfo = isPrivateChannel
     ? selectedDirectFriend
-      ? { name: `@${selectedDirectFriend.displayName || selectedDirectFriend.name}`, desc: `Direct 1-on-1 private discussion with ${selectedDirectFriend.displayName || selectedDirectFriend.name}.` }
+      ? { name: selectedDirectFriend.displayName || selectedDirectFriend.name, desc: `Direct 1-on-1 private discussion with ${selectedDirectFriend.displayName || selectedDirectFriend.name}.` }
       : { name: 'study-buddies', desc: `Private discussion room exclusively for you and your ${friends.length} connected study buddies.` }
     : PUBLIC_CHANNELS.find(c => c.id === activeChannelId) || PUBLIC_CHANNELS[0];
 
@@ -217,9 +217,19 @@ export default function StudyLounge({
     else if (activeChannelId === 'milestones' || text.toUpperCase().includes('#MILESTONE')) tag = 'MILESTONE';
     else if (text.toUpperCase().includes('#BREAK')) tag = 'BREAK';
 
-    await sendChatMessage(currentUser, text, tag, userProfile, activeChannelId, currentReply, targetFriendId);
-    setSending(false);
-    inputRef.current?.focus();
+    try {
+      await sendChatMessage(currentUser, text, tag, userProfile, activeChannelId, currentReply, targetFriendId);
+    } catch (err) {
+      console.error("Error sending chat message:", err);
+      setInputText(text);
+      setCopyToast("Error sending message. Please try again.");
+      setTimeout(() => setCopyToast(''), 3000);
+    } finally {
+      setSending(false);
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -234,9 +244,16 @@ export default function StudyLounge({
     const targetFriendId = selectedDirectFriend ? (selectedDirectFriend.id || selectedDirectFriend.uid) : null;
 
     setSending(true);
-    await sendChatMessage(currentUser, chip.text, chip.tag, userProfile, activeChannelId, replyingTo, targetFriendId);
-    setReplyingTo(null);
-    setSending(false);
+    try {
+      await sendChatMessage(currentUser, chip.text, chip.tag, userProfile, activeChannelId, replyingTo, targetFriendId);
+      setReplyingTo(null);
+    } catch (err) {
+      console.error("Error sending chip message:", err);
+      setCopyToast("Error sending message. Please try again.");
+      setTimeout(() => setCopyToast(''), 3000);
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleQuickChip = handleQuickChipClick;
@@ -477,7 +494,11 @@ export default function StudyLounge({
                   <Icons.MessageSquare size={36} />
                 )}
               </div>
-              <h3>Welcome to #{currentChannelInfo.name}!</h3>
+              <h3>
+                {isPrivateChannel && selectedDirectFriend 
+                  ? `Conversation with @${currentChannelInfo.name}` 
+                  : `Welcome to #${currentChannelInfo.name}!`}
+              </h3>
               <p>
                 {isPrivateChannel
                   ? selectedDirectFriend

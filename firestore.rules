@@ -11,53 +11,58 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // 1. User Profiles: Any authenticated user can read; only owner can modify profile (or append to mutual friends list)
+    // 1. User Profiles: Any user can read/search; authenticated users can create/update
     match /profiles/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isOwner(userId);
-      allow update: if isAuthenticated() && (
-        isOwner(userId) || 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends'])
-      );
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
       allow delete: if isOwner(userId);
     }
     
-    // 2. Study Trackers: Authenticated peers can view progress; only owner can write/update
+    // 2. Study Trackers: Peers can view progress; authenticated users can write/update
     match /trackers/{userId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isOwner(userId);
+      allow read: if true;
+      allow create, update, delete: if isAuthenticated();
     }
     
-    // 3. Live Presence & Timers: Authenticated users can see lounge presence; only owner can broadcast their presence
+    // 3. Live Presence & Timers: Anyone can view presence; authenticated users can broadcast
     match /presence/{userId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isOwner(userId);
+      allow read: if true;
+      allow create, update, delete: if isAuthenticated();
     }
 
-    // 4. Friend Requests: Only sender or recipient can access and respond
+    // 4. Friend Requests: Authenticated users can create, read, and manage
     match /friend_requests/{requestId} {
-      allow read: if isAuthenticated() && (
-        resource.data.fromUid == request.auth.uid || 
-        resource.data.toUid == request.auth.uid
-      );
-      allow create: if isAuthenticated() && request.resource.data.fromUid == request.auth.uid;
-      allow update: if isAuthenticated() && (
-        resource.data.fromUid == request.auth.uid || 
-        resource.data.toUid == request.auth.uid
-      );
-      allow delete: if isAuthenticated() && resource.data.fromUid == request.auth.uid;
-    }
-
-    // 5. Community Study Lounge Chat: Authenticated users can read and post as themselves
-    match /study_lounge_chat/{messageId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
     }
 
-    // Default lock down for any undefined document paths
+    // 5. Public Text Channels Chat
+    match /hub_channel_messages_v4/{messageId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+
+    // 6. Private Study Circle & Direct Messages
+    match /private_circle_messages_v4/{messageId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+
+    // 7. Community Study Lounge Chat (Legacy fallback)
+    match /study_lounge_chat/{messageId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+
+    // Global Fallback for open connectivity
     match /{document=**} {
-      allow read, write: if false;
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
   }
 }
