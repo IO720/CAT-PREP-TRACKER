@@ -1,6 +1,6 @@
 {
-  "version": "1.0.61",
-  "versionCode": 10061,
-  "buildTime": "2026-08-19T11:18:22.565Z",
-  "releaseNotes": "Live web app update release v1.0.61"
+  "version": "1.0.62",
+  "versionCode": 10062,
+  "buildTime": "2026-08-19T16:28:00.000Z",
+  "releaseNotes": "Optimize Firestore quota with debounced saves, anti-overwrite protection, and solitary mode"
 }

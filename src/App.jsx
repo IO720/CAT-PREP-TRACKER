@@ -557,8 +557,9 @@ export default function App() {
 
   const [isCloudLoaded, setIsCloudLoaded] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const cloudSaveTimerRef = useRef(null);
 
-  // Listen to Firebase Auth state
+  // Listen to Firebase Auth state with Anti-Overwrite & Timestamp Protection
   useEffect(() => {
     if (isFirebaseConfigured && auth) {
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -574,12 +575,30 @@ export default function App() {
             // Fetch Cloud tracker data
             const cloudData = await loadTrackerFromCloud(firebaseUser.uid);
             if (cloudData && cloudData.tracker) {
-              setState(prev => ({
-                tracker: cloudData.tracker,
-                studyPlan: cloudData.studyPlan || prev.studyPlan,
-                mocks: cloudData.mocks || prev.mocks,
-                settings: cloudData.settings || prev.settings
-              }));
+              const cloudTimestamp = cloudData.updatedAtMs || (cloudData.updatedAt ? new Date(cloudData.updatedAt).getTime() : 0);
+              const localTimestamp = state.lastUpdated || 0;
+
+              // Only overwrite local state if cloud data is genuinely NEWER than local changes (e.g. from another device)
+              if (cloudTimestamp > localTimestamp + 1500) {
+                setState(prev => ({
+                  tracker: cloudData.tracker,
+                  studyPlan: cloudData.studyPlan || prev.studyPlan,
+                  mocks: cloudData.mocks || prev.mocks,
+                  settings: cloudData.settings || prev.settings,
+                  lastUpdated: cloudTimestamp
+                }));
+              } else {
+                // Local state is newer or has offline changes: preserve local state and push to cloud
+                saveTrackerToCloud(
+                  firebaseUser.uid,
+                  state.tracker,
+                  state.studyPlan,
+                  state.mocks,
+                  activeStreak,
+                  totalSolved,
+                  localTimestamp || Date.now()
+                );
+              }
             } else {
               // Initial cloud state for new user
               await saveTrackerToCloud(
@@ -588,11 +607,12 @@ export default function App() {
                 state.studyPlan, 
                 state.mocks, 
                 activeStreak, 
-                totalSolved
+                totalSolved,
+                state.lastUpdated || Date.now()
               );
             }
           } catch (err) {
-            console.error("Error loading initial cloud data:", err);
+            console.warn("Using local cache, cloud load skipped:", err);
           } finally {
             setIsCloudLoaded(true);
           }
@@ -611,21 +631,37 @@ export default function App() {
     if (!user) return;
     await updateUserProfile(user.uid, profileData);
     setUserProfile(prev => ({ ...prev, ...profileData }));
-    updateUserPresence(user, timerState, activeStreak, totalSolved, profileData);
+    const hasFriends = Array.isArray(userProfile?.friends) && userProfile.friends.length > 0;
+    if (hasFriends || activeTab === 'study-lounge') {
+      updateUserPresence(user, timerState, activeStreak, totalSolved, profileData);
+    }
   };
 
-  // Sync changes to Cloud in real-time when authenticated (only after initial cloud load)
+  // Sync changes to Cloud in real-time with 2.5s Debounce (Protects against Firestore quota exhaustion)
   useEffect(() => {
-    if (isFirebaseConfigured && user && isCloudLoaded) {
+    if (!isFirebaseConfigured || !user || !isCloudLoaded) return;
+
+    if (cloudSaveTimerRef.current) {
+      clearTimeout(cloudSaveTimerRef.current);
+    }
+
+    cloudSaveTimerRef.current = setTimeout(() => {
       saveTrackerToCloud(
         user.uid, 
         state.tracker, 
         state.studyPlan, 
         state.mocks, 
         activeStreak, 
-        totalSolved
+        totalSolved,
+        state.lastUpdated || Date.now()
       );
-    }
+    }, 2500);
+
+    return () => {
+      if (cloudSaveTimerRef.current) {
+        clearTimeout(cloudSaveTimerRef.current);
+      }
+    };
   }, [state, user, isCloudLoaded, activeStreak, totalSolved]);
 
   // Real-time listener for current user's profile document (syncs friends list, display name, target, etc.)
@@ -665,9 +701,11 @@ export default function App() {
     };
   }, [user?.uid, userProfile?.friends]);
 
-  // Real-time Live Study Lounge Listener across all peers
+  // Real-time Live Study Lounge Listener - ONLY active when user is in the Study Lounge tab
   useEffect(() => {
-    if (!isFirebaseConfigured) return;
+    if (!isFirebaseConfigured || activeTab !== 'study-lounge') {
+      return;
+    }
 
     const unsubscribe = subscribeToStudyLounge(user?.uid, (livePeers) => {
       setPeers(livePeers || []);
@@ -676,7 +714,7 @@ export default function App() {
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
-  }, [user?.uid]);
+  }, [user?.uid, activeTab]);
 
   // Friend requests count state for notification badge
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
@@ -696,23 +734,33 @@ export default function App() {
     };
   }, [user?.uid]);
 
-  // Sync user's live presence & timer state to Firestore
-  useEffect(() => {
-    if (isFirebaseConfigured && user) {
-      updateUserPresence(user, timerState, activeStreak, totalSolved, userProfile);
-    }
-  }, [user, userProfile, timerState.isRunning, timerState.isPaused, timerState.subject, timerState.mode, activeStreak, totalSolved]);
-
-  // Periodic heartbeat (every 45s) & visibility/focus sync (prevents quota exhaustion)
+  // Sync user's live presence & timer state to Firestore (Only if user has friends or is in Study Lounge)
   useEffect(() => {
     if (!isFirebaseConfigured || !user) return;
-    
-    // Immediate heartbeat on mount/state update
-    updateUserPresence(user, timerState, activeStreak, totalSolved, userProfile);
+    const hasFriends = Array.isArray(userProfile?.friends) && userProfile.friends.length > 0;
+    const isInStudyLounge = activeTab === 'study-lounge';
 
+    if (hasFriends || isInStudyLounge) {
+      updateUserPresence(user, timerState, activeStreak, totalSolved, userProfile);
+    }
+  }, [user, userProfile, timerState.isRunning, timerState.isPaused, timerState.subject, timerState.mode, activeStreak, totalSolved, activeTab]);
+
+  // Periodic heartbeat & presence sync - Solitary Mode optimized (Zero background pings if no friends and not in Study Lounge)
+  useEffect(() => {
+    if (!isFirebaseConfigured || !user) return;
+
+    const hasFriends = Array.isArray(userProfile?.friends) && userProfile.friends.length > 0;
+    const isInStudyLounge = activeTab === 'study-lounge';
+
+    // Solitary Mode: If no friends and not in Study Lounge, completely skip background presence writes
+    if (!hasFriends && !isInStudyLounge) {
+      return;
+    }
+
+    // Heartbeat every 60s
     const heartbeatInterval = setInterval(() => {
       updateUserPresence(user, timerState, activeStreak, totalSolved, userProfile);
-    }, 45000);
+    }, 60000);
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
@@ -733,7 +781,7 @@ export default function App() {
       window.removeEventListener('focus', handleVisibility);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [user, userProfile, timerState, activeStreak, totalSolved]);
+  }, [user, userProfile, timerState, activeStreak, totalSolved, activeTab]);
 
   // Manual notification trigger for demo
   const triggerDemoNotification = () => {
@@ -1392,7 +1440,7 @@ export default function App() {
         };
 
         try {
-          const localData = localStorage.getItem('cat_tracker_app_state');
+          const localData = localStorage.getItem('cat_prep_tracker_state_v1');
           if (localData) {
             const parsed = JSON.parse(localData);
             const todayPos = getTodayTrackerPosition(parsed.settings?.startDate);
@@ -1403,7 +1451,7 @@ export default function App() {
               d.sessions = d.sessions || [];
               d.sessions.push(sessionSnapshot);
               d.studyHours = (d.studyHours || 0) + (activeElapsedMins / 60);
-              localStorage.setItem('cat_tracker_app_state', JSON.stringify(parsed));
+              saveState(parsed);
             }
           }
         } catch (e) {}

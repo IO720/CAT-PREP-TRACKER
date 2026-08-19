@@ -184,26 +184,28 @@ export const logOutUser = async () => {
 export const signOutUser = logOutUser;
 
 // 4. Save Study Tracker data to Firestore
-export const saveTrackerToCloud = async (userId, trackerState, studyPlanState, mocksState, streak, solvedQs) => {
+export const saveTrackerToCloud = async (userId, trackerState, studyPlanState, mocksState, streak, solvedQs, lastUpdatedMs = null) => {
   if (!isFirebaseConfigured || !userId) return;
 
+  const nowMs = lastUpdatedMs || Date.now();
   try {
     // Save checklist, studyplan, and mocks data
     await setDoc(doc(db, "trackers", userId), {
       tracker: trackerState,
       studyPlan: studyPlanState,
       mocks: mocksState,
-      updatedAt: new Date().toISOString()
-    });
+      updatedAt: new Date(nowMs).toISOString(),
+      updatedAtMs: nowMs
+    }, { merge: true });
 
     // Update matching profile stats
     await updateDoc(doc(db, "profiles", userId), {
       streak: streak || 0,
       solvedQs: solvedQs || 0,
-      lastActive: new Date().toISOString()
-    });
+      lastActive: new Date(nowMs).toISOString()
+    }).catch(() => {});
   } catch (err) {
-    console.error("Error saving tracker data to Cloud:", err);
+    console.warn("Could not sync tracker to Cloud (offline or quota full):", err.message || err);
   }
 };
 

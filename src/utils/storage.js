@@ -74,6 +74,9 @@ export const loadState = () => {
     if (!parsed.settings.startDate) {
       parsed.settings.startDate = formatDateISO(getMondayOfWeek(new Date()));
     }
+    if (!parsed.lastUpdated) {
+      parsed.lastUpdated = Date.now();
+    }
     return parsed;
   } catch (err) {
     console.error("Could not load state from localStorage:", err);
@@ -83,10 +86,16 @@ export const loadState = () => {
 
 export const saveState = (state) => {
   try {
-    const serialized = JSON.stringify(state);
+    const stateWithTimestamp = {
+      ...state,
+      lastUpdated: Date.now()
+    };
+    const serialized = JSON.stringify(stateWithTimestamp);
     localStorage.setItem(STORAGE_KEY, serialized);
+    return stateWithTimestamp;
   } catch (err) {
     console.error("Could not save state to localStorage:", err);
+    return state;
   }
 };
 
