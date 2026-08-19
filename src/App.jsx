@@ -1637,9 +1637,11 @@ export default function App() {
               currentUser={user}
               userProfile={userProfile}
               timerState={timerState}
-              fullPage={true}
-              initialTargetFriend={loungeTargetFriend}
-              onResetTargetFriend={() => setLoungeTargetFriend(null)}
+              onNavigateToTimer={() => setActiveTab('timer')}
+              onNavigateToFriends={() => {
+                setProfileSubTab('friends');
+                setActiveTab('profile');
+              }}
             />
           )}
           {activeTab === 'profile' && (
