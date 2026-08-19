@@ -4272,6 +4272,239 @@ html, body {
   border-radius: var(--radius-md);
 }
 
+/* ========================================================
+   ZEN DEEP FOCUS FULLSCREEN SANCTUARY & STUDY COMPANION
+   ======================================================== */
+.zen-fullscreen-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.zen-fullscreen-trigger-btn:hover,
+.zen-fullscreen-trigger-btn.active {
+  background: var(--accent-gradient-subtle, rgba(56, 189, 248, 0.15));
+  border-color: var(--accent-color, #38bdf8);
+  color: var(--accent-color, #38bdf8);
+  box-shadow: 0 0 14px var(--accent-glow, rgba(56, 189, 248, 0.3));
+  transform: translateY(-1px);
+}
+
+.zen-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zen-icon-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-color-hover);
+}
+
+.zen-icon-btn.muted {
+  opacity: 0.6;
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Fullscreen Immersion Mode */
+.study-timer-minimal-container.zen-fullscreen-mode {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: var(--bg-primary, #060b14) !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  padding: 24px 36px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.study-timer-minimal-container.zen-fullscreen-mode .minimal-timer-stage {
+  flex: 1 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 20px !important;
+  padding: 0 !important;
+}
+
+.study-timer-minimal-container.zen-fullscreen-mode .static-timer-circle {
+  width: 320px !important;
+  height: 320px !important;
+  border-width: 4px !important;
+}
+
+.study-timer-minimal-container.zen-fullscreen-mode .minimal-time-readout {
+  font-size: 74px !important;
+}
+
+/* Animated Study Companion Entity Styles */
+.study-companion-entity-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+  transition: all 0.3s ease;
+}
+
+.companion-focus-halo {
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-glow, rgba(56, 189, 248, 0.25)) 0%, transparent 70%);
+  opacity: 0.3;
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.study-companion-entity-wrap.is-studying .companion-focus-halo {
+  opacity: 0.75;
+  animation: haloBreath 4s infinite ease-in-out alternate;
+}
+
+@keyframes haloBreath {
+  0% { transform: scale(0.9); opacity: 0.45; }
+  100% { transform: scale(1.15); opacity: 0.85; }
+}
+
+.companion-svg-art {
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.45));
+  transition: transform 0.3s ease;
+}
+
+/* Character Animation States */
+.study-companion-entity-wrap.is-studying .scholar-head-group {
+  animation: scholarHeadBob 3.5s infinite ease-in-out;
+  transform-origin: 120px 105px;
+}
+
+@keyframes scholarHeadBob {
+  0%, 100% { transform: rotate(0deg) translateY(0px); }
+  25% { transform: rotate(-2.5deg) translateY(1.5px); }
+  75% { transform: rotate(2deg) translateY(-1px); }
+}
+
+.study-companion-entity-wrap.is-studying .pencil-hand {
+  animation: scholarWrite 1.4s infinite ease-in-out alternate;
+  transform-origin: 140px 154px;
+}
+
+@keyframes scholarWrite {
+  0% { transform: translate(0px, 0px) rotate(0deg); }
+  50% { transform: translate(-3px, 1px) rotate(-4deg); }
+  100% { transform: translate(2px, -1px) rotate(3deg); }
+}
+
+.steam-line {
+  animation: steamRise 2.2s infinite linear;
+  opacity: 0;
+}
+.steam-line.steam-2 {
+  animation-delay: 1.1s;
+}
+
+@keyframes steamRise {
+  0% { transform: translateY(0) scaleX(1); opacity: 0; }
+  40% { opacity: 0.7; }
+  80% { opacity: 0.3; }
+  100% { transform: translateY(-10px) scaleX(1.4); opacity: 0; }
+}
+
+.spark {
+  animation: floatSpark 2.8s infinite ease-in-out alternate;
+}
+.spark.spark-2 { animation-delay: 0.7s; }
+.spark.spark-3 { animation-delay: 1.4s; }
+.spark.spark-4 { animation-delay: 2.1s; }
+
+@keyframes floatSpark {
+  0% { transform: translateY(0px) scale(0.6); opacity: 0.2; }
+  50% { opacity: 0.9; }
+  100% { transform: translateY(-12px) scale(1.2); opacity: 0.3; }
+}
+
+.companion-status-caption {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.companion-name-tag {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--accent-color, #38bdf8);
+  opacity: 0.9;
+}
+
+.companion-quote-text {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.zen-fullscreen-footer-hints {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.zen-hint-pill {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px 10px;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+}
+
+.zen-hint-pill kbd {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-family: inherit;
+  color: var(--text-primary);
+}
+
 /* Settings Grid below stage */
 .minimal-settings-grid {
   display: grid;
