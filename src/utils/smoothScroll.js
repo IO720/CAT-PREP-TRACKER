@@ -1,10 +1,13 @@
 import Lenis from 'lenis';
 import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 let lenisInstance = null;
 
 /**
- * Initializes Lenis smooth scrolling and synchronizes it with GSAP's ticker.
+ * Initializes Lenis smooth scrolling and synchronizes it with GSAP's ticker and ScrollTrigger.
  * Returns the Lenis instance and a cleanup function.
  */
 export function initSmoothScroll() {
@@ -28,6 +31,9 @@ export function initSmoothScroll() {
     infinite: false,
     autoRaf: false
   });
+
+  // Connect Lenis scroll events to GSAP ScrollTrigger
+  lenisInstance.on('scroll', ScrollTrigger.update);
 
   // Bind GSAP ticker to Lenis requestAnimationFrame
   const updateTicker = (time) => {

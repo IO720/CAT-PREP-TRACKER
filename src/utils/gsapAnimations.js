@@ -1,7 +1,11 @@
 import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 /**
- * Animate container children with a silky GSAP stagger entrance.
+ * Animate the view container with a calm, ultra-smooth bottom fade in.
+ * No element shaking, no scale jumps, pure silky transition.
  * @param {HTMLElement|string} container - Container element or selector
  * @param {Object} options - Custom animation options
  */
@@ -11,49 +15,99 @@ export function animatePageEntrance(container, options = {}) {
   const el = typeof container === 'string' ? document.querySelector(container) : container;
   if (!el) return;
 
-  // Find direct sections or cards to stagger
-  const targets = el.querySelectorAll(
-    '.page-title, .page-subtitle, .stat-card, .metric-card, .dashboard-banner, ' +
-    '.study-plan-card, .mock-test-item, .achievement-card, .settings-card-container, ' +
-    '.arena-leaderboard-card, .study-lounge-banner, .tracker-grid-wrapper, .view-stagger-item'
+  // Kill previous animations to prevent any stutter/overlapping transforms
+  gsap.killTweensOf(el);
+
+  // Smooth single-pass bottom fade
+  gsap.fromTo(
+    el,
+    {
+      opacity: 0,
+      y: 18
+    },
+    {
+      opacity: 1,
+      y: 0,
+      duration: options.duration || 0.34,
+      ease: options.ease || 'power2.out',
+      clearProps: 'transform',
+      overwrite: 'auto',
+      onComplete: () => {
+        // Initialize scroll clip-cut reveals for elements below the fold
+        initClipCutScrollAnimations();
+        ScrollTrigger.refresh();
+      }
+    }
+  );
+}
+
+/**
+ * Scroll-triggered diagonal clip-cut reveals for elements as the user scrolls down.
+ * Provides a unique, futuristic, and smooth aesthetic.
+ */
+export function initClipCutScrollAnimations() {
+  if (typeof window === 'undefined') return;
+
+  // Select below-the-fold cards, charts, and content blocks
+  const targets = document.querySelectorAll(
+    '.stat-card, .metric-card, .study-plan-card, .mock-test-item, ' +
+    '.arena-leaderboard-card, .study-lounge-banner, .settings-card-container, ' +
+    '.achievement-card, .tracker-grid-wrapper, .dashboard-banner, .buddy-card, ' +
+    '.syllabus-progress-card, .focus-breakdown-card, .distribution-card'
   );
 
-  if (targets.length > 0) {
+  targets.forEach((target) => {
+    // Prevent duplicate triggers
+    if (target.dataset.clipCutActive) return;
+
+    // Check if target is already visible in viewport
+    const rect = target.getBoundingClientRect();
+    const isAboveFold = rect.top < window.innerHeight * 0.88 && rect.bottom > 0;
+
+    if (isAboveFold) {
+      // Keep immediately visible without blocking initial view
+      target.style.clipPath = 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)';
+      target.style.opacity = '1';
+      target.dataset.clipCutActive = 'done';
+      return;
+    }
+
+    target.dataset.clipCutActive = 'pending';
+
     gsap.fromTo(
-      targets,
+      target,
       {
+        clipPath: 'polygon(0% 12%, 100% 0%, 100% 0%, 0% 12%)',
         opacity: 0,
-        y: 18,
-        scale: 0.985
+        y: 32
       },
       {
+        clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
         opacity: 1,
         y: 0,
-        scale: 1,
-        duration: options.duration || 0.45,
-        stagger: options.stagger || 0.04,
-        ease: options.ease || 'power3.out',
-        clearProps: 'transform,opacity',
-        overwrite: 'auto'
+        duration: 0.72,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: target,
+          start: 'top 92%',
+          toggleActions: 'play none none none',
+          once: true,
+          onEnter: () => {
+            target.dataset.clipCutActive = 'done';
+          }
+        }
       }
     );
-  } else {
-    // Fallback: smooth fade in for whole container
-    gsap.fromTo(
-      el,
-      { opacity: 0, y: 12 },
-      { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out', clearProps: 'transform,opacity' }
-    );
-  }
+  });
 }
 
 /**
  * Attaches magnetic physics to buttons and interactive tags.
  * The element subtly follows the mouse cursor with spring damping.
  * @param {HTMLElement} element 
- * @param {number} strength - Damping multiplier (default: 0.28)
+ * @param {number} strength - Damping multiplier (default: 0.24)
  */
-export function makeMagnetic(element, strength = 0.28) {
+export function makeMagnetic(element, strength = 0.24) {
   if (!element) return () => {};
 
   let bounds = null;
@@ -70,7 +124,7 @@ export function makeMagnetic(element, strength = 0.28) {
     gsap.to(element, {
       x: x * strength,
       y: y * strength,
-      duration: 0.3,
+      duration: 0.25,
       ease: 'power2.out',
       overwrite: 'auto'
     });
@@ -81,7 +135,7 @@ export function makeMagnetic(element, strength = 0.28) {
     gsap.to(element, {
       x: 0,
       y: 0,
-      duration: 0.6,
+      duration: 0.5,
       ease: 'elastic.out(1.1, 0.4)',
       overwrite: 'auto'
     });
@@ -106,12 +160,12 @@ export function pulseIcon(iconEl) {
   if (!iconEl) return;
   gsap.fromTo(
     iconEl,
-    { scale: 0.85, rotate: -12 },
+    { scale: 0.88, rotate: -8 },
     {
       scale: 1,
       rotate: 0,
-      duration: 0.5,
-      ease: 'elastic.out(1.3, 0.35)',
+      duration: 0.45,
+      ease: 'elastic.out(1.2, 0.35)',
       overwrite: 'auto'
     }
   );

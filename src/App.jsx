@@ -49,7 +49,7 @@ import AuthScreen from './components/AuthScreen';
 import CookieConsentBanner from './components/CookieConsentBanner';
 import TermsAndPrivacyModal from './components/TermsAndPrivacyModal';
 import CustomCursor from './components/CustomCursor';
-import { initSmoothScroll } from './utils/smoothScroll';
+import { initSmoothScroll, scrollToTop } from './utils/smoothScroll';
 import { animatePageEntrance, makeMagnetic, triggerThemeWave } from './utils/gsapAnimations';
 
 const Icons = {
@@ -474,11 +474,12 @@ export default function App() {
     };
   }, []);
 
-  // Animate Staggered Page Entrance with GSAP when activeTab changes
+  // Animate Clean Bottom Fade-In & Reset Scroll Position when activeTab changes
   useEffect(() => {
+    scrollToTop({ immediate: true });
     const timer = setTimeout(() => {
       animatePageEntrance('.main-content');
-    }, 40);
+    }, 20);
     return () => clearTimeout(timer);
   }, [activeTab]);
 
