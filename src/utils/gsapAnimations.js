@@ -4,41 +4,14 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * Animate the view container with a calm, ultra-smooth bottom fade in.
- * No element shaking, no scale jumps, pure silky transition.
+ * Initializes scroll clip-cut triggers and refreshes layout without any container fade/translation.
  * @param {HTMLElement|string} container - Container element or selector
- * @param {Object} options - Custom animation options
  */
-export function animatePageEntrance(container, options = {}) {
-  if (!container) return;
-
-  const el = typeof container === 'string' ? document.querySelector(container) : container;
-  if (!el) return;
-
-  // Kill previous animations to prevent any stutter/overlapping transforms
-  gsap.killTweensOf(el);
-
-  // Smooth single-pass bottom fade
-  gsap.fromTo(
-    el,
-    {
-      opacity: 0,
-      y: 18
-    },
-    {
-      opacity: 1,
-      y: 0,
-      duration: options.duration || 0.34,
-      ease: options.ease || 'power2.out',
-      clearProps: 'transform',
-      overwrite: 'auto',
-      onComplete: () => {
-        // Initialize scroll clip-cut reveals for elements below the fold
-        initClipCutScrollAnimations();
-        ScrollTrigger.refresh();
-      }
-    }
-  );
+export function animatePageEntrance(container) {
+  if (typeof window === 'undefined') return;
+  // Initialize scroll clip-cut reveals for below-the-fold elements
+  initClipCutScrollAnimations();
+  ScrollTrigger.refresh();
 }
 
 /**
