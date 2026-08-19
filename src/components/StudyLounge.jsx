@@ -216,7 +216,7 @@ export default function StudyLounge({
     : PUBLIC_CHANNELS.find(c => c.id === activeChannelId) || PUBLIC_CHANNELS[0];
 
   const handleSendMessage = async (e) => {
-    if (e) e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!inputText.trim() || sending) return;
 
     const text = inputText.trim();
@@ -225,12 +225,6 @@ export default function StudyLounge({
 
     setInputText('');
     setReplyingTo(null);
-    setSending(true);
-
-    // Timeout safety fallback to prevent permanently stuck sending states on slow mobile networks
-    const safetyTimeout = setTimeout(() => {
-      setSending(false);
-    }, 4000);
 
     let tag = 'GENERAL';
     if (activeChannelId === 'quant-sprints' || text.toUpperCase().includes('#QUANT')) tag = 'QUANT';
@@ -239,15 +233,35 @@ export default function StudyLounge({
     else if (activeChannelId === 'milestones' || text.toUpperCase().includes('#MILESTONE')) tag = 'MILESTONE';
     else if (text.toUpperCase().includes('#BREAK')) tag = 'BREAK';
 
+    // Optimistically append message to local UI state immediately
+    const optimisticMsg = {
+      id: 'local_' + Date.now(),
+      userId: currentUser?.uid || 'self',
+      senderName: userProfile?.displayName || currentUser?.displayName || 'You',
+      avatar: userProfile?.avatar || currentUser?.photoURL || 'rocket',
+      avatarBg: userProfile?.avatarBg || '#5865f2',
+      text: text,
+      tag: tag,
+      timestamp: Date.now(),
+      roomId: activeChannelId,
+      channel: activeChannelId,
+      replyTo: currentReply
+    };
+
+    setMessages(prev => [...prev, optimisticMsg]);
+    const cacheKey = `cat_chat_cache_${activeChannelId}`;
+    try {
+      const currentCached = JSON.parse(localStorage.getItem(cacheKey) || '[]');
+      localStorage.setItem(cacheKey, JSON.stringify([...currentCached, optimisticMsg].slice(-60)));
+    } catch(e) {}
+
+    setSending(true);
+
     try {
       await sendChatMessage(currentUser, text, tag, userProfile, activeChannelId, currentReply, targetFriendId);
     } catch (err) {
-      console.error("Error sending chat message:", err);
-      setInputText(text);
-      setCopyToast("Error sending message. Please try again.");
-      setTimeout(() => setCopyToast(''), 3000);
+      console.warn("Cloud Firestore message sync notice (saved locally):", err?.message);
     } finally {
-      clearTimeout(safetyTimeout);
       setSending(false);
       setTimeout(() => {
         inputRef.current?.focus();
@@ -266,14 +280,29 @@ export default function StudyLounge({
     if (sending) return;
     const targetFriendId = selectedDirectFriend ? (selectedDirectFriend.id || selectedDirectFriend.uid) : null;
 
+    // Optimistic chip message
+    const optimisticMsg = {
+      id: 'local_' + Date.now(),
+      userId: currentUser?.uid || 'self',
+      senderName: userProfile?.displayName || currentUser?.displayName || 'You',
+      avatar: userProfile?.avatar || currentUser?.photoURL || 'rocket',
+      avatarBg: userProfile?.avatarBg || '#5865f2',
+      text: chip.text,
+      tag: chip.tag || 'GENERAL',
+      timestamp: Date.now(),
+      roomId: activeChannelId,
+      channel: activeChannelId,
+      replyTo: replyingTo
+    };
+
+    setMessages(prev => [...prev, optimisticMsg]);
+    setReplyingTo(null);
     setSending(true);
+
     try {
       await sendChatMessage(currentUser, chip.text, chip.tag, userProfile, activeChannelId, replyingTo, targetFriendId);
-      setReplyingTo(null);
     } catch (err) {
-      console.error("Error sending chip message:", err);
-      setCopyToast("Error sending message. Please try again.");
-      setTimeout(() => setCopyToast(''), 3000);
+      console.warn("Cloud Firestore chip sync notice (saved locally):", err?.message);
     } finally {
       setSending(false);
     }

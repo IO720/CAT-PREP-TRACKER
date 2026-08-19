@@ -652,7 +652,7 @@ export default function App() {
     }
   }, [user, userProfile, timerState.isRunning, timerState.isPaused, timerState.subject, timerState.mode, activeStreak, totalSolved]);
 
-  // Periodic heartbeat (every 15s) & visibility/focus sync
+  // Periodic heartbeat (every 45s) & visibility/focus sync (prevents quota exhaustion)
   useEffect(() => {
     if (!isFirebaseConfigured || !user) return;
     
@@ -661,7 +661,7 @@ export default function App() {
 
     const heartbeatInterval = setInterval(() => {
       updateUserPresence(user, timerState, activeStreak, totalSolved, userProfile);
-    }, 15000);
+    }, 45000);
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
