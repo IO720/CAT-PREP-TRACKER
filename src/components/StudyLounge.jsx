@@ -77,7 +77,19 @@ export default function StudyLounge({
   }, []);
 
   // Subscribe to real-time chat messages based on activeChannelId
+  // Subscribe to channel messages with instant local cache
   useEffect(() => {
+    const cacheKey = `cat_chat_cache_${activeChannelId}`;
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        }
+      }
+    } catch (e) {}
+
     const friendIds = Array.isArray(userProfile?.friends) && userProfile.friends.length > 0
       ? userProfile.friends
       : friends.map(f => f.id || f.uid).filter(Boolean);
@@ -87,6 +99,11 @@ export default function StudyLounge({
       activeChannelId, 
       (msgs) => {
         setMessages(msgs || []);
+        try {
+          if (Array.isArray(msgs) && msgs.length > 0) {
+            localStorage.setItem(cacheKey, JSON.stringify(msgs.slice(-60)));
+          }
+        } catch (e) {}
       },
       currentUser?.uid,
       friendIds,
@@ -569,7 +586,7 @@ export default function StudyLounge({
 
                         {isSelf && <span className="hub-self-tag">YOU</span>}
 
-                        {msg.tag && (
+                        {msg.tag && msg.tag.toUpperCase() !== 'GENERAL' && (
                           <span 
                             className="hub-msg-tag-badge"
                             style={{ backgroundColor: tagStyle.bg, color: tagStyle.color }}

@@ -44,6 +44,8 @@ import SettingsView from './components/SettingsView';
 import AchievementsView from './components/AchievementsView';
 import { calculateUserBadges } from './utils/badgeUtils';
 import AuthScreen from './components/AuthScreen';
+import CookieConsentBanner from './components/CookieConsentBanner';
+import TermsAndPrivacyModal from './components/TermsAndPrivacyModal';
 
 const Icons = {
   Logo: ({ size = 24 }) => (
@@ -299,19 +301,60 @@ export default function App() {
   const [activeMonth, setActiveMonth] = useState(todayPos.activeMonth);
   const [activeWeek, setActiveWeek] = useState(todayPos.activeWeek);
 
-  // Focus Timer State
-  const [timerState, setTimerState] = useState({
-    secondsLeft: 25 * 60,
-    totalSeconds: 25 * 60,
-    isRunning: false,
-    isPaused: false,
-    mode: 'pomodoro',
-    visualTheme: 'forest',
-    subject: 'Quant',
-    startTimeStr: null,
-    startTimeMs: null,
-    sessionNotes: ''
+  // Focus Timer State with persistent local storage hydration & drift reconciliation
+  const [timerState, setTimerState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cat_active_timer_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && (parsed.isRunning || parsed.isPaused)) {
+          if (parsed.isRunning && parsed.lastTickMs) {
+            const nowMs = Date.now();
+            const deltaSecs = Math.max(0, Math.floor((nowMs - parsed.lastTickMs) / 1000));
+            if (parsed.mode === 'stopwatch') {
+              return {
+                ...parsed,
+                secondsLeft: (parsed.secondsLeft || 0) + deltaSecs,
+                lastTickMs: nowMs
+              };
+            } else {
+              const remaining = (parsed.secondsLeft || 0) - deltaSecs;
+              if (remaining > 0) {
+                return {
+                  ...parsed,
+                  secondsLeft: remaining,
+                  lastTickMs: nowMs
+                };
+              }
+              return {
+                ...parsed,
+                secondsLeft: 0,
+                isRunning: false,
+                isPaused: true,
+                lastTickMs: nowMs
+              };
+            }
+          }
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return {
+      secondsLeft: 25 * 60,
+      totalSeconds: 25 * 60,
+      isRunning: false,
+      isPaused: false,
+      mode: 'pomodoro',
+      visualTheme: 'forest',
+      subject: 'Quant',
+      startTimeStr: null,
+      startTimeMs: null,
+      lastTickMs: null,
+      sessionNotes: ''
+    };
   });
+
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
 
   // Calculate Today's sessions and total hours
   const todayPositionNow = getTodayTrackerPosition(state.settings?.startDate);
@@ -1249,6 +1292,63 @@ export default function App() {
     };
   }, [timerState.isRunning]);
 
+  // Synchronize active timer session state into localStorage
+  useEffect(() => {
+    try {
+      if (timerState.isRunning || timerState.isPaused) {
+        localStorage.setItem('cat_active_timer_session', JSON.stringify(timerState));
+      } else {
+        localStorage.removeItem('cat_active_timer_session');
+      }
+    } catch (e) {}
+  }, [timerState]);
+
+  // Offline and Exit/Refresh auto-logger: preserves study time if user disconnects
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (timerState.isRunning && timerState.startTimeMs) {
+        const nowMs = Date.now();
+        const activeElapsedMins = Math.max(1, Math.floor((nowMs - timerState.startTimeMs) / 60000));
+        const now = new Date();
+        const endTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const startObj = new Date(timerState.startTimeMs);
+        const startTimeStr = timerState.startTimeStr || startObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const sessionSnapshot = {
+          id: 'sess_' + nowMs,
+          startTime: startTimeStr,
+          endTime: endTimeStr,
+          durationMinutes: activeElapsedMins,
+          subject: timerState.subject,
+          mode: timerState.mode,
+          visualTheme: timerState.visualTheme,
+          notes: (timerState.sessionNotes ? timerState.sessionNotes + ' ' : '') + '(Auto-saved on exit/offline)',
+          timestamp: nowMs
+        };
+
+        try {
+          const localData = localStorage.getItem('cat_tracker_app_state');
+          if (localData) {
+            const parsed = JSON.parse(localData);
+            const todayPos = getTodayTrackerPosition(parsed.settings?.startDate);
+            const m = parsed.tracker?.[todayPos.activeMonth];
+            const w = m?.find(week => week.week === todayPos.activeWeek);
+            const d = w?.days?.find(day => day.day === todayPos.dayName);
+            if (d) {
+              d.sessions = d.sessions || [];
+              d.sessions.push(sessionSnapshot);
+              d.studyHours = (d.studyHours || 0) + (activeElapsedMins / 60);
+              localStorage.setItem('cat_tracker_app_state', JSON.stringify(parsed));
+            }
+          }
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [timerState]);
+
   if (appLoading) {
     return (
       <div className="minimal-loader-screen">
@@ -1662,6 +1762,15 @@ export default function App() {
           onDismiss={() => setAvailableUpdate(null)}
         />
       )}
+
+      {/* Cookie, Local Storage & Cache Consent Banner */}
+      <CookieConsentBanner onOpenTerms={() => setIsTermsModalOpen(true)} />
+
+      {/* Terms of Service & Privacy Policy Modal */}
+      <TermsAndPrivacyModal 
+        isOpen={isTermsModalOpen} 
+        onClose={() => setIsTermsModalOpen(false)} 
+      />
     </div>
   );
 }
