@@ -15237,6 +15237,107 @@ html, body {
   animation: shake 0.35s ease-in-out;
 }
 
+/* ========================================================
+   LENIS SMOOTH SCROLL FOUNDATION
+   ======================================================== */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* ========================================================
+   GSAP CUSTOM LIQUID GLOW CURSOR
+   ======================================================== */
+.custom-cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  background-color: var(--accent-color, #38bdf8);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99999;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.2s ease;
+  box-shadow: 0 0 10px var(--accent-glow, rgba(56, 189, 248, 0.8));
+}
+
+.custom-cursor-follower {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--accent-color, rgba(56, 189, 248, 0.4));
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99998;
+  transform: translate(-50%, -50%);
+  transition: width 0.25s ease, height 0.25s ease, border-radius 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, opacity 0.25s ease;
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+}
+
+.custom-cursor-follower.hover {
+  box-shadow: 0 0 20px var(--accent-glow, rgba(56, 189, 248, 0.3));
+}
+
+@media (pointer: coarse), (hover: none) {
+  .custom-cursor-dot,
+  .custom-cursor-follower {
+    display: none !important;
+  }
+}
+
+/* ========================================================
+   GSAP MICRO-INTERACTIONS & HOVER GLOWS
+   ======================================================== */
+button svg, .nav-link svg, .sidebar-toggle-btn svg, .theme-emblem-icon-wrap svg {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+button:hover svg, .nav-link:hover svg, .sidebar-toggle-btn:hover svg {
+  transform: scale(1.12);
+}
+
+.stat-card, .metric-card, .study-plan-card, .mock-test-item, .settings-card-container, .arena-leaderboard-card {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+}
+
+.stat-card:hover, .metric-card:hover, .study-plan-card:hover, .mock-test-item:hover, .settings-card-container:hover, .arena-leaderboard-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 15px var(--accent-glow, rgba(0, 0, 0, 0.1));
+  border-color: var(--border-color-hover);
+}
+
+/* Theme Wave Overlay for Switch Animation */
+.theme-transition-wave-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at 50% 50%, var(--accent-color, #38bdf8), transparent 70%);
+  pointer-events: none;
+  z-index: 99990;
+}
+
 
 
 

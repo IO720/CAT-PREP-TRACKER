@@ -48,6 +48,9 @@ import { calculateUserBadges } from './utils/badgeUtils';
 import AuthScreen from './components/AuthScreen';
 import CookieConsentBanner from './components/CookieConsentBanner';
 import TermsAndPrivacyModal from './components/TermsAndPrivacyModal';
+import CustomCursor from './components/CustomCursor';
+import { initSmoothScroll } from './utils/smoothScroll';
+import { animatePageEntrance, makeMagnetic, triggerThemeWave } from './utils/gsapAnimations';
 
 const Icons = {
   Logo: ({ size = 24 }) => (
@@ -462,6 +465,32 @@ export default function App() {
       handleSelectTheme(appliedThemeId);
     }
   };
+
+  // Initialize Lenis Smooth Scroll Engine synchronized with GSAP
+  useEffect(() => {
+    const scrollInstance = initSmoothScroll();
+    return () => {
+      if (scrollInstance) scrollInstance.destroy();
+    };
+  }, []);
+
+  // Animate Staggered Page Entrance with GSAP when activeTab changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      animatePageEntrance('.main-content');
+    }, 40);
+    return () => clearTimeout(timer);
+  }, [activeTab]);
+
+  // Attach Magnetic Damping Physics to Interactive Sidebar & Header Elements
+  useEffect(() => {
+    const cleanupFns = [];
+    const elements = document.querySelectorAll('.sidebar-toggle-btn, .theme-dropdown-trigger');
+    elements.forEach(el => {
+      cleanupFns.push(makeMagnetic(el, 0.22));
+    });
+    return () => cleanupFns.forEach(fn => fn());
+  }, [isSidebarCollapsed, activeTab]);
 
   // Sync theme changes to HTML
   useEffect(() => {
@@ -1417,6 +1446,9 @@ export default function App() {
 
   return (
     <div className={`app-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      {/* Luxury Liquid Glow Custom Cursor with GSAP Physics */}
+      <CustomCursor activeTheme={theme} />
+
       {/* Sidebar Navigation (Hidden on mobile) */}
       <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="brand-section">
