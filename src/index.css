@@ -3589,25 +3589,8 @@ button:active, .btn-primary:active, .btn-secondary:active, .nav-link:active, .si
 
 /* Global Scroll Optimizations */
 html, body {
-  scroll-behavior: smooth;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-}
-
-/* Tab Switching Fade & Slide Animation */
-@keyframes tabSlideFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.main-content > * {
-  animation: tabSlideFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Minimalist Loading Screen Overlay */
@@ -13343,6 +13326,99 @@ html, body {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+/* Modal Close Icon Button */
+.modal-close-icon-btn {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(8px);
+}
+
+.modal-close-icon-btn:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ef4444;
+  transform: rotate(90deg) scale(1.08);
+}
+
+/* Unique Badges & Achievements Animations */
+.achievement-card {
+  position: relative;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg, 16px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.achievement-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--badge-theme-color, var(--accent-color)), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.achievement-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: var(--badge-theme-color, var(--border-color-hover));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.achievement-card:hover::before {
+  opacity: 1;
+}
+
+.achievement-card.unlocked {
+  background: linear-gradient(145deg, var(--bg-secondary) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.achievement-card.unlocked .badge-card-emblem {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%);
+  box-shadow: 0 0 16px var(--badge-theme-color, rgba(234, 179, 8, 0.3));
+  animation: badgeFloating 3s ease-in-out infinite alternate;
+}
+
+@keyframes badgeFloating {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3px); }
+}
+
+.badge-card-emblem {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 14px;
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.25s ease;
 }
 
 .detail-modal-header {
