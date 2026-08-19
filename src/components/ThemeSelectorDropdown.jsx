@@ -350,13 +350,21 @@ export default function ThemeSelectorDropdown({
 
       {/* Animated Popover Menu */}
       {isOpen && (
-        <div className="theme-popover-menu">
+        <div 
+          className="theme-popover-menu" 
+          data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
+        >
           <div className="popover-header">
             <span>Color Tone Themes</span>
             <span className="popover-sub font-mono">{THEMES.length} TONES</span>
           </div>
 
-          <div className="popover-themes-list">
+          <div 
+            className="popover-themes-list" 
+            data-lenis-prevent="true"
+            onWheel={(e) => e.stopPropagation()}
+          >
             {THEMES.map((t) => {
               const isSelected = t.id === currentTheme;
               const OptionIcon = t.IconComponent;

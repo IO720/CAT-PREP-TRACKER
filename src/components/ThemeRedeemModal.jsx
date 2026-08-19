@@ -62,8 +62,18 @@ export default function ThemeRedeemModal({
   };
 
   return (
-    <div className="theme-redeem-modal-overlay animate-fade-in" onClick={onClose}>
-      <div className="theme-redeem-modal-card" onClick={e => e.stopPropagation()}>
+    <div 
+      className="theme-redeem-modal-overlay animate-fade-in" 
+      data-lenis-prevent="true"
+      onWheel={(e) => e.stopPropagation()}
+      onClick={onClose}
+    >
+      <div 
+        className="theme-redeem-modal-card" 
+        data-lenis-prevent="true"
+        onWheel={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="redeem-modal-header">
           <div className="redeem-modal-title-row">

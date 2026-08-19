@@ -183,8 +183,18 @@ export default function AchievementsView({
 
       {/* Modal / Detail View when clicking a badge */}
       {selectedBadge && createPortal(
-        <div className="modal-backdrop" onClick={() => setSelectedBadge(null)}>
-          <div className="achievement-detail-modal" onClick={e => e.stopPropagation()}>
+        <div 
+          className="modal-backdrop" 
+          data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
+          onClick={() => setSelectedBadge(null)}
+        >
+          <div 
+            className="achievement-detail-modal" 
+            data-lenis-prevent="true"
+            onWheel={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
+          >
             <div className="detail-modal-header" style={{ borderColor: selectedBadge.color }}>
               <div className="detail-emblem-bubble" style={{ color: selectedBadge.color, borderColor: selectedBadge.color }}>
                 {React.createElement(Icons[selectedBadge.iconName] || Icons.Award, { size: 28 })}

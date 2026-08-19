@@ -5051,6 +5051,8 @@ html, body {
 .popover-themes-list {
   max-height: 340px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -15337,46 +15339,94 @@ html.lenis, html.lenis body {
 }
 
 /* ========================================================
-   GSAP CUSTOM LIQUID GLOW CURSOR
+   PRECISION FOCUS RETICLE CURSOR (CAT EXAM FOCUS THEME)
    ======================================================== */
-.custom-cursor-dot {
+.focus-cursor-core {
   position: fixed;
   top: 0;
   left: 0;
-  width: 7px;
-  height: 7px;
-  background-color: var(--accent-color, #38bdf8);
+  width: 6px;
+  height: 6px;
+  background: var(--accent-color, #38bdf8);
   border-radius: 50%;
   pointer-events: none;
   z-index: 99999;
   transform: translate(-50%, -50%);
-  transition: opacity 0.2s ease;
-  box-shadow: 0 0 10px var(--accent-glow, rgba(56, 189, 248, 0.8));
+  box-shadow: 0 0 12px var(--accent-color, #38bdf8), 0 0 4px #ffffff;
+  transition: opacity 0.2s ease, width 0.2s ease, height 0.2s ease;
 }
 
-.custom-cursor-follower {
+.focus-cursor-core.text {
+  width: 2px;
+  height: 18px;
+  border-radius: 1px;
+  box-shadow: 0 0 8px var(--accent-color, #38bdf8);
+}
+
+.focus-cursor-reticle {
   position: fixed;
   top: 0;
   left: 0;
-  width: 32px;
-  height: 32px;
-  border: 1.5px solid var(--accent-color, rgba(56, 189, 248, 0.4));
-  border-radius: 50%;
+  width: 28px;
+  height: 28px;
   pointer-events: none;
   z-index: 99998;
   transform: translate(-50%, -50%);
-  transition: width 0.25s ease, height 0.25s ease, border-radius 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, opacity 0.25s ease;
-  backdrop-filter: blur(1.5px);
-  -webkit-backdrop-filter: blur(1.5px);
+  transition: opacity 0.2s ease, filter 0.25s ease;
 }
 
-.custom-cursor-follower.hover {
-  box-shadow: 0 0 20px var(--accent-glow, rgba(56, 189, 248, 0.3));
+.reticle-corner {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-color: var(--accent-color, #38bdf8);
+  opacity: 0.75;
+  transition: all 0.2s ease;
+}
+
+.reticle-corner.top-left {
+  top: 0;
+  left: 0;
+  border-top: 1.5px solid;
+  border-left: 1.5px solid;
+}
+
+.reticle-corner.top-right {
+  top: 0;
+  right: 0;
+  border-top: 1.5px solid;
+  border-right: 1.5px solid;
+}
+
+.reticle-corner.bottom-left {
+  bottom: 0;
+  left: 0;
+  border-bottom: 1.5px solid;
+  border-left: 1.5px solid;
+}
+
+.reticle-corner.bottom-right {
+  bottom: 0;
+  right: 0;
+  border-bottom: 1.5px solid;
+  border-right: 1.5px solid;
+}
+
+.focus-cursor-reticle.target .reticle-corner {
+  width: 8px;
+  height: 8px;
+  border-width: 2px;
+  opacity: 1;
+  box-shadow: 0 0 10px var(--accent-glow, rgba(56, 189, 248, 0.4));
+}
+
+.focus-cursor-reticle.text {
+  opacity: 0 !important;
 }
 
 @media (pointer: coarse), (hover: none) {
-  .custom-cursor-dot,
-  .custom-cursor-follower {
+  .focus-cursor-core,
+  .focus-cursor-reticle {
     display: none !important;
   }
 }

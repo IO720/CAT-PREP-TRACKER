@@ -87,7 +87,12 @@ export default function HeaderProfileDropdown({
 
       {/* Glassmorphic Dropdown Panel */}
       {isOpen && (
-        <div className="header-profile-dropdown-menu animate-slide-up" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="header-profile-dropdown-menu animate-slide-up" 
+          data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Header User Preview Card */}
           <div className="menu-profile-preview-card">
             <div className="preview-top-row">
