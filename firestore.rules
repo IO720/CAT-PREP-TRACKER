@@ -2,67 +2,44 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // 1. User Profiles: Any user can read/search; authenticated users can create/update
+    // 1. User Profiles: Any user can read and update profile
     match /profiles/{userId} {
-      allow read: if true;
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isOwner(userId);
+      allow read, write: if true;
     }
     
-    // 2. Study Trackers: Peers can view progress; authenticated users can write/update
+    // 2. Study Trackers: Real-time study sync
     match /trackers/{userId} {
-      allow read: if true;
-      allow create, update, delete: if isAuthenticated();
+      allow read, write: if true;
     }
     
-    // 3. Live Presence & Timers: Anyone can view presence; authenticated users can broadcast
+    // 3. Live Presence & Timers: Live online status & active sessions
     match /presence/{userId} {
-      allow read: if true;
-      allow create, update, delete: if isAuthenticated();
+      allow read, write: if true;
     }
 
-    // 4. Friend Requests: Authenticated users can create, read, and manage
+    // 4. Friend Requests: Friend invites & buddy network
     match /friend_requests/{requestId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated();
+      allow read, write: if true;
     }
 
     // 5. Public Text Channels Chat
     match /hub_channel_messages_v4/{messageId} {
-      allow read: if true;
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated();
+      allow read, write: if true;
     }
 
     // 6. Private Study Circle & Direct Messages
     match /private_circle_messages_v4/{messageId} {
-      allow read: if true;
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated();
+      allow read, write: if true;
     }
 
-    // 7. Community Study Lounge Chat (Legacy fallback)
+    // 7. Community Study Lounge Chat
     match /study_lounge_chat/{messageId} {
-      allow read: if true;
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated();
+      allow read, write: if true;
     }
 
-    // Global Fallback for open connectivity
+    // Global Fallback for open connectivity across all devices
     match /{document=**} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+      allow read, write: if true;
     }
   }
 }

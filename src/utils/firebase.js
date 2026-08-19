@@ -796,9 +796,12 @@ export const subscribeToFriendsLive = (currentUserId, friendIds = [], onFriendsU
   // Listen to live presence collection
   const presenceUnsubscribe = onSnapshot(collection(db, "presence"), (snapshot) => {
     snapshot.forEach(docSnap => {
-      if (friendIdSet.has(docSnap.id)) {
-        presenceMap[docSnap.id] = docSnap.data();
-      }
+      const data = docSnap.data();
+      const docId = docSnap.id;
+      presenceMap[docId] = data;
+      if (data.uid) presenceMap[data.uid] = data;
+      if (data.id) presenceMap[data.id] = data;
+      if (data.aspirantId) presenceMap[data.aspirantId] = data;
     });
     computeAndEmit();
   }, (err) => {
