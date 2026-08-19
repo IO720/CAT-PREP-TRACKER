@@ -121,10 +121,18 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
                   <stop offset="70%" stopColor="#e02f75" />
                   <stop offset="100%" stopColor="#6700a3" />
                 </linearGradient>
+                <filter id="smGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
               </defs>
-              <circle cx="50" cy="50" r="30" fill="url(#smGrad)" />
-              <path d="M20 70 Q50 50 80 70 L80 88 L20 88 Z" fill="#22102e" opacity="0.85" />
-              <circle cx="50" cy="38" r="8" fill="#fcc8f0" />
+              <circle cx="50" cy="50" r="34" fill="url(#smGrad)" filter="url(#smGlow)" opacity="0.6" />
+              <circle cx="50" cy="50" r="28" fill="url(#smGrad)" />
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#ff5a57" strokeWidth="1.5" strokeDasharray="6 4" opacity="0.8" />
+              <path d="M20 68 Q50 48 80 68 L80 86 L20 86 Z" fill="#12071a" opacity="0.88" />
+              <circle cx="50" cy="38" r="9" fill="#fcc8f0" />
+              <circle cx="28" cy="30" r="2.5" fill="#fcc8f0" opacity="0.8" />
+              <circle cx="72" cy="34" r="3" fill="#ff5a57" opacity="0.9" />
             </svg>
           )}
 
@@ -137,10 +145,18 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
                   <stop offset="75%" stopColor="#6700a3" />
                   <stop offset="100%" stopColor="#050c38" />
                 </linearGradient>
+                <filter id="ctGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
               </defs>
-              <rect x="15" y="15" width="70" height="70" rx="35" fill="url(#ctGrad)" />
-              <path d="M15 65 Q50 48 85 65 L85 85 L15 85 Z" fill="#050c38" />
-              <circle cx="50" cy="40" r="7" fill="#ff5a57" />
+              <rect x="12" y="12" width="76" height="76" rx="38" fill="url(#ctGrad)" filter="url(#ctGlow)" opacity="0.5" />
+              <rect x="16" y="16" width="68" height="68" rx="34" fill="url(#ctGrad)" />
+              <path d="M14 62 Q50 42 86 62 L86 86 L14 86 Z" fill="#040822" />
+              <circle cx="50" cy="38" r="8" fill="#ff5a57" />
+              <line x1="25" y1="38" x2="75" y2="38" stroke="#ff5a57" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+              <circle cx="34" cy="24" r="2" fill="#fdf4f6" />
+              <circle cx="68" cy="28" r="2.5" fill="#fecdd3" />
             </svg>
           )}
 
@@ -148,15 +164,22 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
             <svg viewBox="0 0 100 100" className="theme-svg-art plum-anim">
               <defs>
                 <radialGradient id="cnGrad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#a855f7" />
+                  <stop offset="0%" stopColor="#b347ff" />
                   <stop offset="45%" stopColor="#6700a3" />
                   <stop offset="75%" stopColor="#1b2062" />
                   <stop offset="100%" stopColor="#050c38" />
                 </radialGradient>
+                <filter id="cnGlow">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
               </defs>
-              <circle cx="50" cy="50" r="32" fill="url(#cnGrad)" />
-              <ellipse cx="50" cy="50" rx="42" ry="14" fill="none" stroke="#a855f7" strokeWidth="2.5" transform="rotate(-25 50 50)" />
-              <circle cx="50" cy="50" r="5" fill="#ffffff" />
+              <circle cx="50" cy="50" r="30" fill="url(#cnGrad)" filter="url(#cnGlow)" />
+              <ellipse cx="50" cy="50" rx="44" ry="16" fill="none" stroke="#b347ff" strokeWidth="2.5" strokeDasharray="12 4" transform="rotate(-28 50 50)" />
+              <ellipse cx="50" cy="50" rx="36" ry="12" fill="none" stroke="#6700a3" strokeWidth="1.5" transform="rotate(35 50 50)" opacity="0.7" />
+              <circle cx="50" cy="50" r="6" fill="#ffffff" />
+              <circle cx="22" cy="30" r="2" fill="#b347ff" />
+              <circle cx="78" cy="70" r="2.5" fill="#c2abeb" />
             </svg>
           )}
 
@@ -168,9 +191,15 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
                   <stop offset="50%" stopColor="#977dff" />
                   <stop offset="100%" stopColor="#0033ff" />
                 </linearGradient>
+                <filter id="elGlow">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
               </defs>
+              <polygon points="50,8 65,36 94,50 65,64 50,92 35,64 6,50 35,36" fill="url(#elGrad)" filter="url(#elGlow)" opacity="0.5" />
               <polygon points="50,12 62,38 90,50 62,62 50,88 38,62 10,50 38,38" fill="url(#elGrad)" />
-              <circle cx="50" cy="50" r="5" fill="#ffffff" />
+              <polygon points="50,25 58,42 75,50 58,58 50,75 42,58 25,50 42,42" fill="#ffffff" opacity="0.8" />
+              <circle cx="50" cy="50" r="4" fill="#0033ff" />
             </svg>
           )}
 
@@ -182,10 +211,16 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
                   <stop offset="50%" stopColor="#0033ff" />
                   <stop offset="100%" stopColor="#0600ab" />
                 </linearGradient>
+                <filter id="rcGlow">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
               </defs>
+              <polygon points="50,12 88,36 74,84 26,84 12,36" fill="url(#rcGrad)" filter="url(#rcGlow)" opacity="0.6" />
               <polygon points="50,15 85,38 72,82 28,82 15,38" fill="url(#rcGrad)" />
-              <polygon points="50,26 73,44 63,73 37,73 27,44" fill="#0600ab" opacity="0.6" />
-              <circle cx="50" cy="50" r="6" fill="#977dff" />
+              <polygon points="50,28 73,44 63,73 37,73 27,44" fill="#0600ab" opacity="0.8" />
+              <circle cx="50" cy="50" r="7" fill="#977dff" />
+              <circle cx="50" cy="50" r="3" fill="#ffffff" />
             </svg>
           )}
 
@@ -193,14 +228,22 @@ export default function ThemeSwitchToast({ activeTheme, onClose }) {
             <svg viewBox="0 0 100 100" className="theme-svg-art slate-anim">
               <defs>
                 <linearGradient id="daGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#0033ff" />
-                  <stop offset="50%" stopColor="#0600ab" />
+                  <stop offset="0%" stopColor="#38bdf8" />
+                  <stop offset="35%" stopColor="#0033ff" />
+                  <stop offset="70%" stopColor="#0600ab" />
                   <stop offset="100%" stopColor="#00033d" />
                 </linearGradient>
+                <filter id="daGlow">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
               </defs>
-              <circle cx="50" cy="50" r="32" fill="url(#daGrad)" />
-              <path d="M18 55 Q34 45 50 55 T82 55" fill="none" stroke="#60a5fa" strokeWidth="3" strokeLinecap="round" />
-              <path d="M22 68 Q36 58 50 68 T78 68" fill="none" stroke="#0033ff" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="50" cy="50" r="34" fill="url(#daGrad)" filter="url(#daGlow)" opacity="0.7" />
+              <circle cx="50" cy="50" r="28" fill="url(#daGrad)" />
+              <path d="M16 54 Q33 42 50 54 T84 54" fill="none" stroke="#38bdf8" strokeWidth="3" strokeLinecap="round" />
+              <path d="M20 66 Q35 56 50 66 T80 66" fill="none" stroke="#0033ff" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M26 76 Q38 68 50 76 T74 76" fill="none" stroke="#0600ab" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="50" cy="34" r="5" fill="#38bdf8" opacity="0.9" />
             </svg>
           )}
 
