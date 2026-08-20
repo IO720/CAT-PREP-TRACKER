@@ -1,4 +1,4 @@
-export const APP_VERSION = "1.0.64";
+export const APP_VERSION = "1.0.66";
 export const APP_BUILD_TIME = new Date().toISOString();
 
 export async function checkForAppUpdate() {

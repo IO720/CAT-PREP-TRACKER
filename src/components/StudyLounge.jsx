@@ -154,8 +154,8 @@ export default function StudyLounge({
               <Icons.Flame size={20} />
             </div>
             <div className="arena-stat-data">
-              <span className="arena-stat-value">{activeStudyingCount}</span>
-              <span className="arena-stat-label">Aspirants Studying Now</span>
+              <span className="arena-stat-value" style={{ fontSize: '13px', color: '#eab308' }}>On Development</span>
+              <span className="arena-stat-label">Live Study Arena</span>
             </div>
           </div>
 
@@ -164,8 +164,8 @@ export default function StudyLounge({
               <Icons.Users size={20} />
             </div>
             <div className="arena-stat-data">
-              <span className="arena-stat-value">{onlineBuddiesCount} / {friends.length}</span>
-              <span className="arena-stat-label">Buddies Active</span>
+              <span className="arena-stat-value">{friends.length}</span>
+              <span className="arena-stat-label">Connected Buddies</span>
             </div>
           </div>
         </div>
@@ -365,44 +365,17 @@ export default function StudyLounge({
                         </div>
 
                         <div className="arena-status-row">
-                          <span className={`status-dot-mini ${friend.status || 'offline'}`}></span>
-                          <span className="arena-status-text">
-                            {isStudying ? 'Studying Now' : isOnline ? 'Online' : 'Offline'}
-                          </span>
+                          <span className="arena-dev-badge">Live Status: On Development</span>
                           {friend.target && <span className="arena-target-text">• {friend.target}</span>}
                         </div>
                       </div>
                     </div>
 
-                    {/* Active Timer Box (If Studying) */}
-                    {isStudying ? (
-                      <div className="arena-live-timer-box">
-                        <div className="arena-live-timer-header">
-                          <span className="arena-timer-subject-pill">
-                            {timerInfo?.subject || friend.activity?.subject || 'Quant'}
-                          </span>
-                          <span className="arena-timer-mode-pill">
-                            {timerInfo?.mode === 'stopwatch' ? 'Stopwatch' : 'Pomodoro'}
-                          </span>
-                        </div>
-
-                        <div className="arena-live-timer-clock">
-                          <Icons.Clock size={16} className="clock-pulse" />
-                          <span className="arena-clock-readout">{timerInfo?.formatted || 'In Session'}</span>
-                        </div>
-
-                        {friend.activity?.title && (
-                          <div className="arena-timer-topic-snip">
-                            {friend.activity.title}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="arena-idle-timer-box">
-                        <Icons.Clock size={14} color="#64748b" />
-                        <span>No active timer session currently running</span>
-                      </div>
-                    )}
+                    {/* Live Timer Notice (On Development) */}
+                    <div className="arena-idle-timer-box">
+                      <Icons.Clock size={14} color="#64748b" />
+                      <span>Live Timer Tracking • On Development</span>
+                    </div>
 
                     {/* Stats Strip */}
                     <div className="arena-stats-strip">

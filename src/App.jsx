@@ -694,7 +694,7 @@ export default function App() {
     };
   }, [user?.uid]);
 
-  // Real-time listener for friends' progress and live online/studying presence
+  // Load friend profiles statically without live presence fetching (Live presence on hold / on development)
   useEffect(() => {
     if (!isFirebaseConfigured || !user?.uid) {
       setFriends([]);
@@ -707,29 +707,42 @@ export default function App() {
       return;
     }
 
-    const unsubscribe = subscribeToFriendsLive(user.uid, friendIds, (liveFriends) => {
-      setFriends(liveFriends || []);
-    });
+    let isMounted = true;
+    const loadFriendsData = async () => {
+      try {
+        const loaded = await Promise.all(
+          friendIds.map(async (fId) => {
+            const prof = await getUserProfile(fId);
+            if (!prof) return null;
+            return {
+              id: fId,
+              uid: fId,
+              displayName: prof.displayName || prof.name || 'CAT Aspirant',
+              name: prof.displayName || prof.name || 'CAT Aspirant',
+              avatar: prof.avatar || 'rocket',
+              avatarBg: prof.avatarBg || '#3b82f6',
+              target: prof.target || 'CAT 2025 Aspirant',
+              aspirantId: prof.aspirantId || '',
+              streak: prof.streak || 0,
+              solvedQs: prof.solvedQs || 0,
+              status: 'offline', // Live online presence on hold
+              activity: null
+            };
+          })
+        );
+        if (isMounted) {
+          setFriends(loaded.filter(Boolean));
+        }
+      } catch (err) {
+        console.warn("Could not load friends list:", err);
+      }
+    };
 
+    loadFriendsData();
     return () => {
-      if (typeof unsubscribe === 'function') unsubscribe();
+      isMounted = false;
     };
   }, [user?.uid, userProfile?.friends]);
-
-  // Real-time Live Study Lounge Listener - ONLY active when user is in the Study Lounge tab
-  useEffect(() => {
-    if (!isFirebaseConfigured || activeTab !== 'study-lounge') {
-      return;
-    }
-
-    const unsubscribe = subscribeToStudyLounge(user?.uid, (livePeers) => {
-      setPeers(livePeers || []);
-    });
-
-    return () => {
-      if (typeof unsubscribe === 'function') unsubscribe();
-    };
-  }, [user?.uid, activeTab]);
 
   // Friend requests count state for notification badge
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
@@ -748,55 +761,6 @@ export default function App() {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
   }, [user?.uid]);
-
-  // Sync user's live presence & timer state to Firestore (Only if user has friends or is in Study Lounge)
-  useEffect(() => {
-    if (!isFirebaseConfigured || !user) return;
-    const hasFriends = Array.isArray(userProfile?.friends) && userProfile.friends.length > 0;
-    const isInStudyLounge = activeTab === 'study-lounge';
-
-    if (hasFriends || isInStudyLounge) {
-      updateUserPresence(user, timerState, activeStreak, totalSolved, userProfile);
-    }
-  }, [user, userProfile, timerState.isRunning, timerState.isPaused, timerState.subject, timerState.mode, activeStreak, totalSolved, activeTab]);
-
-  // Periodic heartbeat & presence sync - Solitary Mode optimized (Zero background pings if no friends and not in Study Lounge)
-  useEffect(() => {
-    if (!isFirebaseConfigured || !user) return;
-
-    const hasFriends = Array.isArray(userProfile?.friends) && userProfile.friends.length > 0;
-    const isInStudyLounge = activeTab === 'study-lounge';
-
-    // Solitary Mode: If no friends and not in Study Lounge, completely skip background presence writes
-    if (!hasFriends && !isInStudyLounge) {
-      return;
-    }
-
-    // Heartbeat every 60s
-    const heartbeatInterval = setInterval(() => {
-      updateUserPresence(user, timerState, activeStreak, totalSolved, userProfile);
-    }, 60000);
-
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        updateUserPresence(user, timerState, activeStreak, totalSolved, userProfile);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('focus', handleVisibility);
-
-    const handleBeforeUnload = () => {
-      setUserOffline(user.uid);
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      clearInterval(heartbeatInterval);
-      document.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('focus', handleVisibility);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [user, userProfile, timerState, activeStreak, totalSolved, activeTab]);
 
   // Manual notification trigger for demo
   const triggerDemoNotification = () => {
