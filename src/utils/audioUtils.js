@@ -23,18 +23,21 @@ function getAudioContext() {
  * Plays a calm, gentle harmonic singing bowl / zen chime.
  * Uses 528 Hz (the 'Miracle / Transformation' frequency) with warm 1056 Hz & 1584 Hz overtones.
  * Soft attack and gentle exponential decay to let the user know their session is completed peacefully.
- * @param {number} volume - Volume multiplier (0.0 to 1.0, default 0.28 for soft quietness)
+ * @param {number} volume - Volume multiplier (reduced by 50% for subtle ambient quietness, default 0.14)
  */
-export function playSoftZenChime(volume = 0.28) {
+export function playSoftZenChime(volume = 0.14) {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
+
+    // Apply 50% attenuation to any supplied volume
+    const effectiveVolume = Math.min(volume * 0.5, 0.2);
 
     const now = ctx.currentTime;
     const masterGain = ctx.createGain();
     masterGain.gain.setValueAtTime(0, now);
     // Soft smooth attack to avoid harsh sudden pop
-    masterGain.gain.linearRampToValueAtTime(volume, now + 0.12);
+    masterGain.gain.linearRampToValueAtTime(effectiveVolume, now + 0.12);
     // Gentle lingering decay
     masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 3.4);
     masterGain.connect(ctx.destination);
@@ -49,7 +52,7 @@ export function playSoftZenChime(volume = 0.28) {
     osc2.type = 'sine';
     osc2.frequency.setValueAtTime(1056, now);
     const gain2 = ctx.createGain();
-    gain2.gain.setValueAtTime(0.35, now);
+    gain2.gain.setValueAtTime(0.25, now);
     gain2.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
 
     // 2nd subtle harmonic: 1584 Hz
@@ -57,7 +60,7 @@ export function playSoftZenChime(volume = 0.28) {
     osc3.type = 'sine';
     osc3.frequency.setValueAtTime(1584, now);
     const gain3 = ctx.createGain();
-    gain3.gain.setValueAtTime(0.18, now);
+    gain3.gain.setValueAtTime(0.12, now);
     gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
 
     osc1.connect(masterGain);
@@ -81,10 +84,12 @@ export function playSoftZenChime(volume = 0.28) {
 /**
  * Plays a quiet, soft glass tap when starting or pausing the timer.
  */
-export function playSoftClick(volume = 0.08) {
+export function playSoftClick(volume = 0.04) {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
+
+    const effectiveVolume = Math.min(volume * 0.5, 0.05);
 
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
@@ -94,7 +99,7 @@ export function playSoftClick(volume = 0.08) {
     osc.frequency.setValueAtTime(880, now);
     osc.frequency.exponentialRampToValueAtTime(440, now + 0.06);
 
-    gain.gain.setValueAtTime(volume, now);
+    gain.gain.setValueAtTime(effectiveVolume, now);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
 
     osc.connect(gain);

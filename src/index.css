@@ -43,6 +43,45 @@
   --sidebar-width: 72px;
 }
 
+[data-theme="phosphor-crt"] {
+  /* Phosphor CRT Matrix Theme Variables */
+  --bg-primary: #05080a;
+  --bg-secondary: #080d10;
+  --bg-tertiary: #0e1713;
+  --text-primary: #39ff7a;
+  --text-secondary: #22c55e;
+  --text-tertiary: #166534;
+  --border-color: rgba(57, 255, 122, 0.24);
+  --border-color-hover: rgba(57, 255, 122, 0.55);
+  --accent-color: #39ff7a;
+  --accent-secondary: #10b981;
+  --accent-text: #05080a;
+  --accent-glow: 0 0 16px rgba(57, 255, 122, 0.35);
+  --card-shadow: 0 0 0 1px rgba(57, 255, 122, 0.22), 0 8px 24px rgba(0, 0, 0, 0.6);
+
+  --heatmap-level-0: #080d10;
+  --heatmap-level-1: #0e4429;
+  --heatmap-level-2: #15803d;
+  --heatmap-level-3: #22c55e;
+  --heatmap-level-4: #39ff7a;
+  --heatmap-glow: rgba(57, 255, 122, 0.6);
+}
+
+[data-theme="phosphor-crt"] .nav-link.active {
+  background: #39ff7a !important;
+  color: #05080a !important;
+  font-weight: 700;
+}
+
+[data-theme="phosphor-crt"] .nav-link.active .nav-link-text,
+[data-theme="phosphor-crt"] .nav-link.active .nav-icon {
+  color: #05080a !important;
+}
+
+[data-theme="phosphor-crt"] .nav-link.active .nav-icon svg {
+  stroke: #05080a !important;
+}
+
 [data-theme="dark"] {
   /* Dark Theme Variables */
   --bg-primary: #09090b;
@@ -777,9 +816,18 @@ button, input, select, textarea {
 
 .nav-link.active {
   background: var(--accent-gradient-subtle, var(--accent-color));
-  color: var(--text-primary);
+  color: var(--accent-text, #ffffff);
   border-color: var(--border-color-hover);
   box-shadow: 0 2px 14px var(--accent-glow, rgba(0, 0, 0, 0.15));
+}
+
+.nav-link.active .nav-link-text,
+.nav-link.active .nav-icon {
+  color: var(--accent-text, #ffffff);
+}
+
+.nav-link.active .nav-icon svg {
+  stroke: var(--accent-text, #ffffff);
 }
 
 .nav-link.active::before {
@@ -11254,8 +11302,8 @@ html, body {
   height: 12px;
   border-radius: 2px;
   background: #161b22;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: transform 0.1s ease, border-color 0.1s ease;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
   cursor: pointer;
   flex-shrink: 0;
   margin-bottom: 4px;
@@ -11273,8 +11321,8 @@ html, body {
 }
 
 .heatmap-square:hover {
-  transform: scale(1.35);
   border-color: #ffffff;
+  box-shadow: 0 0 0 1.5px #ffffff, 0 0 6px var(--accent-glow, rgba(255, 255, 255, 0.4));
   z-index: 5;
 }
 
@@ -11409,12 +11457,16 @@ html, body {
 .heatmap-cell-tooltip-status {
   font-size: 11px;
   color: #8fa0ff;
-  min-height: 20px;
+  height: 22px;
+  min-height: 22px;
+  max-height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .tooltip-active-text {
@@ -12749,7 +12801,7 @@ html, body {
    ======================================================== */
 .dashboard-heatmap-dual-row {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 440px 1fr;
   gap: 20px;
   align-items: stretch;
 }
@@ -12763,7 +12815,8 @@ html, body {
 .heatmap-matrix-left-col {
   display: flex;
   flex-direction: column;
-  width: fit-content;
+  width: 100%;
+  max-width: 440px;
 }
 
 .streak-analytics-right-col {
@@ -15843,6 +15896,44 @@ button:hover svg, .nav-link:hover svg, .sidebar-toggle-btn:hover svg {
 .activity-toast-btn-dismiss:hover {
   color: #f8fafc;
 }
+
+/* ASCII Mascot Component (Active in Phosphor CRT Matrix Theme) */
+.ascii-mascot-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ascii-mascot-pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 12px;
+  color: #39ff7a;
+  text-shadow: 0 0 8px rgba(57, 255, 122, 0.45);
+  user-select: none;
+  white-space: pre;
+  font-weight: 700;
+  margin: 0;
+}
+
+.ascii-mascot-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(57, 255, 122, 0.12);
+  color: #39ff7a;
+  border: 1px solid rgba(57, 255, 122, 0.3);
+  letter-spacing: 0.05em;
+}
+
+
 
 
 

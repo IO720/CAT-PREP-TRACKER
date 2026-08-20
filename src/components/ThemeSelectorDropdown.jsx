@@ -146,21 +146,27 @@ const ThemeIcons = {
       <path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
       <path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
     </svg>
+  ),
+  phosphorCrt: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="4 17 10 11 4 5"></polyline>
+      <line x1="12" y1="19" x2="20" y2="19"></line>
+    </svg>
   )
 };
 
 export const THEMES = [
   { 
+    id: 'phosphor-crt', 
+    name: 'Phosphor CRT Matrix', 
+    IconComponent: ThemeIcons.phosphorCrt, 
+    colors: ['#05080a', '#0a160f', '#10b981', '#39ff7a']
+  },
+  { 
     id: 'dark', 
     name: 'Dark Obsidian', 
     IconComponent: ThemeIcons.dark, 
     colors: ['#09090b', '#121215', '#1a1a20', '#ffffff']
-  },
-  { 
-    id: 'light', 
-    name: 'Pure Light', 
-    IconComponent: ThemeIcons.light, 
-    colors: ['#f8fafc', '#ffffff', '#e2e8f0', '#0f172a']
   },
   { 
     id: 'dark-olive', 

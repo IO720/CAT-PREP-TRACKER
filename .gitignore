@@ -28,3 +28,12 @@ graphify-out/
 
 # Android build artifacts
 *.apk
+
+# Environment & Secrets
+.env
+.env.*
+*.env
+*.pem
+*.key
+*.cert
+serviceAccountKey.json

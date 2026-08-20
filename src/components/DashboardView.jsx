@@ -91,10 +91,12 @@ export default function DashboardView({
 
         <div className="hero-action-buttons">
           <button className="btn-primary hero-main-btn" onClick={() => setActiveTab('daily')}>
-            Start Today's Practice
+            <Icons.Target size={15} />
+            <span>Start Today's Practice</span>
           </button>
           <button className="btn-secondary hero-sub-btn" onClick={() => setActiveTab('timer')}>
-            Focus Timer
+            <Icons.Clock size={15} />
+            <span>Focus Timer</span>
           </button>
         </div>
       </div>

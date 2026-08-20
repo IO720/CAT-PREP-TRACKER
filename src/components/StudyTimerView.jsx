@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { stripEmojis } from '../utils/textUtils';
 import StudyCompanionEntity from './StudyCompanionEntity';
+import AsciiMascot from './AsciiMascot';
 import { playSoftZenChime, playSoftClick } from '../utils/audioUtils';
 
 export default function StudyTimerView({
@@ -219,15 +220,23 @@ export default function StudyTimerView({
       {/* Main Stage: Timer + Study Companion Layout */}
       <div className={`minimal-timer-stage ${isRunning ? 'is-running' : ''} ${isZenFullscreen ? 'fullscreen-stage' : ''}`}>
         
-        {/* Companion Entity Display */}
+        {/* Companion Display: Animated ASCII Bot in Phosphor CRT theme, Standard Mascot in all other themes */}
         <div className="stage-companion-container">
-          <StudyCompanionEntity 
-            isRunning={isRunning}
-            isPaused={isPaused}
-            isCompleted={secondsLeft === 0 && !isRunning && !isPaused}
-            subject={currentSubject}
-            size={isZenFullscreen ? 230 : 175}
-          />
+          {theme === 'phosphor-crt' ? (
+            <AsciiMascot 
+              isRunning={isRunning}
+              subject={currentSubject}
+              size={isZenFullscreen ? 230 : 175}
+            />
+          ) : (
+            <StudyCompanionEntity 
+              isRunning={isRunning}
+              isPaused={isPaused}
+              isCompleted={secondsLeft === 0 && !isRunning && !isPaused}
+              subject={currentSubject}
+              size={isZenFullscreen ? 230 : 175}
+            />
+          )}
         </div>
 
         {/* Center Stage: Circular Counter */}

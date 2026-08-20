@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Icons } from './AspirantIcons';
 
 export default function StudyContributionHeatmap({ tracker = {}, compact = false }) {
@@ -9,80 +9,86 @@ export default function StudyContributionHeatmap({ tracker = {}, compact = false
   const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const MONTHS = ['Month 1', 'Month 2', 'Month 3', 'Month 4'];
 
-  // Flatten weeks from all 4 months
-  const allWeeksByMonth = {};
-  let totalActiveDays = 0;
-  let totalTasksDone = 0;
+  // Flatten weeks from all 4 months with stable memoization
+  const { allWeeksByMonth, totalActiveDays, totalTasksDone } = useMemo(() => {
+    const weeksMap = {};
+    let activeDays = 0;
+    let tasksCount = 0;
 
-  MONTHS.forEach(monthKey => {
-    const weeks = tracker[monthKey] || [];
-    const monthWeeksList = [];
+    MONTHS.forEach(monthKey => {
+      const weeks = tracker[monthKey] || [];
+      const monthWeeksList = [];
 
-    weeks.forEach((weekObj, wIdx) => {
-      const days = weekObj.days || [];
-      const cellData = [];
+      weeks.forEach((weekObj, wIdx) => {
+        const days = weekObj.days || [];
+        const cellData = [];
 
-      days.forEach((dayObj, dIdx) => {
-        let tasksDone = 0;
-        if (dayObj.quantCompleted) tasksDone++;
-        if (dayObj.lrdiCompleted) tasksDone++;
-        if (dayObj.varcCompleted) tasksDone++;
+        days.forEach((dayObj, dIdx) => {
+          let tasksDone = 0;
+          if (dayObj.quantCompleted) tasksDone++;
+          if (dayObj.lrdiCompleted) tasksDone++;
+          if (dayObj.varcCompleted) tasksDone++;
 
-        const qCount = Number(dayObj.quantCount) || 0;
-        const lrdiCount = Number(dayObj.lrdiCount) || 0;
-        const varcCount = Number(dayObj.varcCount) || 0;
-        const totalQs = qCount + lrdiCount + varcCount;
+          const qCount = Number(dayObj.quantCount) || 0;
+          const lrdiCount = Number(dayObj.lrdiCount) || 0;
+          const varcCount = Number(dayObj.varcCount) || 0;
+          const totalQs = qCount + lrdiCount + varcCount;
 
-        let level = 0;
-        if (tasksDone === 1) level = 1;
-        else if (tasksDone === 2) level = 2;
-        else if (tasksDone >= 3 || totalQs >= 25) level = 3;
-        if (tasksDone >= 3 && totalQs >= 40) level = 4;
+          let level = 0;
+          if (tasksDone === 1) level = 1;
+          else if (tasksDone === 2) level = 2;
+          else if (tasksDone >= 3 || totalQs >= 25) level = 3;
+          if (tasksDone >= 3 && totalQs >= 40) level = 4;
 
-        if (tasksDone > 0) {
-          totalActiveDays++;
-          totalTasksDone += tasksDone;
+          if (tasksDone > 0) {
+            activeDays++;
+            tasksCount += tasksDone;
+          }
+
+          cellData.push({
+            month: monthKey,
+            weekName: weekObj.week || `Week ${wIdx + 1}`,
+            dayName: DAY_NAMES[dIdx] || `Day ${dIdx + 1}`,
+            dayNumber: dayObj.day || `Day ${dIdx + 1}`,
+            tasksDone,
+            totalQs,
+            level,
+            quantCompleted: dayObj.quantCompleted,
+            lrdiCompleted: dayObj.lrdiCompleted,
+            varcCompleted: dayObj.varcCompleted
+          });
+        });
+
+        while (cellData.length < 7) {
+          cellData.push({
+            month: monthKey,
+            weekName: weekObj.week || `Week ${wIdx + 1}`,
+            dayName: DAY_NAMES[cellData.length],
+            tasksDone: 0,
+            totalQs: 0,
+            level: 0
+          });
         }
 
-        cellData.push({
+        monthWeeksList.push({
           month: monthKey,
           weekName: weekObj.week || `Week ${wIdx + 1}`,
-          dayName: DAY_NAMES[dIdx] || `Day ${dIdx + 1}`,
-          dayNumber: dayObj.day || `Day ${dIdx + 1}`,
-          tasksDone,
-          totalQs,
-          level,
-          quantCompleted: dayObj.quantCompleted,
-          lrdiCompleted: dayObj.lrdiCompleted,
-          varcCompleted: dayObj.varcCompleted
+          days: cellData
         });
       });
 
-      while (cellData.length < 7) {
-        cellData.push({
-          month: monthKey,
-          weekName: weekObj.week || `Week ${wIdx + 1}`,
-          dayName: DAY_NAMES[cellData.length],
-          tasksDone: 0,
-          totalQs: 0,
-          level: 0
-        });
-      }
-
-      monthWeeksList.push({
-        month: monthKey,
-        weekName: weekObj.week || `Week ${wIdx + 1}`,
-        days: cellData
-      });
+      weeksMap[monthKey] = monthWeeksList;
     });
 
-    allWeeksByMonth[monthKey] = monthWeeksList;
-  });
+    return { allWeeksByMonth: weeksMap, totalActiveDays: activeDays, totalTasksDone: tasksCount };
+  }, [tracker]);
 
   // Filter weeks to display based on selectedMonth
-  const displayedWeeks = selectedMonth === 'ALL'
-    ? Object.values(allWeeksByMonth).flat()
-    : (allWeeksByMonth[selectedMonth] || []);
+  const displayedWeeks = useMemo(() => {
+    return selectedMonth === 'ALL'
+      ? Object.values(allWeeksByMonth).flat()
+      : (allWeeksByMonth[selectedMonth] || []);
+  }, [selectedMonth, allWeeksByMonth]);
 
   const isSingleMonth = selectedMonth !== 'ALL';
 

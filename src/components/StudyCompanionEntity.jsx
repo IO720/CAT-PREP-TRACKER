@@ -13,7 +13,7 @@ export default function StudyCompanionEntity({
   size = 200
 }) {
   const statusLabel = isCompleted 
-    ? "Session Mastered! 🎉" 
+    ? "Session Mastered!" 
     : isRunning 
       ? `Studying ${subject} alongside you...` 
       : isPaused 
@@ -37,9 +37,14 @@ export default function StudyCompanionEntity({
       >
         <defs>
           <linearGradient id="bodyGrad" x1="60" y1="40" x2="180" y2="180" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#38bdf8" />
-            <stop offset="50%" stopColor="#818cf8" />
-            <stop offset="100%" stopColor="#c084fc" />
+            <stop offset="0%" stopColor="var(--accent-color, #38bdf8)" />
+            <stop offset="50%" stopColor="var(--accent-secondary, #818cf8)" />
+            <stop offset="100%" stopColor="var(--accent-color, #38bdf8)" stopOpacity="0.85" />
+          </linearGradient>
+
+          <linearGradient id="earInnerGrad" x1="88" y1="38" x2="108" y2="62" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="var(--accent-secondary, #ec4899)" />
+            <stop offset="100%" stopColor="var(--accent-color, #38bdf8)" />
           </linearGradient>
 
           <linearGradient id="deskGrad" x1="20" y1="170" x2="220" y2="170" gradientUnits="userSpaceOnUse">
@@ -62,10 +67,10 @@ export default function StudyCompanionEntity({
         {/* Ambient Floating Sparkles / Focus Particles */}
         {isRunning && (
           <g className="floating-sparks">
-            <circle cx="45" cy="55" r="2" fill="#38bdf8" className="spark spark-1" />
-            <circle cx="195" cy="65" r="2.5" fill="#ec4899" className="spark spark-2" />
-            <circle cx="65" cy="115" r="1.5" fill="#eab308" className="spark spark-3" />
-            <circle cx="180" cy="125" r="2" fill="#38bdf8" className="spark spark-4" />
+            <circle cx="45" cy="55" r="2" fill="var(--accent-color, #38bdf8)" className="spark spark-1" />
+            <circle cx="195" cy="65" r="2.5" fill="var(--accent-secondary, #ec4899)" className="spark spark-2" />
+            <circle cx="65" cy="115" r="1.5" fill="var(--accent-color, #eab308)" className="spark spark-3" />
+            <circle cx="180" cy="125" r="2" fill="var(--accent-secondary, #38bdf8)" className="spark spark-4" />
           </g>
         )}
 
@@ -79,8 +84,8 @@ export default function StudyCompanionEntity({
 
         {/* Cozy Steaming Mug */}
         <g className="desk-mug" transform="translate(38, 142)">
-          <rect x="0" y="8" width="18" height="20" rx="4" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.2" />
-          <path d="M18 13C21 13 23 15 23 18C23 21 21 23 18 23" stroke="#38bdf8" strokeWidth="1.2" fill="none" />
+          <rect x="0" y="8" width="18" height="20" rx="4" fill="#1e293b" stroke="var(--accent-color, #38bdf8)" strokeWidth="1.2" />
+          <path d="M18 13C21 13 23 15 23 18C23 21 21 23 18 23" stroke="var(--accent-color, #38bdf8)" strokeWidth="1.2" fill="none" />
           {/* Animated Rising Steam */}
           <path d="M5 4Q9 0 6 -4" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round" fill="none" className="steam-line steam-1" />
           <path d="M12 5Q15 1 13 -3" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round" fill="none" className="steam-line steam-2" />
@@ -99,10 +104,10 @@ export default function StudyCompanionEntity({
           {/* Bobbing Head Group */}
           <g className="scholar-head-group">
             {/* Cat / Sprite Ears */}
-            <polygon points="82,65 94,30 112,58" fill="#38bdf8" />
-            <polygon points="88,62 96,38 108,58" fill="#ec4899" opacity="0.6" />
-            <polygon points="158,65 146,30 128,58" fill="#c084fc" />
-            <polygon points="152,62 144,38 132,58" fill="#ec4899" opacity="0.6" />
+            <polygon points="82,65 94,30 112,58" fill="var(--accent-color, #38bdf8)" />
+            <polygon points="88,62 96,38 108,58" fill="url(#earInnerGrad)" opacity="0.8" />
+            <polygon points="158,65 146,30 128,58" fill="var(--accent-secondary, #c084fc)" />
+            <polygon points="152,62 144,38 132,58" fill="url(#earInnerGrad)" opacity="0.8" />
 
             {/* Head Silhouette */}
             <circle cx="120" cy="78" r="38" fill="url(#bodyGrad)" />
@@ -110,9 +115,9 @@ export default function StudyCompanionEntity({
             {/* Glowing Focus Headphones */}
             <path d="M82 78 C82 52, 158 52, 158 78" stroke="#f1f5f9" strokeWidth="4" strokeLinecap="round" fill="none" />
             {/* Left Ear Cup */}
-            <rect x="76" y="68" width="12" height="22" rx="6" fill="#0f172a" stroke="#38bdf8" strokeWidth="2" />
+            <rect x="76" y="68" width="12" height="22" rx="6" fill="#0f172a" stroke="var(--accent-color, #38bdf8)" strokeWidth="2" />
             {/* Right Ear Cup */}
-            <rect x="152" y="68" width="12" height="22" rx="6" fill="#0f172a" stroke="#c084fc" strokeWidth="2" />
+            <rect x="152" y="68" width="12" height="22" rx="6" fill="#0f172a" stroke="var(--accent-secondary, #c084fc)" strokeWidth="2" />
 
             {/* Cute Scholar Glasses */}
             <g className="scholar-glasses">
@@ -126,7 +131,7 @@ export default function StudyCompanionEntity({
               {/* Eyes Inside Glasses */}
               {isCompleted ? (
                 // Happy ^ ^ Eyes
-                <g stroke="#38bdf8" strokeWidth="2" strokeLinecap="round">
+                <g stroke="var(--accent-color, #38bdf8)" strokeWidth="2" strokeLinecap="round">
                   <path d="M102 79 L106 75 L110 79" />
                   <path d="M130 79 L134 75 L138 79" />
                 </g>
@@ -138,7 +143,7 @@ export default function StudyCompanionEntity({
                 </g>
               ) : (
                 // Focused Studying Eyes (Gently Blinking)
-                <g className="scholar-eyes" fill="#38bdf8">
+                <g className="scholar-eyes" fill="var(--accent-color, #38bdf8)">
                   <circle cx="106" cy="78" r="3.2" />
                   <circle cx="134" cy="78" r="3.2" />
                   <circle cx="107.5" cy="76.5" r="1" fill="#ffffff" />
@@ -181,7 +186,7 @@ export default function StudyCompanionEntity({
               <line x1="140" y1="154" x2="128" y2="160" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" />
               <polygon points="128,160 125,162 127,159" fill="#0f172a" />
               {/* Particle Spark at pen tip when writing */}
-              {isRunning && <circle cx="125" cy="162" r="1.5" fill="#38bdf8" filter="url(#glowFilter)" />}
+              {isRunning && <circle cx="125" cy="162" r="1.5" fill="var(--accent-color, #38bdf8)" filter="url(#glowFilter)" />}
             </g>
           </g>
 
