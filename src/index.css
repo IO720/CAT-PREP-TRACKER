@@ -4405,25 +4405,28 @@ html, body {
 
 /* Character Animation States */
 .study-companion-entity-wrap.is-studying .scholar-head-group {
-  animation: scholarHeadBob 3.5s infinite ease-in-out;
+  animation: scholarHeadBob 6s infinite ease-in-out;
   transform-origin: 120px 105px;
+  transform-box: fill-box;
+  will-change: transform;
 }
 
 @keyframes scholarHeadBob {
-  0%, 100% { transform: rotate(0deg) translateY(0px); }
-  25% { transform: rotate(-2.5deg) translateY(1.5px); }
-  75% { transform: rotate(2deg) translateY(-1px); }
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(1.5px); }
 }
 
 .study-companion-entity-wrap.is-studying .pencil-hand {
-  animation: scholarWrite 1.4s infinite ease-in-out alternate;
+  animation: scholarWrite 3.5s infinite ease-in-out alternate;
   transform-origin: 140px 154px;
+  transform-box: fill-box;
+  will-change: transform;
 }
 
 @keyframes scholarWrite {
-  0% { transform: translate(0px, 0px) rotate(0deg); }
-  50% { transform: translate(-3px, 1px) rotate(-4deg); }
-  100% { transform: translate(2px, -1px) rotate(3deg); }
+  0% { transform: translate(0px, 0px); }
+  50% { transform: translate(-1px, 0.5px); }
+  100% { transform: translate(1px, -0.5px); }
 }
 
 .steam-line {

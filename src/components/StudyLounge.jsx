@@ -17,13 +17,16 @@ export default function StudyLounge({
   const [buddyFilter, setBuddyFilter] = useState('ALL'); // 'ALL' | 'STUDYING' | 'ONLINE'
   const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
 
-  // Real-time tick every second to smoothly compute remaining countdowns for studying peers
+  // Real-time tick every second to smoothly compute remaining countdowns for studying peers only when needed
   useEffect(() => {
+    const hasActiveCountdown = Boolean(timerState?.isRunning) || (peers || []).some(p => p?.status === 'studying' && p?.activity?.isRunning);
+    if (!hasActiveCountdown) return;
+
     const interval = setInterval(() => {
       setCurrentTimeMs(Date.now());
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [timerState?.isRunning, peers]);
 
   // Format seconds to mm:ss
   const formatTime = (secs) => {

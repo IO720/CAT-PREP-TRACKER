@@ -174,21 +174,7 @@ export default function PeerInspectorModal({
                     <span>Edit Profile</span>
                   </button>
                 )
-              ) : (
-                onMessagePeer && (
-                  <button 
-                    type="button" 
-                    className="profile-card-action-btn primary"
-                    onClick={() => {
-                      onClose();
-                      onMessagePeer(activePeer);
-                    }}
-                  >
-                    <Icons.MessageSquare size={13} />
-                    <span>Message Buddy</span>
-                  </button>
-                )
-              )}
+              ) : null}
             </div>
           </div>
 
