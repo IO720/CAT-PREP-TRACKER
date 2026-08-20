@@ -106,7 +106,7 @@ export const parseISODate = (str) => {
 export const getCalculatedDateForTrackerDay = (monthName, weekName, dayName, startDateStr) => {
   let baseStartDate;
   if (startDateStr) {
-    baseStartDate = parseISODate(startDateStr);
+    baseStartDate = getMondayOfWeek(parseISODate(startDateStr));
   } else {
     // Default to current week Monday
     baseStartDate = getMondayOfWeek(new Date());
@@ -146,7 +146,7 @@ export const getTodayTrackerPosition = (startDateStr) => {
 
   let baseStartDate;
   if (startDateStr) {
-    baseStartDate = parseISODate(startDateStr);
+    baseStartDate = getMondayOfWeek(parseISODate(startDateStr));
   } else {
     baseStartDate = getMondayOfWeek(now);
   }

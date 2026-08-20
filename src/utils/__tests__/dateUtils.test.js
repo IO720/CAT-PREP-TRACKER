@@ -60,6 +60,27 @@ describe('dateUtils - OS and Web Date Tracking Logic', () => {
     expect(pos.todayDayName).toBe(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][today.getDay()]);
   });
 
+  it('correctly maps weekdays when startDate is a non-Monday day', () => {
+    // 2026-08-18 is a Tuesday
+    const nonMondayStartDate = '2026-08-18';
+
+    // Monday should still map to Monday Aug 17, 2026
+    const mon = getCalculatedDateForTrackerDay('Month 1', 'Week 1', 'Monday', nonMondayStartDate);
+    expect(formatDateISO(mon)).toBe('2026-08-17');
+
+    // Tuesday should map to Tuesday Aug 18, 2026
+    const tue = getCalculatedDateForTrackerDay('Month 1', 'Week 1', 'Tuesday', nonMondayStartDate);
+    expect(formatDateISO(tue)).toBe('2026-08-18');
+
+    // Wednesday should map to Wednesday Aug 19, 2026
+    const wed = getCalculatedDateForTrackerDay('Month 1', 'Week 1', 'Wednesday', nonMondayStartDate);
+    expect(formatDateISO(wed)).toBe('2026-08-19');
+
+    // Thursday should map to Thursday Aug 20, 2026
+    const thu = getCalculatedDateForTrackerDay('Month 1', 'Week 1', 'Thursday', nonMondayStartDate);
+    expect(formatDateISO(thu)).toBe('2026-08-20');
+  });
+
   it('correctly matches isToday for current date', () => {
     const today = new Date();
     const mondayThisWeek = getMondayOfWeek(today);

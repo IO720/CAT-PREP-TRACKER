@@ -25,3 +25,6 @@ dist-ssr
 
 # Graphify
 graphify-out/
+
+# Android build artifacts
+*.apk

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { loadState, saveState, exportStateAsFile, getInitialState } from './utils/storage';
+import { loadState, saveState, exportStateAsFile, getInitialState, mergeTrackerStates } from './utils/storage';
 import { 
   auth, 
   isFirebaseConfigured, 
@@ -557,9 +557,12 @@ export default function App() {
 
   const [isCloudLoaded, setIsCloudLoaded] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
-  const cloudSaveTimerRef = useRef(null);
+  const [syncStatus, setSyncStatus] = useState('saved'); // 'saved' | 'syncing' | 'synced' | 'error'
+  const [lastSyncedTimeStr, setLastSyncedTimeStr] = useState(() => {
+    return localStorage.getItem('aspiranto_last_synced_time') || '';
+  });
 
-  // Listen to Firebase Auth state with Anti-Overwrite & Timestamp Protection
+  // Listen to Firebase Auth state with Anti-Overwrite & Non-Destructive Merge
   useEffect(() => {
     if (isFirebaseConfigured && auth) {
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -575,39 +578,21 @@ export default function App() {
             // Fetch Cloud tracker data
             const cloudData = await loadTrackerFromCloud(firebaseUser.uid);
             if (cloudData && cloudData.tracker) {
-              const cloudTimestamp = cloudData.updatedAtMs || (cloudData.updatedAt ? new Date(cloudData.updatedAt).getTime() : 0);
-              const localTimestamp = state.lastUpdated || 0;
-
-              // Only overwrite local state if cloud data is genuinely NEWER than local changes (e.g. from another device)
-              if (cloudTimestamp > localTimestamp + 1500) {
-                setState(prev => ({
-                  tracker: cloudData.tracker,
-                  studyPlan: cloudData.studyPlan || prev.studyPlan,
-                  mocks: cloudData.mocks || prev.mocks,
-                  settings: cloudData.settings || prev.settings,
-                  lastUpdated: cloudTimestamp
-                }));
-              } else {
-                // Local state is newer or has offline changes: preserve local state and push to cloud
-                saveTrackerToCloud(
-                  firebaseUser.uid,
-                  state.tracker,
-                  state.studyPlan,
-                  state.mocks,
-                  activeStreak,
-                  totalSolved,
-                  localTimestamp || Date.now()
-                );
-              }
+              // Intelligently merge local state and cloud state so no offline work is ever wiped
+              setState(prev => {
+                const merged = mergeTrackerStates(prev, cloudData);
+                saveState(merged);
+                return merged;
+              });
             } else {
-              // Initial cloud state for new user
+              // Initial cloud backup for newly authenticated user
               await saveTrackerToCloud(
                 firebaseUser.uid, 
                 state.tracker, 
                 state.studyPlan, 
                 state.mocks, 
                 activeStreak, 
-                totalSolved,
+                totalSolved, 
                 state.lastUpdated || Date.now()
               );
             }
@@ -637,32 +622,62 @@ export default function App() {
     }
   };
 
-  // Sync changes to Cloud in real-time with 2.5s Debounce (Protects against Firestore quota exhaustion)
-  useEffect(() => {
-    if (!isFirebaseConfigured || !user || !isCloudLoaded) return;
+  // Explicit End-of-Day / Daily Cloud Sync (Preserves Firestore write quota for live lounge & chat)
+  const handleRecordDayProgress = async (silent = false) => {
+    if (!silent) setSyncStatus('syncing');
+    try {
+      const nowMs = Date.now();
+      const timeStr = new Date(nowMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const fullLabel = `Today ${timeStr}`;
 
-    if (cloudSaveTimerRef.current) {
-      clearTimeout(cloudSaveTimerRef.current);
+      // 1. Save locally first
+      const updatedLocal = saveState({
+        ...state,
+        lastUpdated: nowMs
+      });
+      setState(updatedLocal);
+
+      // 2. If online and logged in, push daily progress snapshot to Firestore
+      if (isFirebaseConfigured && user?.uid && navigator.onLine) {
+        await saveTrackerToCloud(
+          user.uid,
+          updatedLocal.tracker,
+          updatedLocal.studyPlan,
+          updatedLocal.mocks,
+          activeStreak,
+          totalSolved,
+          nowMs
+        );
+      }
+
+      localStorage.setItem('aspiranto_last_synced_time', fullLabel);
+      setLastSyncedTimeStr(fullLabel);
+      setSyncStatus('synced');
+      setTimeout(() => setSyncStatus('saved'), 3500);
+    } catch (err) {
+      console.warn("Sync error (saved locally):", err);
+      setSyncStatus('saved');
     }
+  };
 
-    cloudSaveTimerRef.current = setTimeout(() => {
-      saveTrackerToCloud(
-        user.uid, 
-        state.tracker, 
-        state.studyPlan, 
-        state.mocks, 
-        activeStreak, 
-        totalSolved,
-        state.lastUpdated || Date.now()
-      );
-    }, 2500);
-
-    return () => {
-      if (cloudSaveTimerRef.current) {
-        clearTimeout(cloudSaveTimerRef.current);
+  // Auto-record day progress on beforeunload if online
+  useEffect(() => {
+    const handleBeforeUnloadSync = () => {
+      if (user?.uid && isFirebaseConfigured && navigator.onLine) {
+        saveTrackerToCloud(
+          user.uid,
+          state.tracker,
+          state.studyPlan,
+          state.mocks,
+          activeStreak,
+          totalSolved,
+          Date.now()
+        );
       }
     };
-  }, [state, user, isCloudLoaded, activeStreak, totalSolved]);
+    window.addEventListener('beforeunload', handleBeforeUnloadSync);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnloadSync);
+  }, [user, state, activeStreak, totalSolved]);
 
   // Real-time listener for current user's profile document (syncs friends list, display name, target, etc.)
   useEffect(() => {
@@ -902,7 +917,7 @@ export default function App() {
         }
         return w;
       });
-      return { ...prev, studyPlan: updatedPlan };
+      return { ...prev, studyPlan: updatedPlan, lastUpdated: Date.now() };
     });
   };
 
@@ -929,7 +944,7 @@ export default function App() {
         return week;
       });
 
-      return { ...prev, tracker: updatedTracker };
+      return { ...prev, tracker: updatedTracker, lastUpdated: Date.now() };
     });
   };
 
@@ -952,7 +967,7 @@ export default function App() {
         return week;
       });
 
-      return { ...prev, tracker: updatedTracker };
+      return { ...prev, tracker: updatedTracker, lastUpdated: Date.now() };
     });
   };
 
@@ -972,7 +987,7 @@ export default function App() {
         }
         return mock;
       });
-      return { ...prev, mocks: updatedMocks };
+      return { ...prev, mocks: updatedMocks, lastUpdated: Date.now() };
     });
   };
 
@@ -1000,7 +1015,8 @@ export default function App() {
       settings: {
         ...prev.settings,
         startDate: newStartDate
-      }
+      },
+      lastUpdated: Date.now()
     }));
   };
 
@@ -1026,7 +1042,7 @@ export default function App() {
       try {
         const imported = JSON.parse(event.target.result);
         if (imported.tracker && imported.studyPlan && imported.mocks) {
-          setState(imported);
+          setState({ ...imported, lastUpdated: Date.now() });
           if (imported.settings?.theme) {
             setTheme(imported.settings.theme);
           }
@@ -1114,7 +1130,7 @@ export default function App() {
         return week;
       });
 
-      return { ...prev, tracker: updatedTracker };
+      return { ...prev, tracker: updatedTracker, lastUpdated: Date.now() };
     });
   };
 
@@ -1146,7 +1162,7 @@ export default function App() {
         return week;
       });
 
-      return { ...prev, tracker: updatedTracker };
+      return { ...prev, tracker: updatedTracker, lastUpdated: Date.now() };
     });
   };
 
@@ -1700,6 +1716,9 @@ export default function App() {
               setActiveWeek={setActiveWeek}
               updateDayMetric={updateDayMetric}
               updateDayNotes={updateDayNotes}
+              syncStatus={syncStatus}
+              lastSyncedTimeStr={lastSyncedTimeStr}
+              onRecordDayProgress={() => handleRecordDayProgress(false)}
             />
           )}
           {activeTab === 'mocks' && (

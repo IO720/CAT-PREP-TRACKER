@@ -99,6 +99,113 @@ export const saveState = (state) => {
   }
 };
 
+export const mergeTrackerStates = (localState, cloudState) => {
+  if (!localState && !cloudState) return getInitialState();
+  if (!localState) return cloudState;
+  if (!cloudState) return localState;
+
+  const base = getInitialState();
+  const mergedTracker = {};
+
+  const months = Object.keys({ ...(base.tracker || {}), ...(localState.tracker || {}), ...(cloudState.tracker || {}) });
+
+  for (const month of months) {
+    const localWeeks = localState.tracker?.[month] || [];
+    const cloudWeeks = cloudState.tracker?.[month] || [];
+    const baseWeeks = base.tracker?.[month] || [];
+
+    const weekNames = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+
+    mergedTracker[month] = weekNames.map((wName, wIdx) => {
+      const lWeek = localWeeks.find(w => w.week === wName) || baseWeeks[wIdx] || { week: wName, days: [] };
+      const cWeek = cloudWeeks.find(w => w.week === wName) || { week: wName, days: [] };
+
+      const days = (lWeek.days || []).map((lDay) => {
+        const cDay = (cWeek.days || []).find(d => d.day === lDay.day) || {};
+
+        // Merge sessions by ID
+        const sessionsMap = new Map();
+        (cDay.sessions || []).forEach(s => {
+          if (s && (s.id || s.startTime)) sessionsMap.set(s.id || `${s.startTime}_${s.subject}`, s);
+        });
+        (lDay.sessions || []).forEach(s => {
+          if (s && (s.id || s.startTime)) sessionsMap.set(s.id || `${s.startTime}_${s.subject}`, s);
+        });
+
+        // Notes merge: prefer non-empty local or cloud
+        let mergedNotes = lDay.notes || '';
+        if (!mergedNotes && cDay.notes) {
+          mergedNotes = cDay.notes;
+        } else if (mergedNotes && cDay.notes && mergedNotes !== cDay.notes && !mergedNotes.includes(cDay.notes)) {
+          mergedNotes = `${mergedNotes}\n${cDay.notes}`.trim();
+        }
+
+        return {
+          ...lDay,
+          quantCompleted: Boolean(lDay.quantCompleted || cDay.quantCompleted),
+          lrdiCompleted: Boolean(lDay.lrdiCompleted || cDay.lrdiCompleted),
+          varcCompleted: Boolean(lDay.varcCompleted || cDay.varcCompleted),
+          quantCount: Math.max(Number(lDay.quantCount) || 0, Number(cDay.quantCount) || 0),
+          lrdiCount: Math.max(Number(lDay.lrdiCount) || 0, Number(cDay.lrdiCount) || 0),
+          varcCount: Math.max(Number(lDay.varcCount) || 0, Number(cDay.varcCount) || 0),
+          studyHours: Math.max(Number(lDay.studyHours) || 0, Number(cDay.studyHours) || 0),
+          notes: mergedNotes,
+          sessions: Array.from(sessionsMap.values())
+        };
+      });
+
+      return {
+        week: wName,
+        days
+      };
+    });
+  }
+
+  // Merge Study Plan
+  const mergedStudyPlan = (localState.studyPlan || base.studyPlan).map((lPlan, idx) => {
+    const cPlan = (cloudState.studyPlan || [])[idx] || {};
+    let status = lPlan.status || "Not Started";
+    if (cPlan.status === 'Completed' || status === 'Completed') {
+      status = 'Completed';
+    } else if (cPlan.status === 'In Progress' || status === 'In Progress') {
+      status = 'In Progress';
+    }
+    return {
+      ...lPlan,
+      status
+    };
+  });
+
+  // Merge Mocks
+  const mergedMocks = (localState.mocks || base.mocks).map((lMock, idx) => {
+    const cMock = (cloudState.mocks || [])[idx] || {};
+    const hasLocal = lMock.status === 'Taken' || Boolean(lMock.totalScore);
+    const hasCloud = cMock.status === 'Taken' || Boolean(cMock.totalScore);
+
+    if (hasLocal) return lMock;
+    if (hasCloud) return cMock;
+    return lMock;
+  });
+
+  const mergedLastUpdated = Math.max(
+    Number(localState.lastUpdated) || 0,
+    Number(cloudState.lastUpdated) || Number(cloudState.updatedAtMs) || 0,
+    Date.now()
+  );
+
+  return {
+    tracker: mergedTracker,
+    studyPlan: mergedStudyPlan,
+    mocks: mergedMocks,
+    settings: {
+      ...(cloudState.settings || {}),
+      ...(localState.settings || {}),
+      startDate: localState.settings?.startDate || cloudState.settings?.startDate || base.settings.startDate
+    },
+    lastUpdated: mergedLastUpdated
+  };
+};
+
 export const exportStateAsFile = (state) => {
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
   const downloadAnchor = document.createElement('a');
@@ -108,3 +215,4 @@ export const exportStateAsFile = (state) => {
   downloadAnchor.click();
   downloadAnchor.remove();
 };
+

@@ -14,7 +14,10 @@ export default function DailyTrackerView({
   activeWeek, 
   setActiveWeek, 
   updateDayMetric, 
-  updateDayNotes 
+  updateDayNotes,
+  syncStatus = 'saved',
+  lastSyncedTimeStr = '',
+  onRecordDayProgress
 }) {
   const { tracker, settings } = state;
   const startDateStr = settings?.startDate;
@@ -102,7 +105,39 @@ export default function DailyTrackerView({
           <h1 className="page-title">Daily Drills</h1>
           <p className="page-subtitle">Track your day-by-day practice checklists synced to your OS/Web calendar.</p>
         </div>
-        <div className="header-actions">
+        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div className="sync-status-indicator" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+            <span style={{ 
+              display: 'inline-block', 
+              width: '8px', 
+              height: '8px', 
+              borderRadius: '50%', 
+              backgroundColor: syncStatus === 'syncing' ? '#eab308' : syncStatus === 'synced' ? '#10b981' : '#38bdf8',
+              boxShadow: syncStatus === 'synced' ? '0 0 8px #10b981' : 'none'
+            }}></span>
+            <span>
+              {syncStatus === 'syncing' ? 'Syncing to Cloud...' : syncStatus === 'synced' ? 'Day Recorded!' : 'Saved Locally'}
+              {lastSyncedTimeStr ? ` • ${lastSyncedTimeStr}` : ''}
+            </span>
+          </div>
+
+          {onRecordDayProgress && (
+            <button 
+              className="btn-secondary record-day-btn" 
+              onClick={onRecordDayProgress}
+              disabled={syncStatus === 'syncing'}
+              title="Record today's progress to cloud and reserve server quota"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={syncStatus === 'syncing' ? 'spin-anim' : ''}>
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span>{syncStatus === 'syncing' ? 'Recording...' : syncStatus === 'synced' ? 'Recorded' : 'Record Day Progress'}</span>
+            </button>
+          )}
+
           <button 
             className="btn-primary jump-today-btn" 
             onClick={handleJumpToToday}
