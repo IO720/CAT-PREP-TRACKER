@@ -40,6 +40,7 @@ import ThemeSwitchToast from './components/ThemeSwitchToast';
 import ThemeRedeemModal from './components/ThemeRedeemModal';
 import { getUnlockedThemes } from './utils/themeRedemption';
 import UpdateNotificationToast from './components/UpdateNotificationToast';
+import ActivityNotificationToast from './components/ActivityNotificationToast';
 import { checkForAppUpdate } from './utils/versionCheck';
 import { audioEngine } from './utils/audioUtils';
 import SettingsView from './components/SettingsView';
@@ -561,6 +562,15 @@ export default function App() {
   const [lastSyncedTimeStr, setLastSyncedTimeStr] = useState(() => {
     return localStorage.getItem('aspiranto_last_synced_time') || '';
   });
+  const [activityNotification, setActivityNotification] = useState(null);
+  const [hasUnsyncedCloudChanges, setHasUnsyncedCloudChanges] = useState(false);
+
+  // Mark unsynced changes whenever local state updates after initial cloud load
+  useEffect(() => {
+    if (isCloudLoaded) {
+      setHasUnsyncedCloudChanges(true);
+    }
+  }, [state, isCloudLoaded]);
 
   // Listen to Firebase Auth state with Anti-Overwrite & Non-Destructive Merge
   useEffect(() => {
@@ -596,6 +606,7 @@ export default function App() {
                 state.lastUpdated || Date.now()
               );
             }
+            setHasUnsyncedCloudChanges(false);
           } catch (err) {
             console.warn("Using local cache, cloud load skipped:", err);
           } finally {
@@ -648,36 +659,65 @@ export default function App() {
           totalSolved,
           nowMs
         );
+        setHasUnsyncedCloudChanges(false);
       }
 
       localStorage.setItem('aspiranto_last_synced_time', fullLabel);
       setLastSyncedTimeStr(fullLabel);
       setSyncStatus('synced');
       setTimeout(() => setSyncStatus('saved'), 3500);
+
+      if (silent) {
+        setActivityNotification({
+          type: 'auto_saved',
+          title: 'Auto-Saved to Cloud',
+          message: `Your prep tracker was saved to cloud (${fullLabel}).`,
+          actionLabel: null,
+          onAction: null
+        });
+      }
     } catch (err) {
       console.warn("Sync error (saved locally):", err);
       setSyncStatus('saved');
     }
   };
 
-  // Auto-record day progress on beforeunload if online
+  // Occasional smart auto-save every 8 minutes if changes exist (quota friendly)
   useEffect(() => {
-    const handleBeforeUnloadSync = () => {
-      if (user?.uid && isFirebaseConfigured && navigator.onLine) {
-        saveTrackerToCloud(
-          user.uid,
-          state.tracker,
-          state.studyPlan,
-          state.mocks,
-          activeStreak,
-          totalSolved,
-          Date.now()
-        );
+    if (!isFirebaseConfigured || !user?.uid || !hasUnsyncedCloudChanges) return;
+
+    const autoSaveInterval = setInterval(() => {
+      if (navigator.onLine) {
+        handleRecordDayProgress(true);
+      }
+    }, 8 * 60 * 1000);
+
+    return () => clearInterval(autoSaveInterval);
+  }, [user?.uid, hasUnsyncedCloudChanges, state]);
+
+  // Warn user on tab exit / reload if there are unsynced changes & trigger emergency save
+  useEffect(() => {
+    const handleBeforeUnloadPrompt = (e) => {
+      if (hasUnsyncedCloudChanges && user?.uid) {
+        if (navigator.onLine) {
+          saveTrackerToCloud(
+            user.uid,
+            state.tracker,
+            state.studyPlan,
+            state.mocks,
+            activeStreak,
+            totalSolved,
+            Date.now()
+          );
+        }
+        e.preventDefault();
+        e.returnValue = 'You have unsynced study tracker progress. Please save your progress before leaving!';
+        return e.returnValue;
       }
     };
-    window.addEventListener('beforeunload', handleBeforeUnloadSync);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnloadSync);
-  }, [user, state, activeStreak, totalSolved]);
+    window.addEventListener('beforeunload', handleBeforeUnloadPrompt);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnloadPrompt);
+  }, [hasUnsyncedCloudChanges, user?.uid, state, activeStreak, totalSolved]);
 
   // Real-time listener for current user's profile document (syncs friends list, display name, target, etc.)
   useEffect(() => {
@@ -1230,6 +1270,21 @@ export default function App() {
 
     addStudySession(sessionObj);
 
+    // Notify the user visually that their study session was logged to daily drills
+    setActivityNotification({
+      type: 'timer_logged',
+      title: 'Session Logged to Daily Drills!',
+      message: `+${elapsedMins}m ${timerState.subject || 'Study'} session added to today's drills with checklist & notes updated.`,
+      actionLabel: 'View Daily Drills',
+      onAction: () => {
+        const todayP = getTodayTrackerPosition(state.settings?.startDate);
+        setActiveMonth(todayP.activeMonth);
+        setActiveWeek(todayP.activeWeek);
+        setActiveTab('daily');
+        setActivityNotification(null);
+      }
+    });
+
     const resetTimer = {
       ...timerState,
       secondsLeft: timerState.totalSeconds,
@@ -1682,6 +1737,7 @@ export default function App() {
               updateDayNotes={updateDayNotes}
               syncStatus={syncStatus}
               lastSyncedTimeStr={lastSyncedTimeStr}
+              hasUnsyncedCloudChanges={hasUnsyncedCloudChanges}
               onRecordDayProgress={() => handleRecordDayProgress(false)}
             />
           )}
@@ -1872,6 +1928,14 @@ export default function App() {
         <UpdateNotificationToast
           updateData={availableUpdate}
           onDismiss={() => setAvailableUpdate(null)}
+        />
+      )}
+
+      {/* Activity & Sync Notification Toast */}
+      {activityNotification && (
+        <ActivityNotificationToast
+          notification={activityNotification}
+          onDismiss={() => setActivityNotification(null)}
         />
       )}
 

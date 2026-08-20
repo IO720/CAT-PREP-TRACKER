@@ -17,6 +17,7 @@ export default function DailyTrackerView({
   updateDayNotes,
   syncStatus = 'saved',
   lastSyncedTimeStr = '',
+  hasUnsyncedCloudChanges = false,
   onRecordDayProgress
 }) {
   const { tracker, settings } = state;
@@ -106,17 +107,23 @@ export default function DailyTrackerView({
           <p className="page-subtitle">Track your day-by-day practice checklists synced to your OS/Web calendar.</p>
         </div>
         <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <div className="sync-status-indicator" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+          <div className="sync-status-indicator" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)', padding: '6px 12px', borderRadius: '8px', border: hasUnsyncedCloudChanges ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--border-color)' }}>
             <span style={{ 
               display: 'inline-block', 
               width: '8px', 
               height: '8px', 
               borderRadius: '50%', 
-              backgroundColor: syncStatus === 'syncing' ? '#eab308' : syncStatus === 'synced' ? '#10b981' : '#38bdf8',
-              boxShadow: syncStatus === 'synced' ? '0 0 8px #10b981' : 'none'
+              backgroundColor: syncStatus === 'syncing' ? '#eab308' : syncStatus === 'synced' ? '#10b981' : hasUnsyncedCloudChanges ? '#f59e0b' : '#38bdf8',
+              boxShadow: syncStatus === 'synced' ? '0 0 8px #10b981' : hasUnsyncedCloudChanges ? '0 0 6px #f59e0b' : 'none'
             }}></span>
             <span>
-              {syncStatus === 'syncing' ? 'Syncing to Cloud...' : syncStatus === 'synced' ? 'Day Recorded!' : 'Saved Locally'}
+              {syncStatus === 'syncing' 
+                ? 'Syncing to Cloud...' 
+                : syncStatus === 'synced' 
+                  ? 'Day Recorded to Cloud!' 
+                  : hasUnsyncedCloudChanges 
+                    ? 'Unsynced Cloud Changes (Saved Locally)' 
+                    : 'All Progress Synced'}
               {lastSyncedTimeStr ? ` • ${lastSyncedTimeStr}` : ''}
             </span>
           </div>
@@ -127,7 +134,12 @@ export default function DailyTrackerView({
               onClick={onRecordDayProgress}
               disabled={syncStatus === 'syncing'}
               title="Record today's progress to cloud and reserve server quota"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '6px',
+                borderColor: hasUnsyncedCloudChanges ? 'rgba(245, 158, 11, 0.5)' : undefined
+              }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={syncStatus === 'syncing' ? 'spin-anim' : ''}>
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>

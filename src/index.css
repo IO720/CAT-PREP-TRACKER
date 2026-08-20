@@ -15745,6 +15745,106 @@ button:hover svg, .nav-link:hover svg, .sidebar-toggle-btn:hover svg {
   letter-spacing: 0.2px;
 }
 
+/* Activity Toast Notification Banner */
+.activity-toast-banner {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.2);
+  max-width: 440px;
+  width: calc(100vw - 48px);
+}
+
+.activity-toast-banner.timer_logged {
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(34, 197, 94, 0.2);
+}
+
+.activity-toast-banner.unsaved_warning {
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(245, 158, 11, 0.2);
+}
+
+.activity-toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.activity-toast-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activity-toast-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.2;
+}
+
+.activity-toast-subtitle {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin-top: 3px;
+  line-height: 1.3;
+}
+
+.activity-toast-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.activity-toast-btn-action {
+  background: var(--accent-color, #38bdf8);
+  color: #0f172a;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.activity-toast-btn-action:hover {
+  transform: scale(1.03);
+  filter: brightness(1.1);
+}
+
+.activity-toast-btn-dismiss {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.activity-toast-btn-dismiss:hover {
+  color: #f8fafc;
+}
+
+
 
 
 
