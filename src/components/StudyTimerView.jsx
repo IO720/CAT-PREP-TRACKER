@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import gsap from 'gsap';
 import { stripEmojis } from '../utils/textUtils';
 import StudyCompanionEntity from './StudyCompanionEntity';
 import AsciiMascot from './AsciiMascot';
@@ -22,9 +23,11 @@ export default function StudyTimerView({
   onInspectFriend,
   currentUser = null,
   activeStreak = 0,
-  onLeaveTimer
+  onLeaveTimer,
+  isFocusTransitioning = false
 }) {
   const [showGuiltTrip, setShowGuiltTrip] = useState(false);
+  const companionRef = useRef(null);
   const {
     secondsLeft,
     totalSeconds,
@@ -98,6 +101,38 @@ export default function StudyTimerView({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isZenFullscreen, isRunning, isPaused]);
 
+  // Shared-Element Glide: Seamlessly glides the cat from bottom-right peeking spot directly into its desk chair!
+  useEffect(() => {
+    if (isFocusTransitioning && companionRef.current) {
+      const el = companionRef.current;
+      const rect = el.getBoundingClientRect();
+      const isMobile = window.innerWidth < 768;
+      const startX = window.innerWidth - (isMobile ? 60 : 110);
+      const startY = window.innerHeight - (isMobile ? 70 : 130);
+
+      const deltaX = startX - (rect.left + rect.width / 2);
+      const deltaY = startY - (rect.top + rect.height / 2);
+
+      gsap.fromTo(el,
+        {
+          x: deltaX,
+          y: deltaY,
+          scale: 0.62,
+          opacity: 0.95
+        },
+        {
+          x: 0,
+          y: 0,
+          scale: 1,
+          opacity: 1,
+          duration: 0.75,
+          ease: 'power3.out',
+          clearProps: 'transform'
+        }
+      );
+    }
+  }, [isFocusTransitioning]);
+
   const toggleZenFullscreen = () => {
     playSoftClick();
     if (!isZenFullscreen) {
@@ -150,100 +185,121 @@ export default function StudyTimerView({
   return (
     <div className={`study-timer-minimal-container ${isZenFullscreen ? 'zen-fullscreen-mode' : ''}`}>
       
-      {/* Header bar inside tab */}
-      <div className="minimal-timer-header">
-        <div className="header-left">
-          {/* Leave Sanctuary Button with Guilt Trip Trigger */}
-          <button 
-            type="button" 
-            className="zen-leave-sanctuary-btn"
-            onClick={() => setShowGuiltTrip(true)}
-            title="Leave Focus Sanctuary"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12"></line>
-              <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-            <span>Leave Sanctuary</span>
-          </button>
+      {/* Floating Exit Button for Pure Deep Focus Fullscreen */}
+      {isZenFullscreen && (
+        <button
+          type="button"
+          className="zen-floating-exit-btn"
+          onClick={toggleZenFullscreen}
+          title="Exit Fullscreen (Esc or F)"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          <span>Exit Fullscreen</span>
+        </button>
+      )}
 
-          <span className="live-timer-badge">
-            <span className={`timer-pulse-dot ${isRunning ? 'active' : ''}`}></span>
-            {isRunning ? 'Session Active' : isPaused ? 'Paused' : 'Ready'}
-          </span>
-        </div>
+      {/* Header bar inside tab (Hidden completely in Deep Focus Fullscreen) */}
+      {!isZenFullscreen && (
+        <div className="minimal-timer-header">
+          <div className="header-left">
+            {/* Leave Sanctuary Button with Guilt Trip Trigger */}
+            <button 
+              type="button" 
+              className="zen-leave-sanctuary-btn"
+              onClick={() => setShowGuiltTrip(true)}
+              title="Leave Focus Sanctuary"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+              <span>Leave Sanctuary</span>
+            </button>
 
-        <div className="header-right">
-          {/* Audio Chime Mute/Unmute Toggle */}
-          <button 
-            type="button" 
-            className={`zen-icon-btn ${isMuted ? 'muted' : ''}`}
-            onClick={() => {
-              setIsMuted(!isMuted);
-              if (isMuted) playSoftZenChime(0.2);
-            }}
-            title={isMuted ? "Sound Muted (Click to enable soft completion chime)" : "Sound Enabled (Click to mute)"}
-          >
-            {isMuted ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="1" y1="1" x2="23" y2="23"></line>
-                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
-                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
-            )}
-            <span className="desktop-inline">{isMuted ? "Chime Muted" : "Zen Chime"}</span>
-          </button>
+            <span className="live-timer-badge">
+              <span className={`timer-pulse-dot ${isRunning ? 'active' : ''}`}></span>
+              {isRunning ? 'Session Active' : isPaused ? 'Paused' : 'Ready'}
+            </span>
+          </div>
 
-          {/* Deep Focus Fullscreen Toggle */}
-          <button
-            type="button"
-            className={`zen-fullscreen-trigger-btn ${isZenFullscreen ? 'active' : ''}`}
-            onClick={toggleZenFullscreen}
-            title="Toggle Deep Focus Fullscreen Sanctuary (Shortcut: F)"
-          >
-            {isZenFullscreen ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="4 14 10 14 10 20"></polyline>
-                <polyline points="20 10 14 10 14 4"></polyline>
-                <line x1="14" y1="10" x2="21" y2="3"></line>
-                <line x1="3" y1="21" x2="10" y2="14"></line>
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <polyline points="9 21 3 21 3 15"></polyline>
-                <line x1="21" y1="3" x2="14" y2="10"></line>
-                <line x1="3" y1="21" x2="10" y2="14"></line>
-              </svg>
-            )}
-            <span>{isZenFullscreen ? 'Exit Focus' : 'Deep Focus Mode'}</span>
-          </button>
+          <div className="header-right">
+            {/* Audio Chime Mute/Unmute Toggle */}
+            <button 
+              type="button" 
+              className={`zen-icon-btn ${isMuted ? 'muted' : ''}`}
+              onClick={() => {
+                setIsMuted(!isMuted);
+                if (isMuted) playSoftZenChime(0.2);
+              }}
+              title={isMuted ? "Sound Muted (Click to enable soft completion chime)" : "Sound Enabled (Click to mute)"}
+            >
+              {isMuted ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                  <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+                  <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+              )}
+              <span className="desktop-inline">{isMuted ? "Chime Muted" : "Zen Chime"}</span>
+            </button>
 
-          {/* Today's Focus Hours summary badge */}
-          <div className="minimal-hours-badge">
-            <span className="hours-label">Today's Focus:</span>
-            <span className="hours-val">{todayTotalHours.toFixed(1)} hrs</span>
+            {/* Deep Focus Fullscreen Toggle */}
+            <button
+              type="button"
+              className={`zen-fullscreen-trigger-btn ${isZenFullscreen ? 'active' : ''}`}
+              onClick={toggleZenFullscreen}
+              title="Toggle Deep Focus Fullscreen Sanctuary (Shortcut: F)"
+            >
+              {isZenFullscreen ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="4 14 10 14 10 20"></polyline>
+                  <polyline points="20 10 14 10 14 4"></polyline>
+                  <line x1="14" y1="10" x2="21" y2="3"></line>
+                  <line x1="3" y1="21" x2="10" y2="14"></line>
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <polyline points="9 21 3 21 3 15"></polyline>
+                  <line x1="21" y1="3" x2="14" y2="10"></line>
+                  <line x1="3" y1="21" x2="10" y2="14"></line>
+                </svg>
+              )}
+              <span>{isZenFullscreen ? 'Exit Focus' : 'Deep Focus Mode'}</span>
+            </button>
+
+            {/* Today's Focus Hours summary badge */}
+            <div className="minimal-hours-badge">
+              <span className="hours-label">Today's Focus:</span>
+              <span className="hours-val">{todayTotalHours.toFixed(1)} hrs</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Stage: Timer + Study Companion Layout */}
       <div className={`minimal-timer-stage ${isRunning ? 'is-running' : ''} ${isZenFullscreen ? 'fullscreen-stage' : ''}`}>
         
         {/* Companion Display: Animated ASCII Bot in Phosphor CRT theme, Standard Mascot in all other themes */}
-        <div className="stage-companion-container">
+        <div 
+          ref={companionRef} 
+          className={`stage-companion-container ${isFocusTransitioning ? 'transitioning-in' : ''}`}
+        >
           {theme === 'phosphor-crt' ? (
             <AsciiMascot 
               isRunning={isRunning}
               subject={currentSubject}
-              size={isZenFullscreen ? 230 : 175}
+              size={isZenFullscreen ? 230 : (typeof window !== 'undefined' && window.innerWidth < 768 ? 140 : 175)}
             />
           ) : (
             <StudyCompanionEntity 
@@ -251,7 +307,7 @@ export default function StudyTimerView({
               isPaused={isPaused}
               isCompleted={secondsLeft === 0 && !isRunning && !isPaused}
               subject={currentSubject}
-              size={isZenFullscreen ? 230 : 175}
+              size={isZenFullscreen ? 230 : (typeof window !== 'undefined' && window.innerWidth < 768 ? 140 : 175)}
             />
           )}
         </div>
@@ -331,11 +387,22 @@ export default function StudyTimerView({
                 </svg>
                 <span>Pause</span>
               </button>
+              <button 
+                className="btn-secondary control-btn reset-control-btn" 
+                onClick={() => { playSoftClick(); onResetTimer(); }}
+                title="Reset Session"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                  <path d="M3 3v5h5"></path>
+                </svg>
+                <span>Reset</span>
+              </button>
               <button className="btn-primary finish-btn control-btn" onClick={handleFinish}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
-                <span>Log Time ({startTimeStr ? `${startTimeStr} - Now` : 'Log'})</span>
+                <span>Log Time</span>
               </button>
             </>
           ) : (
@@ -349,26 +416,22 @@ export default function StudyTimerView({
                 </svg>
                 <span>Resume</span>
               </button>
-              <button className="btn-primary finish-btn control-btn" onClick={handleFinish}>
-                <span>Log Time</span>
-              </button>
               <button 
                 className="btn-secondary control-btn reset-control-btn" 
                 onClick={() => { playSoftClick(); onResetTimer(); }}
               >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                  <path d="M3 3v5h5"></path>
+                </svg>
                 <span>Reset</span>
+              </button>
+              <button className="btn-primary finish-btn control-btn" onClick={handleFinish}>
+                <span>Log Time</span>
               </button>
             </>
           )}
         </div>
-
-        {/* Fullscreen Zen Mode Bottom Hints */}
-        {isZenFullscreen && (
-          <div className="zen-fullscreen-footer-hints">
-            <span className="zen-hint-pill">Press <kbd>Space</kbd> to Pause/Resume</span>
-            <span className="zen-hint-pill">Press <kbd>Esc</kbd> or <kbd>F</kbd> to Exit Fullscreen</span>
-          </div>
-        )}
 
       </div>
 

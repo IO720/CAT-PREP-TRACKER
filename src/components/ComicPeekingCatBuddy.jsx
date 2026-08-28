@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatedPawIcon } from './AnimatedUiIcons';
 
 /**
  * ComicPeekingCatBuddy - Emotive Zen Scholar Cat Peeking from Right Edge
@@ -18,6 +19,7 @@ export default function ComicPeekingCatBuddy({
   const [isDismissed, setIsDismissed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [speechIdx, setSpeechIdx] = useState(0);
+  const [isBubbleVisible, setIsBubbleVisible] = useState(true);
 
   const comicCallouts = [
     { sound: "*PSST!*", text: "Hey! A 25-minute sprint today makes all the difference. Come study!" },
@@ -26,12 +28,25 @@ export default function ComicPeekingCatBuddy({
     { sound: "*FOCUS!*", text: "Top 1% percentile discipline starts right now. Ready when you are!" }
   ];
 
+  // When timer starts, display cheer for 4.5s then auto-collapse so it doesn't crowd mobile view
+  useEffect(() => {
+    if (isTimerRunning) {
+      setIsBubbleVisible(true);
+      const timer = setTimeout(() => {
+        setIsBubbleVisible(false);
+      }, 4500);
+      return () => clearTimeout(timer);
+    } else {
+      setIsBubbleVisible(true);
+    }
+  }, [isTimerRunning]);
+
   // Rotate comic speech periodically when not running
   useEffect(() => {
     if (isTimerRunning || isDismissed) return;
     const interval = setInterval(() => {
       setSpeechIdx((prev) => (prev + 1) % comicCallouts.length);
-    }, 7000);
+    }, 8000);
     return () => clearInterval(interval);
   }, [isTimerRunning, isDismissed, comicCallouts.length]);
 
@@ -44,7 +59,9 @@ export default function ComicPeekingCatBuddy({
         onClick={() => setIsDismissed(false)}
         title="Summon Cat Study Buddy"
       >
-        <span className="minimized-paw-icon">🐾</span>
+        <span className="minimized-paw-icon">
+          <AnimatedPawIcon size={16} />
+        </span>
         <span className="minimized-label">BUDDY</span>
       </button>
     );
@@ -54,6 +71,8 @@ export default function ComicPeekingCatBuddy({
     ? { sound: "*FOCUSED!*", text: `Studying ${timerState?.subject || 'Quant'} alongside you! Keep up the momentum!` }
     : comicCallouts[speechIdx];
 
+  const showBubble = isBubbleVisible || isHovered;
+
   return (
     <div 
       className={`comic-peeking-cat-container ${isTimerRunning ? 'is-studying' : ''}`}
@@ -61,24 +80,25 @@ export default function ComicPeekingCatBuddy({
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Sleek Glassmorphic Comic Speech Bubble */}
-      <div 
-        className={`comic-speech-bubble ${isHovered ? 'hover-expanded' : ''}`}
-        onClick={onOpenTimer}
-        role="button"
-        tabIndex={0}
-        title="Click to launch Study Session"
-      >
-        <button 
-          type="button" 
-          className="comic-bubble-close-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsDismissed(true);
-          }}
-          title="Minimize Buddy"
+      {showBubble && (
+        <div 
+          className={`comic-speech-bubble ${isHovered ? 'hover-expanded' : ''}`}
+          onClick={onOpenTimer}
+          role="button"
+          tabIndex={0}
+          title="Click to launch Study Session"
         >
-          ×
-        </button>
+          <button 
+            type="button" 
+            className="comic-bubble-close-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDismissed(true);
+            }}
+            title="Minimize Buddy"
+          >
+            ×
+          </button>
 
         <div className="comic-sound-effect">{currentCallout.sound}</div>
         <div className="comic-speech-body">
@@ -91,6 +111,7 @@ export default function ComicPeekingCatBuddy({
         {/* Pointer notch pointing directly toward the cat */}
         <div className="comic-bubble-tail" />
       </div>
+      )}
 
       {/* Identical Vector Scholar Cat Peeking In with Rich Emotion & Beckoning Paw */}
       <div 

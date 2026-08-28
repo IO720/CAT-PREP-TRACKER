@@ -1863,6 +1863,7 @@ export default function App() {
               currentUser={user}
               activeStreak={activeStreak}
               onLeaveTimer={() => setActiveTab('dashboard')}
+              isFocusTransitioning={isFocusTransitioning}
             />
           )}
           {activeTab === 'lounge' && (

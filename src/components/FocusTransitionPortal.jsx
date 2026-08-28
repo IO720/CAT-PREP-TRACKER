@@ -1,15 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import StudyCompanionEntity from './StudyCompanionEntity';
 
 /**
- * FocusTransitionPortal - Seamless Shared-Element Transition to Study Timer
- * Glides the Scholar Cat from the peeking edge smoothly into the exact coordinates
- * of the Study Timer's companion container without any abrupt jump or layout shift.
+ * FocusTransitionPortal - Spylt-Inspired Cinematic Focus Overlay
+ * Displays kinetic typography ("TIME TO STUDY.") and ambient veil
+ * while the Study Companion Cat glides seamlessly into its desk chair in StudyTimerView.
  */
 export default function FocusTransitionPortal({ onComplete, activeTheme = 'dark', subject = 'Quant' }) {
   const containerRef = useRef(null);
-  const catWrapperRef = useRef(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
@@ -22,29 +20,15 @@ export default function FocusTransitionPortal({ onComplete, activeTheme = 'dark'
   useEffect(() => {
     let isMounted = true;
 
-    // Safety timeout: exit after 2.2s if anything stalls
+    // Safety timeout: auto-finish after 2.0s
     const safetyTimer = setTimeout(() => {
       if (isMounted) handleFinish();
-    }, 2200);
+    }, 2000);
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') handleFinish();
     };
     window.addEventListener('keydown', handleKeyDown);
-
-    // Calculate exact target position matching the Timer stage's companion box
-    let targetX = window.innerWidth / 2;
-    let targetY = window.innerHeight * 0.32;
-
-    const targetEl = document.querySelector('.stage-companion-container');
-    if (targetEl) {
-      const rect = targetEl.getBoundingClientRect();
-      targetX = rect.left + rect.width / 2;
-      targetY = rect.top + rect.height / 2;
-    }
-
-    const startX = window.innerWidth - 100;
-    const startY = window.innerHeight - 120;
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
@@ -53,76 +37,49 @@ export default function FocusTransitionPortal({ onComplete, activeTheme = 'dark'
         }
       });
 
-      // 1. Initial State
-      gsap.set(catWrapperRef.current, {
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        x: startX,
-        y: startY,
-        xPercent: -50,
-        yPercent: -50,
-        scale: 0.65,
-        opacity: 0
-      });
-
-      gsap.set('.focus-trans-word', { y: 25, opacity: 0, scale: 0.95 });
-      gsap.set('.focus-trans-tag', { opacity: 0, y: -10 });
+      // Initial state
+      gsap.set('.focus-trans-word', { y: 30, opacity: 0, scale: 0.9 });
+      gsap.set('.focus-trans-tag', { opacity: 0, y: -12 });
       gsap.set('.focus-trans-sub-hint', { opacity: 0 });
 
-      // 2. Cat leaps/glides from bottom-right into the exact Study Desk location
-      tl.to(catWrapperRef.current, {
-        opacity: 1,
-        duration: 0.2,
-        ease: 'power1.out'
-      })
-      .to(catWrapperRef.current, {
-        x: targetX,
-        y: targetY,
-        scale: 1,
-        duration: 0.75,
-        ease: 'power3.out'
-      }, '-=0.15')
-
-      // 3. Kinetic Typography ("TIME TO STUDY.") pops in smoothly above the desk
-      .to('.focus-trans-tag', {
+      // 1. Kinetic Typography ("TIME TO STUDY.") sweeps in smoothly
+      tl.to('.focus-trans-tag', {
         opacity: 1,
         y: 0,
         duration: 0.35,
         ease: 'power2.out'
-      }, '-=0.6')
+      }, 0.1)
       .to('.focus-trans-word', {
         y: 0,
         opacity: 1,
         scale: 1,
-        stagger: 0.06,
-        duration: 0.45,
-        ease: 'back.out(1.5)'
-      }, '-=0.4')
+        stagger: 0.07,
+        duration: 0.5,
+        ease: 'back.out(1.6)'
+      }, 0.18)
       .to('.focus-trans-sub-hint', {
-        opacity: 0.75,
-        duration: 0.25
-      }, '-=0.2')
+        opacity: 0.8,
+        duration: 0.3
+      }, 0.4)
 
-      // 4. Brief hold at desk so the aspirant sees the cat settle into study mode
-      .to({}, { duration: 0.4 })
+      // 2. Brief hold so the aspirant experiences the focus motivation
+      .to({}, { duration: 0.45 })
 
-      // 5. Kinetic Typography fades out smoothly
+      // 3. Kinetic Typography sweeps upward and fades
       .to(['.focus-trans-word', '.focus-trans-tag', '.focus-trans-sub-hint'], {
-        y: -20,
+        y: -24,
         opacity: 0,
         stagger: 0.03,
-        duration: 0.25,
+        duration: 0.3,
         ease: 'power2.in'
       })
 
-      // 6. Seamless dissolve of the overlay background directly revealing the Timer Stage
-      // The cat matches the exact coordinates of .stage-companion-container below!
+      // 4. Veil dissolves seamlessly, revealing the full Timer Sanctuary
       .to(containerRef.current, {
         opacity: 0,
-        duration: 0.35,
+        duration: 0.4,
         ease: 'power2.out'
-      }, '-=0.1');
+      }, '-=0.15');
 
     }, containerRef);
 
@@ -155,16 +112,6 @@ export default function FocusTransitionPortal({ onComplete, activeTheme = 'dark'
           <span className="focus-trans-word font-display">TO</span>{' '}
           <span className="focus-trans-word italic-serif">STUDY.</span>
         </h1>
-      </div>
-
-      {/* Cat Companion Smoothly Gliding into exact target coordinates */}
-      <div ref={catWrapperRef} className="focus-trans-floating-cat">
-        <StudyCompanionEntity 
-          isRunning={true}
-          isPaused={false}
-          subject={subject}
-          size={175}
-        />
       </div>
 
       <span className="focus-trans-sub-hint font-mono">

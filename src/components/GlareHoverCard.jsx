@@ -1,76 +1,107 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 /**
- * GlareHoverCard - Inspired by ReactBits Glare Hover & 3D Tilt
+ * GlareHoverCard - Ultra-Smooth High-Performance 3D Tilt & Glare
  * Features:
- * - 3D Perspective tilt following mouse cursor position
- * - Dynamic holographic glare reflection that moves with light angle
- * - Theme-reactive ambient edge glow
- * - Touch-safe fallback with smooth spring-back on leave
+ * - 0 React re-renders on mousemove (pure RAF + direct GPU style updates)
+ * - Zero CSS transition conflict during hover (eliminates jitter and micro-stuttering)
+ * - Smooth spring-back physics on mouseleave
+ * - Touch-device aware (gracefully disabled on touchscreens to prevent erratic tilt)
  */
 export default function GlareHoverCard({
   children,
   className = '',
-  maxTilt = 12,
-  glareColor = 'rgba(255, 255, 255, 0.25)',
+  maxTilt = 10,
+  glareColor = 'rgba(255, 255, 255, 0.22)',
   style = {},
   onClick,
   ...props
 }) {
   const cardRef = useRef(null);
-  const [transform, setTransform] = useState('');
-  const [glareStyle, setGlareStyle] = useState({ opacity: 0 });
-  const [isHovered, setIsHovered] = useState(false);
+  const sheenRef = useRef(null);
+  const rafRef = useRef(null);
 
-  const handleMouseMove = (e) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  useEffect(() => {
+    const card = cardRef.current;
+    const sheen = sheenRef.current;
+    if (!card) return;
 
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
+    // Check if device supports true hover (skip on touch devices)
+    const isHoverCapable = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (!isHoverCapable) return;
 
-    const normX = (x - centerX) / centerX; // -1 to 1
-    const normY = (y - centerY) / centerY; // -1 to 1
+    let bounds = null;
 
-    const rotX = -normY * maxTilt;
-    const rotY = normX * maxTilt;
+    const onMouseEnter = () => {
+      bounds = card.getBoundingClientRect();
+      card.style.transition = 'transform 0.15s ease-out';
+      if (sheen) sheen.style.opacity = '1';
+    };
 
-    setTransform(`perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) scale3d(1.02, 1.02, 1.02)`);
+    const onMouseMove = (e) => {
+      if (!bounds) bounds = card.getBoundingClientRect();
 
-    // Glare position percentage
-    const glareX = (x / rect.width) * 100;
-    const glareY = (y / rect.height) * 100;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
 
-    setGlareStyle({
-      opacity: 1,
-      background: `radial-gradient(circle at ${glareX}% ${glareY}%, ${glareColor} 0%, rgba(255, 255, 255, 0) 65%)`
-    });
-  };
+      rafRef.current = requestAnimationFrame(() => {
+        const x = e.clientX - bounds.left;
+        const y = e.clientY - bounds.top;
 
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-  };
+        const centerX = bounds.width / 2;
+        const centerY = bounds.height / 2;
 
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setTransform('perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)');
-    setGlareStyle({ opacity: 0 });
-  };
+        const normX = (x - centerX) / centerX;
+        const normY = (y - centerY) / centerY;
+
+        const rotX = (-normY * maxTilt).toFixed(2);
+        const rotY = (normX * maxTilt).toFixed(2);
+
+        // Direct hardware-accelerated transform with NO transition lag during active mousemove
+        card.style.transition = 'none';
+        card.style.transform = `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(1.015, 1.015, 1.015)`;
+
+        if (sheen) {
+          const glareX = ((x / bounds.width) * 100).toFixed(1);
+          const glareY = ((y / bounds.height) * 100).toFixed(1);
+          sheen.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, ${glareColor} 0%, rgba(255, 255, 255, 0) 65%)`;
+        }
+      });
+    };
+
+    const onMouseLeave = () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      bounds = null;
+      // Smooth liquid spring-back
+      card.style.transition = 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)';
+      card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+      if (sheen) {
+        sheen.style.transition = 'opacity 0.4s ease';
+        sheen.style.opacity = '0';
+      }
+    };
+
+    card.addEventListener('mouseenter', onMouseEnter);
+    card.addEventListener('mousemove', onMouseMove);
+    card.addEventListener('mouseleave', onMouseLeave);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      card.removeEventListener('mouseenter', onMouseEnter);
+      card.removeEventListener('mousemove', onMouseMove);
+      card.removeEventListener('mouseleave', onMouseLeave);
+    };
+  }, [maxTilt, glareColor]);
 
   return (
     <div
       ref={cardRef}
-      className={`glare-hover-card-root ${className} ${isHovered ? 'is-glare-hovered' : ''}`}
+      className={`glare-hover-card-root ${className}`}
       style={{
         ...style,
-        transform: transform || undefined,
-        transition: isHovered ? 'transform 0.08s linear' : 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
+        willChange: 'transform',
+        transformStyle: 'preserve-3d',
+        backfaceVisibility: 'hidden'
       }}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
       onClick={onClick}
       {...props}
     >
@@ -81,10 +112,11 @@ export default function GlareHoverCard({
 
       {/* Dynamic 3D Glare Sheen Overlay */}
       <div
+        ref={sheenRef}
         className="glare-hover-sheen-layer"
         style={{
-          ...glareStyle,
-          transition: isHovered ? 'opacity 0.15s ease' : 'opacity 0.5s ease'
+          opacity: 0,
+          pointerEvents: 'none'
         }}
       />
     </div>

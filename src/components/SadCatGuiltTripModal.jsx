@@ -1,6 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { Icons } from './AspirantIcons';
+import { AnimatedWarningIcon, AnimatedTearIcon, AnimatedFlameIcon } from './AnimatedUiIcons';
 
 /**
  * SadCatGuiltTripModal - Emotional Focus Sanctuary Exit Warning
@@ -134,11 +135,13 @@ export default function SadCatGuiltTripModal({
 
         {/* Guilt-Trip Dialogue & Notice */}
         <div className="sad-cat-text-block">
-          <span className="sad-cat-badge font-mono">
-            ⚠️ FOCUS BREACH WARNING
-          </span>
+          <div className="sad-cat-badge font-mono">
+            <AnimatedWarningIcon size={14} />
+            <span>FOCUS BREACH WARNING</span>
+          </div>
           <h2 className="sad-cat-title">
-            Wait... You're really leaving?! 😿
+            <span>Wait... You're really leaving?!</span>
+            <AnimatedTearIcon size={22} color="#38bdf8" />
           </h2>
           <p className="sad-cat-message">
             {isRunning 
@@ -147,7 +150,7 @@ export default function SadCatGuiltTripModal({
           </p>
           {activeStreak > 0 && (
             <div className="sad-cat-streak-warning">
-              <span>🔥</span>
+              <AnimatedFlameIcon size={16} />
               <span>Your <strong>{activeStreak}-day momentum streak</strong> is counting on this focus session. Don't break the chain!</span>
             </div>
           )}
