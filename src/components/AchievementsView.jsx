@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icons } from './AspirantIcons';
 import { PRESTIGE_BADGE } from '../utils/badgeUtils';
+import GlareHoverCard from './GlareHoverCard';
+import CubesCanvas from './CubesCanvas';
+import PrestigeBadgeEmblem from './PrestigeBadgeEmblem';
 
 export default function AchievementsView({
   userProfile = {},
@@ -43,9 +46,18 @@ export default function AchievementsView({
   return (
     <div className="achievements-page-container fade-in">
       
-      {/* Top Prestige Hero Banner */}
+      {/* Top Prestige Hero Banner with ReactBits Interactive Cubes Canvas */}
       <div className={`achievements-hero-card ${isGrandmaster ? 'is-grandmaster' : ''}`}>
         <div className="hero-backdrop-glow" style={{ '--rank-color': currentRank.color }} />
+        
+        {/* Interactive 3D Cubes Matrix Background */}
+        <CubesCanvas 
+          themeColor={currentRank.color}
+          cubeSize={18}
+          gap={12}
+          maxElevation={22}
+          proximity={130}
+        />
         
         <div className="hero-content-split">
           <div className="hero-rank-info">
@@ -113,70 +125,81 @@ export default function AchievementsView({
         </div>
       </div>
 
-      {/* Badges Grid */}
+      {/* Badges Grid with GlareHoverCard 3D Tilt & Unique Prestige Emblems */}
       <div className="achievements-badges-grid">
         {filteredBadges.map((badge) => {
-          const IconComp = Icons[badge.iconName] || Icons.Award;
           const isUnlocked = badge.isUnlocked;
           const progressPct = badge.progressPercent !== undefined ? badge.progressPercent : (isUnlocked ? 100 : Math.min(100, Math.round(((badge.currentValue || 0) / (badge.threshold || 1)) * 100)));
 
           return (
-            <div
+            <GlareHoverCard
               key={badge.id}
-              className={`achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`}
-              style={{ '--badge-theme-color': badge.color }}
+              className={`achievement-card-wrapper ${isUnlocked ? 'unlocked' : 'locked'}`}
+              maxTilt={14}
+              glareColor={isUnlocked ? `${badge.color}35` : 'rgba(255,255,255,0.12)'}
               onClick={() => setSelectedBadge(badge)}
             >
-              {/* Top Row: Emblem & Status */}
-              <div className="card-top-row">
-                <div className="badge-card-emblem" style={{ color: isUnlocked ? badge.color : '#64748b' }}>
-                  <IconComp size={22} />
-                  {isUnlocked && <span className="unlocked-glow-pip" style={{ backgroundColor: badge.color }} />}
+              <div
+                className={`achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`}
+                style={{ '--badge-theme-color': badge.color }}
+              >
+                {/* Top Row: Handcrafted SVG Emblem & Status */}
+                <div className="card-top-row">
+                  <div className="badge-card-emblem">
+                    <PrestigeBadgeEmblem 
+                      badgeId={badge.id}
+                      category={badge.category}
+                      color={badge.color}
+                      isUnlocked={isUnlocked}
+                      size={44}
+                    />
+                    {isUnlocked && <span className="unlocked-glow-pip" style={{ backgroundColor: badge.color }} />}
+                  </div>
+
+                  <div className="badge-card-status-pill">
+                    {isUnlocked ? (
+                      <span className="status-tag-unlocked">
+                        <Icons.Check size={11} /> Unlocked
+                      </span>
+                    ) : (
+                      <span className="status-tag-locked">
+                        Locked
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="badge-card-status-pill">
-                  {isUnlocked ? (
-                    <span className="status-tag-unlocked">
-                      <Icons.Check size={11} /> Unlocked
+                {/* Title & Perk */}
+                <div className="card-info-block">
+                  <h3 className="badge-card-title">{badge.name}</h3>
+                  <div className="badge-card-perk" style={{ color: badge.color }}>
+                    {badge.perkTitle}
+                  </div>
+                  <p className="badge-card-desc">{badge.description}</p>
+                </div>
+
+                {/* Progress Bar & Metrics */}
+                <div className="card-progress-footer">
+                  <div className="card-progress-labels">
+                    <span className="progress-metric-sub">
+                      {badge.metricType === 'streak' ? 'Streak Days' : badge.metricType === 'mocksCount' ? 'Mocks Done' : 'Questions Solved'}
                     </span>
-                  ) : (
-                    <span className="status-tag-locked">
-                      Locked
+                    <span className="progress-metric-val">
+                      {isUnlocked ? `${badge.threshold} / ${badge.threshold}` : `${badge.currentValue || 0} / ${badge.threshold}`}
                     </span>
-                  )}
+                  </div>
+                  <div className="card-progress-bar-track">
+                    <div 
+                      className="card-progress-bar-fill" 
+                      style={{ 
+                        width: `${progressPct}%`,
+                        backgroundColor: badge.color 
+                      }} 
+                    />
+                  </div>
                 </div>
               </div>
-
-              {/* Title & Perk */}
-              <div className="card-info-block">
-                <h3 className="badge-card-title">{badge.name}</h3>
-                <div className="badge-card-perk" style={{ color: badge.color }}>
-                  {badge.perkTitle}
-                </div>
-                <p className="badge-card-desc">{badge.description}</p>
-              </div>
-
-              {/* Progress Bar & Metrics */}
-              <div className="card-progress-footer">
-                <div className="card-progress-labels">
-                  <span className="progress-metric-sub">
-                    {badge.metricType === 'streak' ? 'Streak Days' : badge.metricType === 'mocksCount' ? 'Mocks Done' : 'Questions Solved'}
-                  </span>
-                  <span className="progress-metric-val">
-                    {isUnlocked ? `${badge.threshold} / ${badge.threshold}` : `${badge.currentValue || 0} / ${badge.threshold}`}
-                  </span>
-                </div>
-                <div className="card-progress-bar-track">
-                  <div 
-                    className="card-progress-bar-fill" 
-                    style={{ 
-                      width: `${progressPct}%`,
-                      backgroundColor: badge.color 
-                    }} 
-                  />
-                </div>
-              </div>
-            </div>
+            </GlareHoverCard>
           );
         })}
       </div>
@@ -197,7 +220,13 @@ export default function AchievementsView({
           >
             <div className="detail-modal-header" style={{ borderColor: selectedBadge.color }}>
               <div className="detail-emblem-bubble" style={{ color: selectedBadge.color, borderColor: selectedBadge.color }}>
-                {React.createElement(Icons[selectedBadge.iconName] || Icons.Award, { size: 28 })}
+                <PrestigeBadgeEmblem 
+                  badgeId={selectedBadge.id}
+                  category={selectedBadge.category}
+                  color={selectedBadge.color}
+                  isUnlocked={selectedBadge.isUnlocked}
+                  size={48}
+                />
               </div>
               <div style={{ flex: 1 }}>
                 <h2 className="detail-modal-title">{selectedBadge.name}</h2>

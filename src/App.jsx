@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { loadState, saveState, exportStateAsFile, getInitialState, mergeTrackerStates } from './utils/storage';
 import { 
   auth, 
@@ -50,6 +50,12 @@ import AuthScreen from './components/AuthScreen';
 import CookieConsentBanner from './components/CookieConsentBanner';
 import TermsAndPrivacyModal from './components/TermsAndPrivacyModal';
 import CustomCursor from './components/CustomCursor';
+import DitherBackground from './components/DitherBackground';
+import LiquidIntroLoader from './components/LiquidIntroLoader';
+import ClickSpark from './components/ClickSpark';
+import AnimatedStreakBadge from './components/AnimatedStreakBadge';
+import ComicPeekingCatBuddy from './components/ComicPeekingCatBuddy';
+import FocusTransitionPortal from './components/FocusTransitionPortal';
 import { initSmoothScroll, scrollToTop } from './utils/smoothScroll';
 import { animatePageEntrance, makeMagnetic, triggerThemeWave } from './utils/gsapAnimations';
 
@@ -365,6 +371,13 @@ export default function App() {
   });
 
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [showIntro, setShowIntro] = useState(() => !sessionStorage.getItem('catalyze_intro_viewed'));
+  const [isFocusTransitioning, setIsFocusTransitioning] = useState(false);
+
+  const handleIntroComplete = useCallback(() => {
+    sessionStorage.setItem('catalyze_intro_viewed', 'true');
+    setShowIntro(false);
+  }, []);
 
   // Calculate Today's sessions and total hours
   const todayPositionNow = getTodayTrackerPosition(state.settings?.startDate);
@@ -1497,20 +1510,6 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [timerState]);
 
-  if (appLoading) {
-    return (
-      <div className="minimal-loader-screen">
-        <div className="brand-logo-badge" style={{ width: '56px', height: '56px', fontSize: '24px', marginBottom: '24px' }}>
-          <Icons.Logo size={32} />
-        </div>
-        <div className="loader-bar-container">
-          <div className="loader-bar-fill"></div>
-        </div>
-        <span className="loader-text">Loading CATalyze...</span>
-      </div>
-    );
-  }
-
   // Auth Gate: Require login or create account before accessing the main dashboard/app
   if (!user && !isGuestMode) {
     return (
@@ -1529,107 +1528,169 @@ export default function App() {
   }
 
   return (
-    <div className={`app-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+    <div className={`app-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''} ${activeTab === 'timer' ? 'in-timer-mode' : ''}`}>
+      {/* Spylt-Inspired Cinematic Liquid Intro Loader */}
+      {showIntro && (
+        <LiquidIntroLoader 
+          activeTheme={theme} 
+          onComplete={handleIntroComplete} 
+        />
+      )}
+
+      {/* ReactBits Dither Background WebGL Shader */}
+      <DitherBackground activeTheme={theme} opacity={0.24} ditherSize={2.5} />
+
+      {/* ReactBits ClickSpark Particle Burst Animation */}
+      <ClickSpark activeTheme={theme} />
+
       {/* Luxury Liquid Glow Custom Cursor with GSAP Physics */}
       <CustomCursor activeTheme={theme} />
 
-      {/* Sidebar Navigation (Hidden on mobile) */}
-      <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+      {/* Minimalist Editorial Sidebar Navigation */}
+      <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${activeTab === 'timer' ? 'timer-mode-hidden' : ''}`}>
         <div className="brand-section">
           <div className="brand-emblem-badge" title="CATalyze">
             <Icons.Logo size={18} />
           </div>
           <div className="brand-text-wrap">
             <span className="brand-title-bold">CATalyze</span>
+            <span className="brand-tagline-minimal">TRACKER</span>
           </div>
         </div>
 
-        <nav className="nav-links">
+        <nav className="nav-links dock-nav-links">
           <button 
-            className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`}
+            className={`dock-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
             onClick={() => setActiveTab('dashboard')}
-            title="Dashboard"
+            aria-label="Dashboard"
           >
-            <span className="nav-icon"><Icons.Home /></span>
-            <span className="nav-link-text">Dashboard</span>
+            <span className="dock-active-indicator"></span>
+            <span className="dock-icon"><Icons.Home /></span>
+            <div className="dock-floating-tooltip">
+              <span className="tooltip-title">Dashboard</span>
+              <span className="tooltip-tag">SYS.OVERVIEW</span>
+            </div>
           </button>
+
           <button 
-            className={`nav-link ${activeTab === 'timeline' ? 'active' : ''}`}
+            className={`dock-nav-item ${activeTab === 'timeline' ? 'active' : ''}`}
             onClick={() => setActiveTab('timeline')}
-            title="Study Plan"
+            aria-label="Study Plan"
           >
-            <span className="nav-icon"><Icons.Plan /></span>
-            <span className="nav-link-text">Study Plan</span>
+            <span className="dock-active-indicator"></span>
+            <span className="dock-icon"><Icons.Plan /></span>
+            <div className="dock-floating-tooltip">
+              <span className="tooltip-title">Study Plan</span>
+              <span className="tooltip-tag">16-WK CURRICULUM</span>
+            </div>
           </button>
+
           <button 
-            className={`nav-link ${activeTab === 'timer' ? 'active' : ''}`}
+            className={`dock-nav-item ${activeTab === 'timer' ? 'active' : ''}`}
             onClick={() => setActiveTab('timer')}
-            title="Focus & Study Timer"
+            aria-label="Focus & Study Timer"
           >
-            <span className="nav-icon"><Icons.Timer /></span>
-            <span className="nav-link-text">Study Timer</span>
+            <span className="dock-active-indicator"></span>
+            <span className="dock-icon"><Icons.Timer /></span>
+            <div className="dock-floating-tooltip">
+              <span className="tooltip-title">Study Timer</span>
+              <span className="tooltip-tag">FOCUS SUITE</span>
+            </div>
           </button>
+
           <button 
-            className={`nav-link ${activeTab === 'lounge' ? 'active' : ''}`}
+            className={`dock-nav-item ${activeTab === 'lounge' ? 'active' : ''}`}
             onClick={() => setActiveTab('lounge')}
-            title="Live Aspirants Study Hub & Channels"
+            aria-label="Live Study Lounge"
           >
-            <span className="nav-icon"><Icons.Chat /></span>
-            <span className="nav-link-text">Study Lounge</span>
+            <span className="dock-active-indicator"></span>
+            <span className="dock-icon"><Icons.Chat /></span>
+            <div className="dock-floating-tooltip">
+              <span className="tooltip-title">Study Lounge</span>
+              <span className="tooltip-tag">LIVE ROOM</span>
+            </div>
           </button>
+
           <button 
-            className={`nav-link ${activeTab === 'daily' ? 'active' : ''}`}
+            className={`dock-nav-item ${activeTab === 'daily' ? 'active' : ''}`}
             onClick={() => setActiveTab('daily')}
-            title="Daily Drills"
+            aria-label="Daily Drills"
           >
-            <span className="nav-icon"><Icons.Drills /></span>
-            <span className="nav-link-text">Daily Drills</span>
+            <span className="dock-active-indicator"></span>
+            <span className="dock-icon"><Icons.Drills /></span>
+            <div className="dock-floating-tooltip">
+              <span className="tooltip-title">Daily Drills</span>
+              <span className="tooltip-tag">QUOTA SOLVER</span>
+            </div>
           </button>
+
           <button 
-            className={`nav-link ${activeTab === 'mocks' ? 'active' : ''}`}
+            className={`dock-nav-item ${activeTab === 'mocks' ? 'active' : ''}`}
             onClick={() => setActiveTab('mocks')}
-            title="Mock Tests"
+            aria-label="Mock Tests"
           >
-            <span className="nav-icon"><Icons.Mocks /></span>
-            <span className="nav-link-text">Mock Tests</span>
+            <span className="dock-active-indicator"></span>
+            <span className="dock-icon"><Icons.Mocks /></span>
+            <div className="dock-floating-tooltip">
+              <span className="tooltip-title">Mock Tests</span>
+              <span className="tooltip-tag">BENCHMARKS</span>
+            </div>
           </button>
+
           <button 
-            className={`nav-link ${activeTab === 'achievements' ? 'active' : ''}`}
+            className={`dock-nav-item ${activeTab === 'achievements' ? 'active' : ''}`}
             onClick={() => setActiveTab('achievements')}
-            title="Prestige Achievement Badges & Perks"
+            aria-label="Prestige Achievement Badges"
           >
-            <span className="nav-icon"><Icons.Award /></span>
-            <span className="nav-link-text">Achievements</span>
+            <span className="dock-active-indicator"></span>
+            <span className="dock-icon"><Icons.Award /></span>
+            <div className="dock-floating-tooltip">
+              <span className="tooltip-title">Achievements</span>
+              <span className="tooltip-tag">PRESTIGE BADGES</span>
+            </div>
           </button>
+
           <button 
-            className={`nav-link ${activeTab === 'errors' ? 'active' : ''}`}
+            className={`dock-nav-item ${activeTab === 'errors' ? 'active' : ''}`}
             onClick={() => setActiveTab('errors')}
-            title="Error Log"
+            aria-label="Error Log"
           >
-            <span className="nav-icon"><Icons.Errors /></span>
-            <span className="nav-link-text">Error Log</span>
+            <span className="dock-active-indicator"></span>
+            <span className="dock-icon"><Icons.Errors /></span>
+            <div className="dock-floating-tooltip">
+              <span className="tooltip-title">Error Log</span>
+              <span className="tooltip-tag">AUDIT MISTAKES</span>
+            </div>
           </button>
+
           <button 
-            className={`nav-link ${activeTab === 'profile' ? 'active' : ''}`}
+            className={`dock-nav-item ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setActiveTab('profile')}
-            title="Profile & Study Buddies"
+            aria-label="Profile & Study Buddies"
             style={{ position: 'relative' }}
           >
-            <span className="nav-icon"><Icons.Cloud /></span>
-            <span className="nav-link-text">Profile & Buddies</span>
+            <span className="dock-active-indicator"></span>
+            <span className="dock-icon"><Icons.Cloud /></span>
             {pendingRequestsCount > 0 && (
-              <span className="sidebar-nav-badge-pill" title={`${pendingRequestsCount} new friend request(s)`}>
-                {pendingRequestsCount}
-              </span>
+              <span className="dock-badge-dot" title={`${pendingRequestsCount} new friend request(s)`}></span>
             )}
+            <div className="dock-floating-tooltip">
+              <span className="tooltip-title">Profile & Buddies</span>
+              <span className="tooltip-tag">COMMUNITY</span>
+            </div>
           </button>
+
           <button 
-            className={`nav-link ${activeTab === 'settings' ? 'active' : ''}`}
+            className={`dock-nav-item ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveTab('settings')}
-            title="Application Settings & Cloud Management"
+            aria-label="Application Settings"
           >
-            <span className="nav-icon"><Icons.Settings /></span>
-            <span className="nav-link-text">Settings</span>
+            <span className="dock-active-indicator"></span>
+            <span className="dock-icon"><Icons.Settings /></span>
+            <div className="dock-floating-tooltip">
+              <span className="tooltip-title">Settings</span>
+              <span className="tooltip-tag">PREFERENCES</span>
+            </div>
           </button>
         </nav>
 
@@ -1639,8 +1700,8 @@ export default function App() {
             onClick={toggleSidebarCollapse}
             title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
-            {isSidebarCollapsed ? <Icons.ChevronRight size={16} /> : <Icons.ChevronLeft size={16} />}
-            <span className="sidebar-toggle-text">{isSidebarCollapsed ? "Expand" : "Collapse Bar"}</span>
+            {isSidebarCollapsed ? <Icons.ChevronRight size={14} /> : <Icons.ChevronLeft size={14} />}
+            <span className="sidebar-toggle-text">{isSidebarCollapsed ? "Expand" : "Collapse"}</span>
           </button>
           
           <input 
@@ -1659,18 +1720,25 @@ export default function App() {
         {activeTab !== 'timer' && (
           <header className="global-header">
             <div className="header-brand-title">
-              <span className="brand-dot"></span>
-              <span className="header-page-name">{activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'lounge' ? 'Live Study Lounge & Community' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'achievements' ? 'Prestige Achievements & Badges' : activeTab === 'errors' ? 'Error Log' : activeTab === 'profile' ? 'Profile & Study Buddies' : activeTab === 'settings' ? 'Settings & Cloud Management' : 'Dashboard'}</span>
+              <button 
+                type="button"
+                className="header-replay-intro-btn" 
+                onClick={() => setShowIntro(true)} 
+                title="Replay Spylt Cinematic Intro"
+              >
+                <span className="brand-dot pulse-dot"></span>
+              </button>
+              <div className="header-title-badge">
+                <span className="header-protocol-tag">// PROTOCOL</span>
+                <span className="header-page-name" key={activeTab}>
+                  {activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'lounge' ? 'Study Lounge' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'achievements' ? 'Achievements' : activeTab === 'errors' ? 'Error Log' : activeTab === 'profile' ? 'Profile & Buddies' : activeTab === 'settings' ? 'Settings' : 'Dashboard'}
+                </span>
+              </div>
             </div>
 
             <div className="header-stats">
-              {/* Streak Info Pill */}
-              <div className="header-stat-item header-streak-pill" title="Active Study Streak">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="#f97316" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z" />
-                </svg>
-                <span>{activeStreak}<span className="desktop-inline"> Days</span><span className="mobile-inline">d</span></span>
-              </div>
+              {/* Unique Animated Flame & Floating Embers Streak Pill */}
+              <AnimatedStreakBadge streak={activeStreak} />
 
               {/* Custom Animated Theme Popover Dropdown */}
               <ThemeSelectorDropdown 
@@ -1699,6 +1767,29 @@ export default function App() {
               />
             </div>
           </header>
+        )}
+
+        {/* Comic Peeking Cat Study Buddy on Right Edge */}
+        {activeTab !== 'timer' && (
+          <ComicPeekingCatBuddy 
+            onOpenTimer={() => {
+              setActiveTab('timer');
+              setIsFocusTransitioning(true);
+            }}
+            timerState={timerState}
+            activeTheme={theme}
+          />
+        )}
+
+        {/* Kinetic Study Desk Transition Screen (Cat Glides into Desk Position) */}
+        {isFocusTransitioning && (
+          <FocusTransitionPortal
+            subject={timerState?.subject || 'Quant'}
+            activeTheme={theme}
+            onComplete={() => {
+              setIsFocusTransitioning(false);
+            }}
+          />
         )}
 
         {/* Main Content Render */}
@@ -1770,6 +1861,8 @@ export default function App() {
               friends={friends}
               onInspectFriend={handleInspectFriend}
               currentUser={user}
+              activeStreak={activeStreak}
+              onLeaveTimer={() => setActiveTab('dashboard')}
             />
           )}
           {activeTab === 'lounge' && (
@@ -1849,7 +1942,7 @@ export default function App() {
 
       {/* Streamlined Native Mobile Bottom Navigation */}
       <nav 
-        className="mobile-bottom-nav"
+        className={`mobile-bottom-nav ${activeTab === 'timer' ? 'timer-mode-hidden' : ''}`}
         style={{
           paddingBottom: 'max(14px, env(safe-area-inset-bottom, 14px))',
           paddingTop: '8px',

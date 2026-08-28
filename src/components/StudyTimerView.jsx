@@ -3,6 +3,7 @@ import { stripEmojis } from '../utils/textUtils';
 import StudyCompanionEntity from './StudyCompanionEntity';
 import AsciiMascot from './AsciiMascot';
 import { playSoftZenChime, playSoftClick } from '../utils/audioUtils';
+import SadCatGuiltTripModal from './SadCatGuiltTripModal';
 
 export default function StudyTimerView({
   timerState,
@@ -19,8 +20,11 @@ export default function StudyTimerView({
   onSetTheme,
   friends = [],
   onInspectFriend,
-  currentUser = null
+  currentUser = null,
+  activeStreak = 0,
+  onLeaveTimer
 }) {
+  const [showGuiltTrip, setShowGuiltTrip] = useState(false);
   const {
     secondsLeft,
     totalSeconds,
@@ -149,7 +153,20 @@ export default function StudyTimerView({
       {/* Header bar inside tab */}
       <div className="minimal-timer-header">
         <div className="header-left">
-          <h1 className="minimal-page-title">Focus Session</h1>
+          {/* Leave Sanctuary Button with Guilt Trip Trigger */}
+          <button 
+            type="button" 
+            className="zen-leave-sanctuary-btn"
+            onClick={() => setShowGuiltTrip(true)}
+            title="Leave Focus Sanctuary"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Leave Sanctuary</span>
+          </button>
+
           <span className="live-timer-badge">
             <span className={`timer-pulse-dot ${isRunning ? 'active' : ''}`}></span>
             {isRunning ? 'Session Active' : isPaused ? 'Paused' : 'Ready'}
@@ -239,11 +256,57 @@ export default function StudyTimerView({
           )}
         </div>
 
-        {/* Center Stage: Circular Counter */}
-        <div className="static-timer-circle">
-          <div className="minimal-time-readout">{formatTime(secondsLeft)}</div>
-          <div className="minimal-sub-readout">
-            {currentSubject} Focus {timerMode === 'stopwatch' ? '• Stopwatch' : ''}
+        {/* Center Stage: Dynamic Circular SVG Progress Ring (Enlarged) */}
+        <div className="dynamic-timer-ring-container enlarged-ring">
+          <svg className="timer-svg-ring" viewBox="0 0 320 320">
+            <defs>
+              <linearGradient id="timerRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="var(--accent-color, #38bdf8)" />
+                <stop offset="50%" stopColor="var(--accent-secondary, #ec4899)" />
+                <stop offset="100%" stopColor="var(--accent-color, #38bdf8)" />
+              </linearGradient>
+              <filter id="ringGlowFilter" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="7" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+
+            {/* Background Track Circle */}
+            <circle
+              cx="160"
+              cy="160"
+              r="140"
+              className="timer-track-circle"
+            />
+
+            {/* Dynamic Animated Progress Circle */}
+            <circle
+              cx="160"
+              cy="160"
+              r="140"
+              className={`timer-progress-circle ${isRunning ? 'active-glow' : ''}`}
+              style={{
+                strokeDasharray: 2 * Math.PI * 140,
+                strokeDashoffset: totalSeconds > 0 
+                  ? 2 * Math.PI * 140 * (1 - Math.max(0, Math.min(1, secondsLeft / totalSeconds)))
+                  : 0
+              }}
+            />
+          </svg>
+
+          {/* Time Readout in Center */}
+          <div className="minimal-timer-center-info">
+            <span className="minimal-time-readout font-display">{formatTime(secondsLeft)}</span>
+            <div className="minimal-sub-readout">
+              <span className="subject-focus-badge">{currentSubject} FOCUS</span>
+              {timerMode === 'stopwatch' && <span className="stopwatch-tag">• STOPWATCH</span>}
+            </div>
+            {isRunning && (
+              <span className="live-sprint-indicator">
+                <span className="pulse-sprint-dot"></span>
+                <span>DEEP FOCUS ACTIVE</span>
+              </span>
+            )}
           </div>
         </div>
 
@@ -455,6 +518,20 @@ export default function StudyTimerView({
           )}
         </div>
       )}
+
+      {/* Emotional Guilt-Trip Sad Cat Modal when attempting to leave focus sanctuary */}
+      <SadCatGuiltTripModal
+        isOpen={showGuiltTrip}
+        onStay={() => setShowGuiltTrip(false)}
+        onLeave={() => {
+          setShowGuiltTrip(false);
+          if (onLeaveTimer) onLeaveTimer();
+        }}
+        activeStreak={activeStreak}
+        subject={currentSubject}
+        secondsLeft={secondsLeft}
+        isRunning={isRunning}
+      />
 
     </div>
   );

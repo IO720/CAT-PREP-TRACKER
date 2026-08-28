@@ -2,15 +2,16 @@ import React, { useEffect } from 'react';
 import { Icons } from './AspirantIcons';
 
 export default function ActivityNotificationToast({ notification, onDismiss }) {
-  if (!notification) return null;
-
   useEffect(() => {
+    if (!notification) return;
     // Auto-dismiss after 6 seconds if not permanent
     const timer = setTimeout(() => {
       if (onDismiss) onDismiss();
     }, 6000);
     return () => clearTimeout(timer);
   }, [notification, onDismiss]);
+
+  if (!notification) return null;
 
   const isTimerLogged = notification.type === 'timer_logged';
   const isUnsavedWarning = notification.type === 'unsaved_warning';

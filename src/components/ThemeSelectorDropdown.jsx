@@ -333,13 +333,18 @@ export default function ThemeSelectorDropdown({
 
   return (
     <div className="custom-theme-dropdown-container" ref={dropdownRef}>
-      {/* Trigger Button */}
+      {/* Sleek Floating Capsule Trigger */}
       <button 
-        className="theme-dropdown-trigger" 
+        type="button"
+        className={`theme-dropdown-trigger ${isOpen ? 'active' : ''}`}
         onClick={() => setIsOpen(prev => !prev)}
-        title="Change Color Tone Theme"
+        title="Change Visual Theme"
+        aria-expanded={isOpen}
       >
-        <span className="theme-trigger-icon"><ActiveIcon /></span>
+        <span 
+          className="theme-trigger-swatch"
+          style={{ backgroundColor: activeThemeObj.colors?.[3] || activeThemeObj.colors?.[2] || '#38bdf8' }}
+        />
         <span className="theme-trigger-name">{activeThemeObj.name}</span>
         <svg 
           width="12" 
@@ -354,77 +359,65 @@ export default function ThemeSelectorDropdown({
         </svg>
       </button>
 
-      {/* Animated Popover Menu */}
+      {/* Luxury Skiper UI / ReactBits Popover Grid */}
       {isOpen && (
         <div 
-          className="theme-popover-menu" 
+          className="theme-popover-menu unique-theme-popover animate-slide-up" 
           data-lenis-prevent="true"
           onWheel={(e) => e.stopPropagation()}
         >
-          <div className="popover-header">
-            <span>Color Tone Themes</span>
-            <span className="popover-sub font-mono">{THEMES.length} TONES</span>
+          <div className="popover-header-editorial">
+            <div className="popover-header-titles">
+              <span className="popover-header-tag">// PALETTE PROTOCOL</span>
+              <span className="popover-header-title">Color Tone System</span>
+            </div>
+            <span className="popover-counter-pill font-mono">{THEMES.length} TONES</span>
           </div>
 
           <div 
-            className="popover-themes-list" 
+            className="popover-themes-grid" 
             data-lenis-prevent="true"
             onWheel={(e) => e.stopPropagation()}
           >
             {THEMES.map((t) => {
               const isSelected = t.id === currentTheme;
-              const OptionIcon = t.IconComponent;
               const isUnlocked = isThemeUnlocked(t.id, unlockedThemes);
               const isPrem = t.isPremium;
+              const accentColor = t.colors?.[3] || t.colors?.[2] || '#38bdf8';
 
               return (
                 <button
                   key={t.id}
-                  className={`theme-option-item ${isSelected ? 'selected' : ''} ${isPrem && !isUnlocked ? 'theme-locked-item' : ''}`}
+                  type="button"
+                  className={`theme-grid-card ${isSelected ? 'selected' : ''} ${isPrem && !isUnlocked ? 'locked' : ''}`}
                   onClick={() => handlePickTheme(t)}
-                  title={isPrem && !isUnlocked ? `${t.name} (Requires Code to Unlock)` : t.name}
+                  title={isPrem && !isUnlocked ? `${t.name} (Requires Unlock Code)` : t.name}
                 >
-                  <div className="item-left">
-                    <span className="item-icon"><OptionIcon /></span>
-                    <span className="item-name">
-                      {t.name}
-                      {isPrem && (
-                        <span className={`theme-vip-tag ${isUnlocked ? 'unlocked' : 'locked'}`}>
-                          {isUnlocked ? (
-                            'VIP'
-                          ) : (
-                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                            </svg>
-                          )}
-                        </span>
-                      )}
-                    </span>
+                  <div className="theme-card-swatches">
+                    {t.colors.map((c, idx) => (
+                      <span 
+                        key={idx} 
+                        className="theme-swatch-bar" 
+                        style={{ backgroundColor: c }} 
+                      />
+                    ))}
                   </div>
 
-                  <div className="item-right">
-                    {/* Palette Swatch Circles */}
-                    <div className="palette-swatch" title={`${t.name} Palette`}>
-                      {t.colors.map((c, idx) => (
-                        <span key={idx} className="swatch-dot" style={{ backgroundColor: c }} />
-                      ))}
+                  <div className="theme-card-info">
+                    <span className="theme-card-name" style={{ color: isSelected ? accentColor : 'inherit' }}>
+                      {t.name}
+                    </span>
+
+                    <div className="theme-card-meta">
+                      {isPrem && (
+                        <span className={`theme-meta-pill ${isUnlocked ? 'vip' : 'lock'}`}>
+                          {isUnlocked ? 'VIP' : 'LOCK'}
+                        </span>
+                      )}
+                      {isSelected && (
+                        <span className="theme-active-indicator" style={{ backgroundColor: accentColor }}></span>
+                      )}
                     </div>
-
-                    {isSelected && (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="check-icon">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                      </svg>
-                    )}
-
-                    {!isUnlocked && isPrem && !isSelected && (
-                      <span className="item-lock-pill" title="Locked Theme">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                        </svg>
-                      </span>
-                    )}
                   </div>
                 </button>
               );
@@ -441,7 +434,7 @@ export default function ThemeSelectorDropdown({
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
-              <span>Redeem Theme Code</span>
+              <span>Unlock Secret VIP Palette</span>
             </button>
           </div>
         </div>

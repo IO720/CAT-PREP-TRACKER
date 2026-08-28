@@ -82,231 +82,215 @@ export default function DashboardView({
 
   return (
     <div className="dashboard-clean-container">
-      {/* Hero Greeting Bar */}
-      <div className="dashboard-hero-header">
-        <div className="hero-title-group">
-          <h1 className="hero-greeting">Welcome back, Aspirant</h1>
-          <p className="hero-subtext">Your daily preparation hub & benchmark performance summary.</p>
+      {/* Minimalist Editorial Hero Header */}
+      <div className="minimal-hero-section">
+        <div className="minimal-hero-tag">
+          <span>// PREPARATION PROTOCOL • {todayPos.activeMonth?.toUpperCase()} (WEEK {todayPos.activeWeek})</span>
         </div>
 
-        <div className="hero-action-buttons">
-          <button className="btn-primary hero-main-btn" onClick={() => setActiveTab('daily')}>
-            <Icons.Target size={15} />
-            <span>Start Today's Practice</span>
-          </button>
-          <button className="btn-secondary hero-sub-btn" onClick={() => setActiveTab('timer')}>
-            <Icons.Clock size={15} />
-            <span>Focus Timer</span>
-          </button>
+        <div className="minimal-hero-main">
+          <div className="minimal-hero-titles">
+            <h1 className="minimal-headline">
+              DISCIPLINE <span className="minimal-headline-italic">is Real.</span>
+            </h1>
+            <p className="minimal-subtext">
+              Observation defines outcome. Structured daily quotas and continuous percentile mastery.
+            </p>
+          </div>
+
+          <div className="minimal-hero-actions">
+            <button 
+              type="button" 
+              className="minimal-btn-primary" 
+              onClick={() => setActiveTab('daily')}
+            >
+              <span>Start Daily Practice</span>
+              <span className="btn-arrow">↗</span>
+            </button>
+            <button 
+              type="button" 
+              className="minimal-btn-secondary" 
+              onClick={() => setActiveTab('timer')}
+            >
+              <Icons.Clock size={14} />
+              <span>Focus Timer</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 3-Metric Horizon Quota Strip */}
+        <div className="minimal-horizon-strip">
+          <div className="horizon-stat-item">
+            <span className="horizon-stat-lbl">Time Studied Today</span>
+            <span className="horizon-stat-val">{todayStudyHours.toFixed(1)} <span className="horizon-unit">hrs</span></span>
+          </div>
+          <div className="horizon-divider"></div>
+          <div className="horizon-stat-item">
+            <span className="horizon-stat-lbl">Daily Drills</span>
+            <span className="horizon-stat-val">{todayDoneTasks} <span className="horizon-unit">/ 3 Done</span></span>
+          </div>
+          <div className="horizon-divider"></div>
+          <div className="horizon-stat-item">
+            <span className="horizon-stat-lbl">Active Streak</span>
+            <span className="horizon-stat-val" style={{ color: activeStreak > 0 ? '#ff3344' : 'inherit' }}>
+              {activeStreak} <span className="horizon-unit">{activeStreak === 1 ? 'Day' : 'Days'}</span>
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Today's Focus Overview Card */}
-      <div className="today-focus-card">
-        <div className="focus-card-left">
-          <div className="focus-card-badge">
-            <span>TODAY'S FOCUS & QUOTA</span>
-          </div>
-          <div className="focus-card-stats">
-            <div className="focus-stat-item">
-              <span className="focus-stat-val">{todayStudyHours.toFixed(1)} hrs</span>
-              <span className="focus-stat-lbl">Time Studied Today</span>
-            </div>
-            <div className="focus-stat-divider"></div>
-            <div className="focus-stat-item">
-              <span className="focus-stat-val">{todayDoneTasks} / 3</span>
-              <span className="focus-stat-lbl">Drills Completed</span>
-            </div>
-            <div className="focus-stat-divider"></div>
-            <div className="focus-stat-item">
-              <span className="focus-stat-val">{activeStreak} Days</span>
-              <span className="focus-stat-lbl">Active Streak</span>
-            </div>
-          </div>
-          {todaySessions.length > 0 && (
-            <div className="focus-recent-slots">
-              {todaySessions.slice(0, 3).map((s, i) => (
-                <span key={i} className="slot-chip">
-                  {s.startTime} - {s.endTime} ({s.subject})
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="focus-card-right">
-          <button className="btn-primary start-timer-cta-btn" onClick={() => setActiveTab('timer')}>
-            <span>Start 25m Session</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 4 Clean Metric Cards */}
-      <div className="metrics-clean-grid">
+      {/* 4 Core Subject Metrics Grid */}
+      <div className="minimal-metrics-grid">
         {/* Quant */}
-        <div className="metric-card">
-          <div className="metric-card-top">
-            <div className="metric-icon-title">
-              <span className="metric-title">Quant Questions</span>
-            </div>
-            <span className="metric-percent-badge">{quantPercent}%</span>
+        <div className="minimal-metric-card">
+          <div className="minimal-metric-header">
+            <span className="minimal-metric-title">Quant Questions</span>
+            <span className="minimal-metric-badge">{quantPercent}%</span>
           </div>
-          <div className="metric-card-value">
-            {totalQuantSolved.toLocaleString()} <span className="metric-target">/ {grandTargets.quant}</span>
+          <div className="minimal-metric-number">
+            {totalQuantSolved.toLocaleString()} <span className="minimal-target">/ {grandTargets.quant}</span>
           </div>
-          <div className="stat-progress-bar">
-            <div className="stat-progress-fill" style={{ width: `${quantPercent}%` }}></div>
+          <div className="minimal-progress-track">
+            <div className="minimal-progress-fill quant-fill" style={{ width: `${quantPercent}%` }}></div>
           </div>
         </div>
 
         {/* LRDI */}
-        <div className="metric-card">
-          <div className="metric-card-top">
-            <div className="metric-icon-title">
-              <span className="metric-title">LRDI Sets</span>
-            </div>
-            <span className="metric-percent-badge">{lrdiPercent}%</span>
+        <div className="minimal-metric-card">
+          <div className="minimal-metric-header">
+            <span className="minimal-metric-title">LRDI Sets</span>
+            <span className="minimal-metric-badge">{lrdiPercent}%</span>
           </div>
-          <div className="metric-card-value">
-            {totalLrdidSolved.toLocaleString()} <span className="metric-target">/ {grandTargets.lrdi}</span>
+          <div className="minimal-metric-number">
+            {totalLrdidSolved.toLocaleString()} <span className="minimal-target">/ {grandTargets.lrdi}</span>
           </div>
-          <div className="stat-progress-bar">
-            <div className="stat-progress-fill" style={{ width: `${lrdiPercent}%` }}></div>
+          <div className="minimal-progress-track">
+            <div className="minimal-progress-fill lrdi-fill" style={{ width: `${lrdiPercent}%` }}></div>
           </div>
         </div>
 
         {/* VARC */}
-        <div className="metric-card">
-          <div className="metric-card-top">
-            <div className="metric-icon-title">
-              <span className="metric-title">VARC RCs</span>
-            </div>
-            <span className="metric-percent-badge">{varcPercent}%</span>
+        <div className="minimal-metric-card">
+          <div className="minimal-metric-header">
+            <span className="minimal-metric-title">VARC RCs</span>
+            <span className="minimal-metric-badge">{varcPercent}%</span>
           </div>
-          <div className="metric-card-value">
-            {totalVarcSolved.toLocaleString()} <span className="metric-target">/ {grandTargets.varc}</span>
+          <div className="minimal-metric-number">
+            {totalVarcSolved.toLocaleString()} <span className="minimal-target">/ {grandTargets.varc}</span>
           </div>
-          <div className="stat-progress-bar">
-            <div className="stat-progress-fill" style={{ width: `${varcPercent}%` }}></div>
+          <div className="minimal-progress-track">
+            <div className="minimal-progress-fill varc-fill" style={{ width: `${varcPercent}%` }}></div>
           </div>
         </div>
 
         {/* Mocks */}
-        <div className="metric-card">
-          <div className="metric-card-top">
-            <div className="metric-icon-title">
-              <span className="metric-title">Mock Tests</span>
-            </div>
-            <span className="metric-percent-badge">{mockPercent}%</span>
+        <div className="minimal-metric-card">
+          <div className="minimal-metric-header">
+            <span className="minimal-metric-title">Mock Tests</span>
+            <span className="minimal-metric-badge">{mockPercent}%</span>
           </div>
-          <div className="metric-card-value">
-            {mocksTaken} <span className="metric-target">/ {grandTargets.mocks}</span>
+          <div className="minimal-metric-number">
+            {mocksTaken} <span className="minimal-target">/ {grandTargets.mocks}</span>
           </div>
-          <div className="stat-progress-bar">
-            <div className="stat-progress-fill" style={{ width: `${mockPercent}%` }}></div>
+          <div className="minimal-progress-track">
+            <div className="minimal-progress-fill mock-fill" style={{ width: `${mockPercent}%` }}></div>
           </div>
         </div>
       </div>
 
-      {/* Activity Consistency & Streak Matrix Panel (2-Column Responsive Layout) */}
-      <div className="dashboard-card streak-heatmap-dashboard-card">
-        <div className="streak-heatmap-header">
-          <div className="streak-heatmap-title-group">
-            <div className="streak-icon-bubble">
-              <Icons.Zap size={18} />
-            </div>
-            <div>
-              <h3 className="streak-heatmap-title">Study Consistency & Streak Matrix</h3>
-              <p className="streak-heatmap-subtitle">
-                Daily preparation activity matrix. Maintain daily drills to unlock streak perks and collectible badges.
-              </p>
-            </div>
+      {/* Activity Consistency & Streak Matrix */}
+      <div className="minimal-section-card">
+        <div className="minimal-section-header">
+          <div>
+            <h3 className="minimal-section-title">Study Consistency & Streak Matrix</h3>
+            <p className="minimal-section-subtitle">
+              Daily preparation activity matrix. Maintain daily momentum across the 16-week curriculum.
+            </p>
           </div>
         </div>
 
-        {/* 2-Column Split: Heatmap on Left, Streak Insights on Right */}
         <div className="dashboard-heatmap-dual-row">
           <div className="heatmap-matrix-left-col">
             <StudyContributionHeatmap tracker={tracker} compact={false} />
           </div>
 
           <div className="streak-analytics-right-col">
-            <div className="streak-analytics-tile">
-              <div className="streak-tile-header">
-                <Icons.Flame size={14} color="#f97316" />
+            <div className="minimal-streak-box">
+              <div className="streak-box-label">
+                <Icons.Flame size={14} color="#ff3344" />
                 <span>ACTIVE STREAK</span>
               </div>
-              <div className="streak-tile-number">
-                {activeStreak} <span>{activeStreak === 1 ? 'Day' : 'Days'}</span>
+              <div className="streak-box-value">
+                {activeStreak} <span className="streak-box-unit">{activeStreak === 1 ? 'Day' : 'Days'}</span>
               </div>
-              <div className="streak-tile-desc">
-                {activeStreak > 0 ? "Momentum active! Don't break the streak." : "Complete today's drill to start your streak."}
+              <div className="streak-box-desc">
+                {activeStreak > 0 ? "Momentum active! Keep the streak alive." : "Complete today's drill to start your streak."}
               </div>
             </div>
 
-            <div className="streak-analytics-tile">
-              <div className="streak-tile-header">
+            <div className="minimal-streak-box">
+              <div className="streak-box-label">
                 <Icons.Calendar size={14} color="#38bdf8" />
                 <span>CONSISTENCY RECORD</span>
               </div>
-              <div className="streak-tile-number">
-                {allDaysChronological.filter(d => d.isDone).length} <span>/ 112 Days</span>
+              <div className="streak-box-value">
+                {allDaysChronological.filter(d => d.isDone).length} <span className="streak-box-unit">/ 112 Days</span>
               </div>
-              <div className="streak-tile-desc">
-                Total active practice days logged across 4 months.
+              <div className="streak-box-desc">
+                Total active practice days logged across 4 curriculum months.
               </div>
             </div>
 
             <button 
               type="button"
-              className="streak-perks-action-btn"
+              className="minimal-perks-btn"
               onClick={() => setActiveTab('achievements')}
-              title="View your prestige achievement badges and custom perks"
+              title="View your prestige achievement badges"
             >
-              <Icons.Award size={14} color="#eab308" />
-              <span>Collected Perks & Badges</span>
-              <Icons.ChevronRight size={14} />
+              <div className="perks-btn-text">
+                <Icons.Award size={14} color="#eab308" />
+                <span>Prestige Badges & Perks</span>
+              </div>
+              <span>↗</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Curriculum Phase & Focus */}
-      <div className="dashboard-details-row">
-        {/* Active Study Focus */}
-        <div className="dashboard-panel" style={{ width: '100%' }}>
-          <div className="panel-header-row">
-            <h2 className="panel-title">Current Study Focus</h2>
-            {activeWeek && (
-              <span className="status-badge in-progress">
-                {activeWeek.week}
-              </span>
-            )}
+      <div className="minimal-section-card">
+        <div className="minimal-section-header">
+          <div>
+            <h3 className="minimal-section-title">Current Study Focus</h3>
+            <p className="minimal-section-subtitle">Active curriculum syllabus milestones and target areas.</p>
           </div>
-
-          {activeWeek ? (
-            <div className="weekly-focus-container">
-              <p className="phase-label-sub">{activeWeek.phase}</p>
-              
-              <div className="weekly-focus-card">
-                <div className="focus-subject">Quantitative Aptitude</div>
-                <div className="focus-detail">{activeWeek.quantFocus || "Formula revision & concept brushing"}</div>
-              </div>
-
-              <div className="weekly-focus-card">
-                <div className="focus-subject">LRDI Practice</div>
-                <div className="focus-detail">{activeWeek.lrdiFocus || "Set selection & speed practice"}</div>
-              </div>
-
-              <div className="weekly-focus-card">
-                <div className="focus-subject">VARC Sectionals</div>
-                <div className="focus-detail">{activeWeek.varcFocus || "Mock analytics & VA grammar"}</div>
-              </div>
-            </div>
-          ) : (
-            <p className="empty-state">No active focus found. Mark a week as "In Progress" in the timeline plan.</p>
+          {activeWeek && (
+            <span className="minimal-phase-pill">
+              {activeWeek.week} • {activeWeek.phase}
+            </span>
           )}
         </div>
+
+        {activeWeek ? (
+          <div className="minimal-focus-grid">
+            <div className="minimal-focus-tile">
+              <span className="focus-tile-subject">Quantitative Aptitude</span>
+              <span className="focus-tile-detail">{activeWeek.quantFocus || "Formula revision & concept practice"}</span>
+            </div>
+
+            <div className="minimal-focus-tile">
+              <span className="focus-tile-subject">LRDI Practice</span>
+              <span className="focus-tile-detail">{activeWeek.lrdiFocus || "Set selection & speed practice"}</span>
+            </div>
+
+            <div className="minimal-focus-tile">
+              <span className="focus-tile-subject">VARC Sectionals</span>
+              <span className="focus-tile-detail">{activeWeek.varcFocus || "Mock analytics & VA grammar"}</span>
+            </div>
+          </div>
+        ) : (
+          <p className="empty-state">No active focus found. Mark a week as "In Progress" in the timeline plan.</p>
+        )}
       </div>
     </div>
   );
