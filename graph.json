@@ -12,18 +12,7 @@
       "file_type": "code",
       "norm_label": "app()",
       "source_file": "src/App.jsx",
-      "source_location": "L216"
-    },
-    {
-      "id": "src_components_achievementsview_achievementsview",
-      "label": "AchievementsView()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "file_type": "code",
-      "norm_label": "achievementsview()",
-      "source_file": "src/components/AchievementsView.jsx",
-      "source_location": "L6"
+      "source_location": "L222"
     },
     {
       "id": "src_components_activitynotificationtoast_activitynotificationtoast",
@@ -59,6 +48,28 @@
       "source_location": "L4"
     },
     {
+      "id": "src_components_ditherbackground_ditherbackground",
+      "label": "DitherBackground()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "file_type": "code",
+      "norm_label": "ditherbackground()",
+      "source_file": "src/components/DitherBackground.jsx",
+      "source_location": "L14"
+    },
+    {
+      "id": "src_components_ditherbackground_ditherbackground_createshader",
+      "label": "createShader()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "file_type": "code",
+      "norm_label": "createshader()",
+      "source_file": "src/components/DitherBackground.jsx",
+      "source_location": "L120"
+    },
+    {
       "id": "src_components_errorlogview_errorlogview",
       "label": "ErrorLogView()",
       "_callable": true,
@@ -79,6 +90,17 @@
       "norm_label": "floatingtimerwidget()",
       "source_file": "src/components/FloatingTimerWidget.jsx",
       "source_location": "L4"
+    },
+    {
+      "id": "src_components_focustransitionportal_focustransitionportal",
+      "label": "FocusTransitionPortal()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "file_type": "code",
+      "norm_label": "focustransitionportal()",
+      "source_file": "src/components/FocusTransitionPortal.jsx",
+      "source_location": "L9"
     },
     {
       "id": "src_components_headerprofiledropdown_headerprofiledropdown",
@@ -112,6 +134,17 @@
       "norm_label": "handlekeydown()",
       "source_file": "src/components/HeaderProfileDropdown.jsx",
       "source_location": "L30"
+    },
+    {
+      "id": "src_components_liquidintroloader_liquidintroloader",
+      "label": "LiquidIntroLoader()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "file_type": "code",
+      "norm_label": "liquidintroloader()",
+      "source_file": "src/components/LiquidIntroLoader.jsx",
+      "source_location": "L13"
     },
     {
       "id": "src_components_mocktrackerview_mocktrackerview",
@@ -180,6 +213,17 @@
       "source_location": "L16"
     },
     {
+      "id": "src_utils_firebase_loadtrackerfromcloud",
+      "label": "loadTrackerFromCloud()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "file_type": "code",
+      "norm_label": "loadtrackerfromcloud()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L213"
+    },
+    {
       "id": "src_utils_firebase_savetrackertocloud",
       "label": "saveTrackerToCloud()",
       "_callable": true,
@@ -200,6 +244,17 @@
       "norm_label": "subscribetouserprofile()",
       "source_file": "src/utils/firebase.js",
       "source_location": "L248"
+    },
+    {
+      "id": "src_utils_firebase_updateuserpresence",
+      "label": "updateUserPresence()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "file_type": "code",
+      "norm_label": "updateuserpresence()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L527"
     },
     {
       "id": "src_utils_gsapanimations_animatepageentrance",
@@ -334,279 +389,158 @@
       "source_location": "L4"
     },
     {
-      "id": "src_components_authscreen_authscreen",
-      "label": "AuthScreen()",
+      "id": "src_components_achievementsview_achievementsview",
+      "label": "AchievementsView()",
       "_callable": true,
       "_origin": "ast",
       "community": 1,
       "file_type": "code",
-      "norm_label": "authscreen()",
-      "source_file": "src/components/AuthScreen.jsx",
-      "source_location": "L5"
+      "norm_label": "achievementsview()",
+      "source_file": "src/components/AchievementsView.jsx",
+      "source_location": "L9"
     },
     {
-      "id": "src_components_profileview_profileview",
-      "label": "ProfileView()",
+      "id": "src_components_archived_studylounge_chatarchive_studyloungechatarchive",
+      "label": "StudyLoungeChatArchive()",
       "_callable": true,
       "_origin": "ast",
       "community": 1,
       "file_type": "code",
-      "norm_label": "profileview()",
-      "source_file": "src/components/ProfileView.jsx",
-      "source_location": "L18"
+      "norm_label": "studyloungechatarchive()",
+      "source_file": "src/components/archived/StudyLounge_ChatArchive.jsx",
+      "source_location": "L22"
     },
     {
-      "id": "src_components_settingsview_settingsview",
-      "label": "SettingsView()",
+      "id": "src_components_aspirantprofilecard_aspirantprofilecard",
+      "label": "AspirantProfileCard()",
       "_callable": true,
       "_origin": "ast",
       "community": 1,
       "file_type": "code",
-      "norm_label": "settingsview()",
-      "source_file": "src/components/SettingsView.jsx",
-      "source_location": "L14"
+      "norm_label": "aspirantprofilecard()",
+      "source_file": "src/components/AspirantProfileCard.jsx",
+      "source_location": "L7"
     },
     {
-      "id": "src_utils_firebase_addfriendbyemail",
-      "label": "addFriendByEmail()",
+      "id": "src_components_avatarrenderer_avatarrenderer",
+      "label": "AvatarRenderer()",
       "_callable": true,
       "_origin": "ast",
       "community": 1,
       "file_type": "code",
-      "norm_label": "addfriendbyemail()",
+      "norm_label": "avatarrenderer()",
+      "source_file": "src/components/AvatarRenderer.jsx",
+      "source_location": "L15"
+    },
+    {
+      "id": "src_components_communitychat_communitychat",
+      "label": "CommunityChat()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "communitychat()",
+      "source_file": "src/components/CommunityChat.jsx",
+      "source_location": "L22"
+    },
+    {
+      "id": "src_components_cubescanvas_cubescanvas",
+      "label": "CubesCanvas()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "cubescanvas()",
+      "source_file": "src/components/CubesCanvas.jsx",
+      "source_location": "L11"
+    },
+    {
+      "id": "src_components_glarehovercard_glarehovercard",
+      "label": "GlareHoverCard()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "glarehovercard()",
+      "source_file": "src/components/GlareHoverCard.jsx",
+      "source_location": "L11"
+    },
+    {
+      "id": "src_components_peerinspectormodal_peerinspectormodal",
+      "label": "PeerInspectorModal()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "peerinspectormodal()",
+      "source_file": "src/components/PeerInspectorModal.jsx",
+      "source_location": "L8"
+    },
+    {
+      "id": "src_components_prestigebadgeemblem_prestigebadgeemblem",
+      "label": "PrestigeBadgeEmblem()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "prestigebadgeemblem()",
+      "source_file": "src/components/PrestigeBadgeEmblem.jsx",
+      "source_location": "L7"
+    },
+    {
+      "id": "src_components_studycontributionheatmap_studycontributionheatmap",
+      "label": "StudyContributionHeatmap()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "studycontributionheatmap()",
+      "source_file": "src/components/StudyContributionHeatmap.jsx",
+      "source_location": "L4"
+    },
+    {
+      "id": "src_utils_badgeutils_calculateuserbadges",
+      "label": "calculateUserBadges()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "calculateuserbadges()",
+      "source_file": "src/utils/badgeUtils.js",
+      "source_location": "L157"
+    },
+    {
+      "id": "src_utils_firebase_deletechatmessage",
+      "label": "deleteChatMessage()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "deletechatmessage()",
       "source_file": "src/utils/firebase.js",
-      "source_location": "L459"
+      "source_location": "L1065"
     },
     {
-      "id": "src_utils_firebase_fetchfriendprogress",
-      "label": "fetchFriendProgress()",
+      "id": "src_utils_firebase_sendchatmessage",
+      "label": "sendChatMessage()",
       "_callable": true,
       "_origin": "ast",
       "community": 1,
       "file_type": "code",
-      "norm_label": "fetchfriendprogress()",
+      "norm_label": "sendchatmessage()",
       "source_file": "src/utils/firebase.js",
-      "source_location": "L891"
+      "source_location": "L909"
     },
     {
-      "id": "src_utils_firebase_fetchfriendsprogress",
-      "label": "fetchFriendsProgress()",
+      "id": "src_utils_firebase_subscribetochatmessages",
+      "label": "subscribeToChatMessages()",
       "_callable": true,
       "_origin": "ast",
       "community": 1,
       "file_type": "code",
-      "norm_label": "fetchfriendsprogress()",
+      "norm_label": "subscribetochatmessages()",
       "source_file": "src/utils/firebase.js",
-      "source_location": "L819"
-    },
-    {
-      "id": "src_utils_firebase_finduserbyidentifier",
-      "label": "findUserByIdentifier()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "finduserbyidentifier()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L270"
-    },
-    {
-      "id": "src_utils_firebase_generateuniqueaspirantid",
-      "label": "generateUniqueAspirantId()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "generateuniqueaspirantid()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L59"
-    },
-    {
-      "id": "src_utils_firebase_getlocalaspirantid",
-      "label": "getLocalAspirantId()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "getlocalaspirantid()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L73"
-    },
-    {
-      "id": "src_utils_firebase_getuserprofile",
-      "label": "getUserProfile()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "getuserprofile()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L227"
-    },
-    {
-      "id": "src_utils_firebase_hashstringtocolor",
-      "label": "hashStringToColor()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "hashstringtocolor()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L84"
-    },
-    {
-      "id": "src_utils_firebase_loadtrackerfromcloud",
-      "label": "loadTrackerFromCloud()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "loadtrackerfromcloud()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L213"
-    },
-    {
-      "id": "src_utils_firebase_loginuser",
-      "label": "logInUser()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "loginuser()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L131"
-    },
-    {
-      "id": "src_utils_firebase_logoutuser",
-      "label": "logOutUser()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "logoutuser()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L177"
-    },
-    {
-      "id": "src_utils_firebase_removefriend",
-      "label": "removeFriend()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "removefriend()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L441"
-    },
-    {
-      "id": "src_utils_firebase_respondtofriendrequest",
-      "label": "respondToFriendRequest()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "respondtofriendrequest()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L404"
-    },
-    {
-      "id": "src_utils_firebase_sendfriendrequest",
-      "label": "sendFriendRequest()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "sendfriendrequest()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L308"
-    },
-    {
-      "id": "src_utils_firebase_setuseroffline",
-      "label": "setUserOffline()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "setuseroffline()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L596"
-    },
-    {
-      "id": "src_utils_firebase_signinwithgoogle",
-      "label": "signInWithGoogle()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "signinwithgoogle()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L139"
-    },
-    {
-      "id": "src_utils_firebase_signupuser",
-      "label": "signUpUser()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "signupuser()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L98"
-    },
-    {
-      "id": "src_utils_firebase_subscribetofriendrequests",
-      "label": "subscribeToFriendRequests()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "subscribetofriendrequests()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L371"
-    },
-    {
-      "id": "src_utils_firebase_subscribetofriendslive",
-      "label": "subscribeToFriendsLive()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "subscribetofriendslive()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L693"
-    },
-    {
-      "id": "src_utils_firebase_subscribetostudylounge",
-      "label": "subscribeToStudyLounge()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "subscribetostudylounge()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L612"
-    },
-    {
-      "id": "src_utils_firebase_updateuserpresence",
-      "label": "updateUserPresence()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "updateuserpresence()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L527"
-    },
-    {
-      "id": "src_utils_firebase_updateuserprofile",
-      "label": "updateUserProfile()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "updateuserprofile()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L484"
+      "source_location": "L981"
     },
     {
       "id": "scripts_release_bumpversion",
@@ -631,59 +565,257 @@
       "source_location": "L15"
     },
     {
-      "id": "src_components_aspirantprofilecard_aspirantprofilecard",
-      "label": "AspirantProfileCard()",
+      "id": "src_components_authscreen_authscreen",
+      "label": "AuthScreen()",
       "_callable": true,
       "_origin": "ast",
       "community": 2,
       "file_type": "code",
-      "norm_label": "aspirantprofilecard()",
-      "source_file": "src/components/AspirantProfileCard.jsx",
-      "source_location": "L7"
+      "norm_label": "authscreen()",
+      "source_file": "src/components/AuthScreen.jsx",
+      "source_location": "L5"
     },
     {
-      "id": "src_components_avatarrenderer_avatarrenderer",
-      "label": "AvatarRenderer()",
+      "id": "src_components_profileview_profileview",
+      "label": "ProfileView()",
       "_callable": true,
       "_origin": "ast",
       "community": 2,
       "file_type": "code",
-      "norm_label": "avatarrenderer()",
-      "source_file": "src/components/AvatarRenderer.jsx",
-      "source_location": "L15"
+      "norm_label": "profileview()",
+      "source_file": "src/components/ProfileView.jsx",
+      "source_location": "L18"
     },
     {
-      "id": "src_components_peerinspectormodal_peerinspectormodal",
-      "label": "PeerInspectorModal()",
+      "id": "src_components_settingsview_settingsview",
+      "label": "SettingsView()",
       "_callable": true,
       "_origin": "ast",
       "community": 2,
       "file_type": "code",
-      "norm_label": "peerinspectormodal()",
-      "source_file": "src/components/PeerInspectorModal.jsx",
-      "source_location": "L8"
+      "norm_label": "settingsview()",
+      "source_file": "src/components/SettingsView.jsx",
+      "source_location": "L14"
     },
     {
-      "id": "src_components_studycontributionheatmap_studycontributionheatmap",
-      "label": "StudyContributionHeatmap()",
+      "id": "src_utils_firebase_addfriendbyemail",
+      "label": "addFriendByEmail()",
       "_callable": true,
       "_origin": "ast",
       "community": 2,
       "file_type": "code",
-      "norm_label": "studycontributionheatmap()",
-      "source_file": "src/components/StudyContributionHeatmap.jsx",
-      "source_location": "L4"
+      "norm_label": "addfriendbyemail()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L459"
     },
     {
-      "id": "src_utils_badgeutils_calculateuserbadges",
-      "label": "calculateUserBadges()",
+      "id": "src_utils_firebase_fetchfriendprogress",
+      "label": "fetchFriendProgress()",
       "_callable": true,
       "_origin": "ast",
       "community": 2,
       "file_type": "code",
-      "norm_label": "calculateuserbadges()",
-      "source_file": "src/utils/badgeUtils.js",
-      "source_location": "L157"
+      "norm_label": "fetchfriendprogress()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L891"
+    },
+    {
+      "id": "src_utils_firebase_fetchfriendsprogress",
+      "label": "fetchFriendsProgress()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "fetchfriendsprogress()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L819"
+    },
+    {
+      "id": "src_utils_firebase_finduserbyidentifier",
+      "label": "findUserByIdentifier()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "finduserbyidentifier()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L270"
+    },
+    {
+      "id": "src_utils_firebase_generateuniqueaspirantid",
+      "label": "generateUniqueAspirantId()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "generateuniqueaspirantid()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L59"
+    },
+    {
+      "id": "src_utils_firebase_getlocalaspirantid",
+      "label": "getLocalAspirantId()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "getlocalaspirantid()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L73"
+    },
+    {
+      "id": "src_utils_firebase_getuserprofile",
+      "label": "getUserProfile()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "getuserprofile()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L227"
+    },
+    {
+      "id": "src_utils_firebase_hashstringtocolor",
+      "label": "hashStringToColor()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "hashstringtocolor()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L84"
+    },
+    {
+      "id": "src_utils_firebase_loginuser",
+      "label": "logInUser()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "loginuser()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L131"
+    },
+    {
+      "id": "src_utils_firebase_logoutuser",
+      "label": "logOutUser()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "logoutuser()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L177"
+    },
+    {
+      "id": "src_utils_firebase_removefriend",
+      "label": "removeFriend()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "removefriend()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L441"
+    },
+    {
+      "id": "src_utils_firebase_respondtofriendrequest",
+      "label": "respondToFriendRequest()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "respondtofriendrequest()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L404"
+    },
+    {
+      "id": "src_utils_firebase_sendfriendrequest",
+      "label": "sendFriendRequest()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "sendfriendrequest()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L308"
+    },
+    {
+      "id": "src_utils_firebase_setuseroffline",
+      "label": "setUserOffline()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "setuseroffline()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L596"
+    },
+    {
+      "id": "src_utils_firebase_signinwithgoogle",
+      "label": "signInWithGoogle()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "signinwithgoogle()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L139"
+    },
+    {
+      "id": "src_utils_firebase_signupuser",
+      "label": "signUpUser()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "signupuser()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L98"
+    },
+    {
+      "id": "src_utils_firebase_subscribetofriendrequests",
+      "label": "subscribeToFriendRequests()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "subscribetofriendrequests()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L371"
+    },
+    {
+      "id": "src_utils_firebase_subscribetofriendslive",
+      "label": "subscribeToFriendsLive()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "subscribetofriendslive()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L693"
+    },
+    {
+      "id": "src_utils_firebase_subscribetostudylounge",
+      "label": "subscribeToStudyLounge()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "subscribetostudylounge()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L612"
+    },
+    {
+      "id": "src_utils_firebase_updateuserprofile",
+      "label": "updateUserProfile()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "updateuserprofile()",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L484"
     },
     {
       "id": "src_components_dailytrackerview_dailytrackerview",
@@ -840,6 +972,17 @@
       "source_location": "L102"
     },
     {
+      "id": "src_components_clickspark_clickspark",
+      "label": "ClickSpark()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 6,
+      "file_type": "code",
+      "norm_label": "clickspark()",
+      "source_file": "src/components/ClickSpark.jsx",
+      "source_location": "L13"
+    },
+    {
       "id": "src_components_themeredeemmodal_themeredeemmodal",
       "label": "ThemeRedeemModal()",
       "_callable": true,
@@ -936,7 +1079,7 @@
       "file_type": "code",
       "norm_label": "studytimerview()",
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L7"
+      "source_location": "L9"
     },
     {
       "id": "src_utils_audioutils_getaudiocontext",
@@ -983,59 +1126,92 @@
       "source_location": "L13"
     },
     {
-      "id": "src_components_archived_studylounge_chatarchive_studyloungechatarchive",
-      "label": "StudyLoungeChatArchive()",
+      "id": "src_components_animatedstreakbadge_animatedstreakbadge",
+      "label": "AnimatedStreakBadge()",
       "_callable": true,
       "_origin": "ast",
       "community": 8,
       "file_type": "code",
-      "norm_label": "studyloungechatarchive()",
-      "source_file": "src/components/archived/StudyLounge_ChatArchive.jsx",
-      "source_location": "L22"
+      "norm_label": "animatedstreakbadge()",
+      "source_file": "src/components/AnimatedStreakBadge.jsx",
+      "source_location": "L12"
     },
     {
-      "id": "src_components_communitychat_communitychat",
-      "label": "CommunityChat()",
+      "id": "src_components_animateduiicons_animatedflameicon",
+      "label": "AnimatedFlameIcon()",
       "_callable": true,
       "_origin": "ast",
       "community": 8,
       "file_type": "code",
-      "norm_label": "communitychat()",
-      "source_file": "src/components/CommunityChat.jsx",
-      "source_location": "L22"
+      "norm_label": "animatedflameicon()",
+      "source_file": "src/components/AnimatedUiIcons.jsx",
+      "source_location": "L9"
     },
     {
-      "id": "src_utils_firebase_deletechatmessage",
-      "label": "deleteChatMessage()",
+      "id": "src_components_animateduiicons_animatedpawicon",
+      "label": "AnimatedPawIcon()",
       "_callable": true,
       "_origin": "ast",
       "community": 8,
       "file_type": "code",
-      "norm_label": "deletechatmessage()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L1065"
+      "norm_label": "animatedpawicon()",
+      "source_file": "src/components/AnimatedUiIcons.jsx",
+      "source_location": "L73"
     },
     {
-      "id": "src_utils_firebase_sendchatmessage",
-      "label": "sendChatMessage()",
+      "id": "src_components_animateduiicons_animatedtargeticon",
+      "label": "AnimatedTargetIcon()",
       "_callable": true,
       "_origin": "ast",
       "community": 8,
       "file_type": "code",
-      "norm_label": "sendchatmessage()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L909"
+      "norm_label": "animatedtargeticon()",
+      "source_file": "src/components/AnimatedUiIcons.jsx",
+      "source_location": "L119"
     },
     {
-      "id": "src_utils_firebase_subscribetochatmessages",
-      "label": "subscribeToChatMessages()",
+      "id": "src_components_animateduiicons_animatedtearicon",
+      "label": "AnimatedTearIcon()",
       "_callable": true,
       "_origin": "ast",
       "community": 8,
       "file_type": "code",
-      "norm_label": "subscribetochatmessages()",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L981"
+      "norm_label": "animatedtearicon()",
+      "source_file": "src/components/AnimatedUiIcons.jsx",
+      "source_location": "L98"
+    },
+    {
+      "id": "src_components_animateduiicons_animatedwarningicon",
+      "label": "AnimatedWarningIcon()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 8,
+      "file_type": "code",
+      "norm_label": "animatedwarningicon()",
+      "source_file": "src/components/AnimatedUiIcons.jsx",
+      "source_location": "L48"
+    },
+    {
+      "id": "src_components_comicpeekingcatbuddy_comicpeekingcatbuddy",
+      "label": "ComicPeekingCatBuddy()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 8,
+      "file_type": "code",
+      "norm_label": "comicpeekingcatbuddy()",
+      "source_file": "src/components/ComicPeekingCatBuddy.jsx",
+      "source_location": "L13"
+    },
+    {
+      "id": "src_components_sadcatguilttripmodal_sadcatguilttripmodal",
+      "label": "SadCatGuiltTripModal()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 8,
+      "file_type": "code",
+      "norm_label": "sadcatguilttripmodal()",
+      "source_file": "src/components/SadCatGuiltTripModal.jsx",
+      "source_location": "L13"
     },
     {
       "id": "src_app",
@@ -1055,7 +1231,7 @@
       "file_type": "code",
       "norm_label": "icons",
       "source_file": "src/App.jsx",
-      "source_location": "L56"
+      "source_location": "L62"
     },
     {
       "id": "src_components_customcursor",
@@ -1068,6 +1244,16 @@
       "source_location": "L1"
     },
     {
+      "id": "src_components_ditherbackground",
+      "label": "DitherBackground.jsx",
+      "_origin": "ast",
+      "community": 0,
+      "file_type": "code",
+      "norm_label": "ditherbackground.jsx",
+      "source_file": "src/components/DitherBackground.jsx",
+      "source_location": "L1"
+    },
+    {
       "id": "src_components_errorlogview",
       "label": "ErrorLogView.jsx",
       "_origin": "ast",
@@ -1075,6 +1261,26 @@
       "file_type": "code",
       "norm_label": "errorlogview.jsx",
       "source_file": "src/components/ErrorLogView.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_focustransitionportal",
+      "label": "FocusTransitionPortal.jsx",
+      "_origin": "ast",
+      "community": 0,
+      "file_type": "code",
+      "norm_label": "focustransitionportal.jsx",
+      "source_file": "src/components/FocusTransitionPortal.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_liquidintroloader",
+      "label": "LiquidIntroLoader.jsx",
+      "_origin": "ast",
+      "community": 0,
+      "file_type": "code",
+      "norm_label": "liquidintroloader.jsx",
+      "source_file": "src/components/LiquidIntroLoader.jsx",
       "source_location": "L1"
     },
     {
@@ -1158,64 +1364,304 @@
       "source_location": "L1"
     },
     {
-      "id": "src_components_authscreen",
-      "label": "AuthScreen.jsx",
+      "id": "src_components_achievementsview",
+      "label": "AchievementsView.jsx",
       "_origin": "ast",
       "community": 1,
       "file_type": "code",
-      "norm_label": "authscreen.jsx",
-      "source_file": "src/components/AuthScreen.jsx",
+      "norm_label": "achievementsview.jsx",
+      "source_file": "src/components/AchievementsView.jsx",
       "source_location": "L1"
     },
     {
-      "id": "src_components_avatarrenderer_avatar_presets",
-      "label": "AVATAR_PRESETS",
+      "id": "src_components_activitynotificationtoast",
+      "label": "ActivityNotificationToast.jsx",
       "_origin": "ast",
       "community": 1,
       "file_type": "code",
-      "norm_label": "avatar_presets",
+      "norm_label": "activitynotificationtoast.jsx",
+      "source_file": "src/components/ActivityNotificationToast.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_archived_studylounge_chatarchive",
+      "label": "StudyLounge_ChatArchive.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "studylounge_chatarchive.jsx",
+      "source_file": "src/components/archived/StudyLounge_ChatArchive.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_archived_studylounge_chatarchive_public_channels",
+      "label": "PUBLIC_CHANNELS",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "public_channels",
+      "source_file": "src/components/archived/StudyLounge_ChatArchive.jsx",
+      "source_location": "L6"
+    },
+    {
+      "id": "src_components_archived_studylounge_chatarchive_quick_chips",
+      "label": "QUICK_CHIPS",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "quick_chips",
+      "source_file": "src/components/archived/StudyLounge_ChatArchive.jsx",
+      "source_location": "L14"
+    },
+    {
+      "id": "src_components_aspiranticons",
+      "label": "AspirantIcons.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "aspiranticons.jsx",
+      "source_file": "src/components/AspirantIcons.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_aspiranticons_icons",
+      "label": "Icons",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "icons",
+      "source_file": "src/components/AspirantIcons.jsx",
+      "source_location": "L497"
+    },
+    {
+      "id": "src_components_aspiranticons_rawicons",
+      "label": "rawIcons",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "rawicons",
+      "source_file": "src/components/AspirantIcons.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_aspirantprofilecard",
+      "label": "AspirantProfileCard.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "aspirantprofilecard.jsx",
+      "source_file": "src/components/AspirantProfileCard.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_avatarrenderer",
+      "label": "AvatarRenderer.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "avatarrenderer.jsx",
       "source_file": "src/components/AvatarRenderer.jsx",
-      "source_location": "L4"
-    },
-    {
-      "id": "src_components_profileview",
-      "label": "ProfileView.jsx",
-      "_origin": "ast",
-      "community": 1,
-      "file_type": "code",
-      "norm_label": "profileview.jsx",
-      "source_file": "src/components/ProfileView.jsx",
       "source_location": "L1"
     },
     {
-      "id": "src_components_settingsview",
-      "label": "SettingsView.jsx",
+      "id": "src_components_communitychat",
+      "label": "CommunityChat.jsx",
       "_origin": "ast",
       "community": 1,
       "file_type": "code",
-      "norm_label": "settingsview.jsx",
-      "source_file": "src/components/SettingsView.jsx",
+      "norm_label": "communitychat.jsx",
+      "source_file": "src/components/CommunityChat.jsx",
       "source_location": "L1"
     },
     {
-      "id": "src_utils_firebase",
-      "label": "firebase.js",
+      "id": "src_components_communitychat_quick_chips",
+      "label": "QUICK_CHIPS",
       "_origin": "ast",
       "community": 1,
       "file_type": "code",
-      "norm_label": "firebase.js",
-      "source_file": "src/utils/firebase.js",
+      "norm_label": "quick_chips",
+      "source_file": "src/components/CommunityChat.jsx",
+      "source_location": "L6"
+    },
+    {
+      "id": "src_components_communitychat_tag_filters",
+      "label": "TAG_FILTERS",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "tag_filters",
+      "source_file": "src/components/CommunityChat.jsx",
+      "source_location": "L14"
+    },
+    {
+      "id": "src_components_cookieconsentbanner",
+      "label": "CookieConsentBanner.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "cookieconsentbanner.jsx",
+      "source_file": "src/components/CookieConsentBanner.jsx",
       "source_location": "L1"
     },
     {
-      "id": "src_utils_firebase_firebaseconfig",
-      "label": "firebaseConfig",
+      "id": "src_components_cubescanvas",
+      "label": "CubesCanvas.jsx",
       "_origin": "ast",
       "community": 1,
       "file_type": "code",
-      "norm_label": "firebaseconfig",
-      "source_file": "src/utils/firebase.js",
-      "source_location": "L30"
+      "norm_label": "cubescanvas.jsx",
+      "source_file": "src/components/CubesCanvas.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_dashboardview",
+      "label": "DashboardView.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "dashboardview.jsx",
+      "source_file": "src/components/DashboardView.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_floatingtimerwidget",
+      "label": "FloatingTimerWidget.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "floatingtimerwidget.jsx",
+      "source_file": "src/components/FloatingTimerWidget.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_glarehovercard",
+      "label": "GlareHoverCard.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "glarehovercard.jsx",
+      "source_file": "src/components/GlareHoverCard.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_headerprofiledropdown",
+      "label": "HeaderProfileDropdown.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "headerprofiledropdown.jsx",
+      "source_file": "src/components/HeaderProfileDropdown.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_mocktrackerview",
+      "label": "MockTrackerView.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "mocktrackerview.jsx",
+      "source_file": "src/components/MockTrackerView.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_peerinspectormodal",
+      "label": "PeerInspectorModal.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "peerinspectormodal.jsx",
+      "source_file": "src/components/PeerInspectorModal.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_prestigebadgeemblem",
+      "label": "PrestigeBadgeEmblem.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "prestigebadgeemblem.jsx",
+      "source_file": "src/components/PrestigeBadgeEmblem.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_studycontributionheatmap",
+      "label": "StudyContributionHeatmap.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "studycontributionheatmap.jsx",
+      "source_file": "src/components/StudyContributionHeatmap.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_studylounge",
+      "label": "StudyLounge.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "studylounge.jsx",
+      "source_file": "src/components/StudyLounge.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_termsandprivacymodal",
+      "label": "TermsAndPrivacyModal.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "termsandprivacymodal.jsx",
+      "source_file": "src/components/TermsAndPrivacyModal.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_timelineview",
+      "label": "TimelineView.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "timelineview.jsx",
+      "source_file": "src/components/TimelineView.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_utils_badgeutils",
+      "label": "badgeUtils.js",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "badgeutils.js",
+      "source_file": "src/utils/badgeUtils.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_utils_badgeutils_badge_definitions",
+      "label": "BADGE_DEFINITIONS",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "badge_definitions",
+      "source_file": "src/utils/badgeUtils.js",
+      "source_location": "L3"
+    },
+    {
+      "id": "src_utils_badgeutils_prestige_badge",
+      "label": "PRESTIGE_BADGE",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "code",
+      "norm_label": "prestige_badge",
+      "source_file": "src/utils/badgeUtils.js",
+      "source_location": "L182"
+    },
+    {
+      "id": "ref_react",
+      "label": "react",
+      "_origin": "ast",
+      "community": 1,
+      "file_type": "concept",
+      "norm_label": "react",
+      "source_file": ".oxlintrc.json",
+      "source_location": "L3"
     },
     {
       "id": "oxlintrc",
@@ -1348,214 +1794,54 @@
       "source_location": "L1"
     },
     {
-      "id": "src_components_achievementsview",
-      "label": "AchievementsView.jsx",
+      "id": "src_components_authscreen",
+      "label": "AuthScreen.jsx",
       "_origin": "ast",
       "community": 2,
       "file_type": "code",
-      "norm_label": "achievementsview.jsx",
-      "source_file": "src/components/AchievementsView.jsx",
+      "norm_label": "authscreen.jsx",
+      "source_file": "src/components/AuthScreen.jsx",
       "source_location": "L1"
     },
     {
-      "id": "src_components_activitynotificationtoast",
-      "label": "ActivityNotificationToast.jsx",
+      "id": "src_components_avatarrenderer_avatar_presets",
+      "label": "AVATAR_PRESETS",
       "_origin": "ast",
       "community": 2,
       "file_type": "code",
-      "norm_label": "activitynotificationtoast.jsx",
-      "source_file": "src/components/ActivityNotificationToast.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_aspiranticons",
-      "label": "AspirantIcons.jsx",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "aspiranticons.jsx",
-      "source_file": "src/components/AspirantIcons.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_aspiranticons_icons",
-      "label": "Icons",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "icons",
-      "source_file": "src/components/AspirantIcons.jsx",
-      "source_location": "L497"
-    },
-    {
-      "id": "src_components_aspiranticons_rawicons",
-      "label": "rawIcons",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "rawicons",
-      "source_file": "src/components/AspirantIcons.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_aspirantprofilecard",
-      "label": "AspirantProfileCard.jsx",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "aspirantprofilecard.jsx",
-      "source_file": "src/components/AspirantProfileCard.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_avatarrenderer",
-      "label": "AvatarRenderer.jsx",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "avatarrenderer.jsx",
+      "norm_label": "avatar_presets",
       "source_file": "src/components/AvatarRenderer.jsx",
+      "source_location": "L4"
+    },
+    {
+      "id": "src_components_profileview",
+      "label": "ProfileView.jsx",
+      "_origin": "ast",
+      "community": 2,
+      "file_type": "code",
+      "norm_label": "profileview.jsx",
+      "source_file": "src/components/ProfileView.jsx",
       "source_location": "L1"
     },
     {
-      "id": "src_components_cookieconsentbanner",
-      "label": "CookieConsentBanner.jsx",
+      "id": "src_utils_firebase",
+      "label": "firebase.js",
       "_origin": "ast",
       "community": 2,
       "file_type": "code",
-      "norm_label": "cookieconsentbanner.jsx",
-      "source_file": "src/components/CookieConsentBanner.jsx",
+      "norm_label": "firebase.js",
+      "source_file": "src/utils/firebase.js",
       "source_location": "L1"
     },
     {
-      "id": "src_components_dashboardview",
-      "label": "DashboardView.jsx",
+      "id": "src_utils_firebase_firebaseconfig",
+      "label": "firebaseConfig",
       "_origin": "ast",
       "community": 2,
       "file_type": "code",
-      "norm_label": "dashboardview.jsx",
-      "source_file": "src/components/DashboardView.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_floatingtimerwidget",
-      "label": "FloatingTimerWidget.jsx",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "floatingtimerwidget.jsx",
-      "source_file": "src/components/FloatingTimerWidget.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_headerprofiledropdown",
-      "label": "HeaderProfileDropdown.jsx",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "headerprofiledropdown.jsx",
-      "source_file": "src/components/HeaderProfileDropdown.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_mocktrackerview",
-      "label": "MockTrackerView.jsx",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "mocktrackerview.jsx",
-      "source_file": "src/components/MockTrackerView.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_peerinspectormodal",
-      "label": "PeerInspectorModal.jsx",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "peerinspectormodal.jsx",
-      "source_file": "src/components/PeerInspectorModal.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_studycontributionheatmap",
-      "label": "StudyContributionHeatmap.jsx",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "studycontributionheatmap.jsx",
-      "source_file": "src/components/StudyContributionHeatmap.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_studylounge",
-      "label": "StudyLounge.jsx",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "studylounge.jsx",
-      "source_file": "src/components/StudyLounge.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_termsandprivacymodal",
-      "label": "TermsAndPrivacyModal.jsx",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "termsandprivacymodal.jsx",
-      "source_file": "src/components/TermsAndPrivacyModal.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_timelineview",
-      "label": "TimelineView.jsx",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "timelineview.jsx",
-      "source_file": "src/components/TimelineView.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_utils_badgeutils",
-      "label": "badgeUtils.js",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "badgeutils.js",
-      "source_file": "src/utils/badgeUtils.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_utils_badgeutils_badge_definitions",
-      "label": "BADGE_DEFINITIONS",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "badge_definitions",
-      "source_file": "src/utils/badgeUtils.js",
-      "source_location": "L3"
-    },
-    {
-      "id": "src_utils_badgeutils_prestige_badge",
-      "label": "PRESTIGE_BADGE",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "code",
-      "norm_label": "prestige_badge",
-      "source_file": "src/utils/badgeUtils.js",
-      "source_location": "L182"
-    },
-    {
-      "id": "ref_react",
-      "label": "react",
-      "_origin": "ast",
-      "community": 2,
-      "file_type": "concept",
-      "norm_label": "react",
-      "source_file": ".oxlintrc.json",
-      "source_location": "L3"
+      "norm_label": "firebaseconfig",
+      "source_file": "src/utils/firebase.js",
+      "source_location": "L30"
     },
     {
       "id": "package",
@@ -2068,6 +2354,26 @@
       "source_location": "L31"
     },
     {
+      "id": "src_components_clickspark",
+      "label": "ClickSpark.jsx",
+      "_origin": "ast",
+      "community": 6,
+      "file_type": "code",
+      "norm_label": "clickspark.jsx",
+      "source_file": "src/components/ClickSpark.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_settingsview",
+      "label": "SettingsView.jsx",
+      "_origin": "ast",
+      "community": 6,
+      "file_type": "code",
+      "norm_label": "settingsview.jsx",
+      "source_file": "src/components/SettingsView.jsx",
+      "source_location": "L1"
+    },
+    {
       "id": "src_components_themeredeemmodal",
       "label": "ThemeRedeemModal.jsx",
       "_origin": "ast",
@@ -2228,64 +2534,44 @@
       "source_location": "L1"
     },
     {
-      "id": "src_components_archived_studylounge_chatarchive",
-      "label": "StudyLounge_ChatArchive.jsx",
+      "id": "src_components_animatedstreakbadge",
+      "label": "AnimatedStreakBadge.jsx",
       "_origin": "ast",
       "community": 8,
       "file_type": "code",
-      "norm_label": "studylounge_chatarchive.jsx",
-      "source_file": "src/components/archived/StudyLounge_ChatArchive.jsx",
+      "norm_label": "animatedstreakbadge.jsx",
+      "source_file": "src/components/AnimatedStreakBadge.jsx",
       "source_location": "L1"
     },
     {
-      "id": "src_components_archived_studylounge_chatarchive_public_channels",
-      "label": "PUBLIC_CHANNELS",
+      "id": "src_components_animateduiicons",
+      "label": "AnimatedUiIcons.jsx",
       "_origin": "ast",
       "community": 8,
       "file_type": "code",
-      "norm_label": "public_channels",
-      "source_file": "src/components/archived/StudyLounge_ChatArchive.jsx",
-      "source_location": "L6"
-    },
-    {
-      "id": "src_components_archived_studylounge_chatarchive_quick_chips",
-      "label": "QUICK_CHIPS",
-      "_origin": "ast",
-      "community": 8,
-      "file_type": "code",
-      "norm_label": "quick_chips",
-      "source_file": "src/components/archived/StudyLounge_ChatArchive.jsx",
-      "source_location": "L14"
-    },
-    {
-      "id": "src_components_communitychat",
-      "label": "CommunityChat.jsx",
-      "_origin": "ast",
-      "community": 8,
-      "file_type": "code",
-      "norm_label": "communitychat.jsx",
-      "source_file": "src/components/CommunityChat.jsx",
+      "norm_label": "animateduiicons.jsx",
+      "source_file": "src/components/AnimatedUiIcons.jsx",
       "source_location": "L1"
     },
     {
-      "id": "src_components_communitychat_quick_chips",
-      "label": "QUICK_CHIPS",
+      "id": "src_components_comicpeekingcatbuddy",
+      "label": "ComicPeekingCatBuddy.jsx",
       "_origin": "ast",
       "community": 8,
       "file_type": "code",
-      "norm_label": "quick_chips",
-      "source_file": "src/components/CommunityChat.jsx",
-      "source_location": "L6"
+      "norm_label": "comicpeekingcatbuddy.jsx",
+      "source_file": "src/components/ComicPeekingCatBuddy.jsx",
+      "source_location": "L1"
     },
     {
-      "id": "src_components_communitychat_tag_filters",
-      "label": "TAG_FILTERS",
+      "id": "src_components_sadcatguilttripmodal",
+      "label": "SadCatGuiltTripModal.jsx",
       "_origin": "ast",
       "community": 8,
       "file_type": "code",
-      "norm_label": "tag_filters",
-      "source_file": "src/components/CommunityChat.jsx",
-      "source_location": "L14"
+      "norm_label": "sadcatguilttripmodal.jsx",
+      "source_file": "src/components/SadCatGuiltTripModal.jsx",
+      "source_location": "L1"
     },
     {
       "id": "public_manifest",
@@ -2388,7 +2674,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L1036",
+      "source_location": "L1049",
       "weight": 1.0
     },
     {
@@ -2400,7 +2686,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L1066",
+      "source_location": "L1079",
       "weight": 1.0
     },
     {
@@ -2412,7 +2698,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L1691",
+      "source_location": "L1759",
       "weight": 1.0
     },
     {
@@ -2424,7 +2710,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L217",
+      "source_location": "L223",
       "weight": 1.0
     },
     {
@@ -2436,7 +2722,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L221",
+      "source_location": "L227",
       "weight": 1.0
     },
     {
@@ -2448,7 +2734,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L281",
+      "source_location": "L287",
       "weight": 1.0
     },
     {
@@ -2460,7 +2746,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L308",
+      "source_location": "L314",
       "weight": 1.0
     },
     {
@@ -2472,7 +2758,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L380",
+      "source_location": "L393",
       "weight": 1.0
     },
     {
@@ -2484,7 +2770,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L448",
+      "source_location": "L461",
       "weight": 1.0
     },
     {
@@ -2496,7 +2782,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L472",
+      "source_location": "L485",
       "weight": 1.0
     },
     {
@@ -2508,7 +2794,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L480",
+      "source_location": "L493",
       "weight": 1.0
     },
     {
@@ -2520,7 +2806,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L482",
+      "source_location": "L495",
       "weight": 1.0
     },
     {
@@ -2532,7 +2818,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L492",
+      "source_location": "L505",
       "weight": 1.0
     },
     {
@@ -2544,7 +2830,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L504",
+      "source_location": "L517",
       "weight": 1.0
     },
     {
@@ -2556,7 +2842,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L583",
+      "source_location": "L596",
       "weight": 1.0
     },
     {
@@ -2568,7 +2854,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L589",
+      "source_location": "L602",
       "weight": 1.0
     },
     {
@@ -2580,7 +2866,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L593",
+      "source_location": "L606",
       "weight": 1.0
     },
     {
@@ -2592,7 +2878,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L599",
+      "source_location": "L612",
       "weight": 1.0
     },
     {
@@ -2604,7 +2890,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L628",
+      "source_location": "L641",
       "weight": 1.0
     },
     {
@@ -2616,7 +2902,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L632",
+      "source_location": "L645",
       "weight": 1.0
     },
     {
@@ -2628,7 +2914,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L726",
+      "source_location": "L739",
       "weight": 1.0
     },
     {
@@ -2640,7 +2926,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L796",
+      "source_location": "L809",
       "weight": 1.0
     },
     {
@@ -2652,7 +2938,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/App.jsx",
-      "source_location": "L828",
+      "source_location": "L841",
       "weight": 1.0
     },
     {
@@ -3072,7 +3358,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L39",
+      "source_location": "L46",
       "weight": 1.0
     },
     {
@@ -3084,7 +3370,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L61",
+      "source_location": "L68",
       "weight": 1.0
     },
     {
@@ -3096,7 +3382,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L79",
+      "source_location": "L86",
       "weight": 1.0
     },
     {
@@ -3613,6 +3899,18 @@
       "context": "call",
       "source_file": "src/utils/themeRedemption.js",
       "source_location": "L113",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_ditherbackground_ditherbackground",
+      "target": "src_components_ditherbackground_ditherbackground_createshader",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/components/DitherBackground.jsx",
+      "source_location": "L120",
       "weight": 1.0
     },
     {
@@ -4385,7 +4683,7 @@
     },
     {
       "source": "src_app",
-      "target": "src_utils_smoothscroll_initsmoothscroll",
+      "target": "src_components_ditherbackground_ditherbackground",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -4393,6 +4691,78 @@
       "context": "import",
       "source_file": "src/App.jsx",
       "source_location": "L53",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app",
+      "target": "src_components_liquidintroloader_liquidintroloader",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/App.jsx",
+      "source_location": "L54",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app",
+      "target": "src_components_clickspark_clickspark",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/App.jsx",
+      "source_location": "L55",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app",
+      "target": "src_components_animatedstreakbadge_animatedstreakbadge",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/App.jsx",
+      "source_location": "L56",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app",
+      "target": "src_components_comicpeekingcatbuddy_comicpeekingcatbuddy",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/App.jsx",
+      "source_location": "L57",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app",
+      "target": "src_components_focustransitionportal_focustransitionportal",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/App.jsx",
+      "source_location": "L58",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app",
+      "target": "src_utils_smoothscroll_initsmoothscroll",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/App.jsx",
+      "source_location": "L59",
       "weight": 1.0
     },
     {
@@ -4404,7 +4774,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/App.jsx",
-      "source_location": "L53",
+      "source_location": "L59",
       "weight": 1.0
     },
     {
@@ -4416,7 +4786,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/App.jsx",
-      "source_location": "L54",
+      "source_location": "L60",
       "weight": 1.0
     },
     {
@@ -4428,7 +4798,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/App.jsx",
-      "source_location": "L54",
+      "source_location": "L60",
       "weight": 1.0
     },
     {
@@ -4440,7 +4810,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/App.jsx",
-      "source_location": "L54",
+      "source_location": "L60",
       "weight": 1.0
     },
     {
@@ -4468,6 +4838,42 @@
       "weight": 1.0
     },
     {
+      "source": "src_components_achievementsview",
+      "target": "src_components_glarehovercard_glarehovercard",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/AchievementsView.jsx",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_achievementsview",
+      "target": "src_components_cubescanvas_cubescanvas",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/AchievementsView.jsx",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_achievementsview",
+      "target": "src_components_prestigebadgeemblem_prestigebadgeemblem",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/AchievementsView.jsx",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
       "source": "src_components_activitynotificationtoast",
       "target": "src_components_aspiranticons_icons",
       "relation": "imports",
@@ -4476,6 +4882,18 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/ActivityNotificationToast.jsx",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_animatedstreakbadge",
+      "target": "src_components_animateduiicons_animatedflameicon",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/AnimatedStreakBadge.jsx",
       "source_location": "L2",
       "weight": 1.0
     },
@@ -4644,6 +5062,30 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/AvatarRenderer.jsx",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_clickspark",
+      "target": "src_components_themeselectordropdown_themes",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/ClickSpark.jsx",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_comicpeekingcatbuddy",
+      "target": "src_components_animateduiicons_animatedpawicon",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/ComicPeekingCatBuddy.jsx",
       "source_location": "L2",
       "weight": 1.0
     },
@@ -5092,6 +5534,54 @@
       "weight": 1.0
     },
     {
+      "source": "src_components_sadcatguilttripmodal",
+      "target": "src_components_aspiranticons_icons",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/SadCatGuiltTripModal.jsx",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_sadcatguilttripmodal",
+      "target": "src_components_animateduiicons_animatedflameicon",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/SadCatGuiltTripModal.jsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_sadcatguilttripmodal",
+      "target": "src_components_animateduiicons_animatedtearicon",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/SadCatGuiltTripModal.jsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_sadcatguilttripmodal",
+      "target": "src_components_animateduiicons_animatedwarningicon",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/SadCatGuiltTripModal.jsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
       "source": "src_components_settingsview",
       "target": "src_components_aspiranticons_icons",
       "relation": "imports",
@@ -5268,7 +5758,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L2",
+      "source_location": "L3",
       "weight": 1.0
     },
     {
@@ -5280,7 +5770,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L3",
+      "source_location": "L4",
       "weight": 1.0
     },
     {
@@ -5292,7 +5782,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L4",
+      "source_location": "L5",
       "weight": 1.0
     },
     {
@@ -5304,7 +5794,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L5",
+      "source_location": "L6",
       "weight": 1.0
     },
     {
@@ -5316,7 +5806,19 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L5",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_studytimerview",
+      "target": "src_components_sadcatguilttripmodal_sadcatguilttripmodal",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/StudyTimerView.jsx",
+      "source_location": "L7",
       "weight": 1.0
     },
     {
@@ -6029,7 +6531,7 @@
     },
     {
       "source": "src_app",
-      "target": "src_utils_smoothscroll",
+      "target": "src_components_ditherbackground",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -6041,7 +6543,7 @@
     },
     {
       "source": "src_app",
-      "target": "src_utils_gsapanimations",
+      "target": "src_components_liquidintroloader",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -6049,6 +6551,78 @@
       "context": "import",
       "source_file": "src/App.jsx",
       "source_location": "L54",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app",
+      "target": "src_components_clickspark",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/App.jsx",
+      "source_location": "L55",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app",
+      "target": "src_components_animatedstreakbadge",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/App.jsx",
+      "source_location": "L56",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app",
+      "target": "src_components_comicpeekingcatbuddy",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/App.jsx",
+      "source_location": "L57",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app",
+      "target": "src_components_focustransitionportal",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/App.jsx",
+      "source_location": "L58",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app",
+      "target": "src_utils_smoothscroll",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/App.jsx",
+      "source_location": "L59",
+      "weight": 1.0
+    },
+    {
+      "source": "src_app",
+      "target": "src_utils_gsapanimations",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/App.jsx",
+      "source_location": "L60",
       "weight": 1.0
     },
     {
@@ -6088,6 +6662,42 @@
       "weight": 1.0
     },
     {
+      "source": "src_components_achievementsview",
+      "target": "src_components_glarehovercard",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/AchievementsView.jsx",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_achievementsview",
+      "target": "src_components_cubescanvas",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/AchievementsView.jsx",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_achievementsview",
+      "target": "src_components_prestigebadgeemblem",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/AchievementsView.jsx",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
       "source": "src_components_activitynotificationtoast",
       "target": "ref_react",
       "relation": "imports_from",
@@ -6109,6 +6719,42 @@
       "context": "import",
       "source_file": "src/components/ActivityNotificationToast.jsx",
       "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_animatedstreakbadge",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/AnimatedStreakBadge.jsx",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_animatedstreakbadge",
+      "target": "src_components_animateduiicons",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/AnimatedStreakBadge.jsx",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_animateduiicons",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/AnimatedUiIcons.jsx",
+      "source_location": "L1",
       "weight": 1.0
     },
     {
@@ -6292,6 +6938,54 @@
       "weight": 1.0
     },
     {
+      "source": "src_components_clickspark",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/ClickSpark.jsx",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_clickspark",
+      "target": "src_components_themeselectordropdown",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/ClickSpark.jsx",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_comicpeekingcatbuddy",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/ComicPeekingCatBuddy.jsx",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_comicpeekingcatbuddy",
+      "target": "src_components_animateduiicons",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/ComicPeekingCatBuddy.jsx",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
       "source": "src_components_communitychat",
       "target": "ref_react",
       "relation": "imports_from",
@@ -6361,6 +7055,18 @@
       "context": "import",
       "source_file": "src/components/CookieConsentBanner.jsx",
       "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_cubescanvas",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/CubesCanvas.jsx",
+      "source_location": "L1",
       "weight": 1.0
     },
     {
@@ -6472,6 +7178,18 @@
       "weight": 1.0
     },
     {
+      "source": "src_components_ditherbackground",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/DitherBackground.jsx",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
       "source": "src_components_errorlogview",
       "target": "ref_react",
       "relation": "imports_from",
@@ -6508,6 +7226,30 @@
       "weight": 1.0
     },
     {
+      "source": "src_components_focustransitionportal",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/FocusTransitionPortal.jsx",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_glarehovercard",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/GlareHoverCard.jsx",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
       "source": "src_components_headerprofiledropdown",
       "target": "ref_react",
       "relation": "imports_from",
@@ -6541,6 +7283,18 @@
       "context": "import",
       "source_file": "src/components/HeaderProfileDropdown.jsx",
       "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_liquidintroloader",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/LiquidIntroLoader.jsx",
+      "source_location": "L1",
       "weight": 1.0
     },
     {
@@ -6640,6 +7394,18 @@
       "weight": 1.0
     },
     {
+      "source": "src_components_prestigebadgeemblem",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/PrestigeBadgeEmblem.jsx",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
       "source": "src_components_profileview",
       "target": "ref_react",
       "relation": "imports_from",
@@ -6697,6 +7463,42 @@
       "context": "import",
       "source_file": "src/components/ProfileView.jsx",
       "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_sadcatguilttripmodal",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/SadCatGuiltTripModal.jsx",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_sadcatguilttripmodal",
+      "target": "src_components_aspiranticons",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/SadCatGuiltTripModal.jsx",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_sadcatguilttripmodal",
+      "target": "src_components_animateduiicons",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/SadCatGuiltTripModal.jsx",
+      "source_location": "L4",
       "weight": 1.0
     },
     {
@@ -6864,7 +7666,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L2",
+      "source_location": "L3",
       "weight": 1.0
     },
     {
@@ -6876,7 +7678,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L3",
+      "source_location": "L4",
       "weight": 1.0
     },
     {
@@ -6888,7 +7690,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L4",
+      "source_location": "L5",
       "weight": 1.0
     },
     {
@@ -6900,7 +7702,19 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L5",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_studytimerview",
+      "target": "src_components_sadcatguilttripmodal",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/StudyTimerView.jsx",
+      "source_location": "L7",
       "weight": 1.0
     },
     {
@@ -7694,7 +8508,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/App.jsx",
-      "source_location": "L216",
+      "source_location": "L222",
       "weight": 1.0
     },
     {
@@ -7705,7 +8519,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/App.jsx",
-      "source_location": "L56",
+      "source_location": "L62",
       "weight": 1.0
     },
     {
@@ -7716,7 +8530,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/AchievementsView.jsx",
-      "source_location": "L6",
+      "source_location": "L9",
       "weight": 1.0
     },
     {
@@ -7728,6 +8542,72 @@
       "confidence_score": 1.0,
       "source_file": "src/components/ActivityNotificationToast.jsx",
       "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_animatedstreakbadge",
+      "target": "src_components_animatedstreakbadge_animatedstreakbadge",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/AnimatedStreakBadge.jsx",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_animateduiicons",
+      "target": "src_components_animateduiicons_animatedtargeticon",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/AnimatedUiIcons.jsx",
+      "source_location": "L119",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_animateduiicons",
+      "target": "src_components_animateduiicons_animatedwarningicon",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/AnimatedUiIcons.jsx",
+      "source_location": "L48",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_animateduiicons",
+      "target": "src_components_animateduiicons_animatedpawicon",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/AnimatedUiIcons.jsx",
+      "source_location": "L73",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_animateduiicons",
+      "target": "src_components_animateduiicons_animatedflameicon",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/AnimatedUiIcons.jsx",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_animateduiicons",
+      "target": "src_components_animateduiicons_animatedtearicon",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/AnimatedUiIcons.jsx",
+      "source_location": "L98",
       "weight": 1.0
     },
     {
@@ -7841,6 +8721,28 @@
       "weight": 1.0
     },
     {
+      "source": "src_components_clickspark",
+      "target": "src_components_clickspark_clickspark",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/ClickSpark.jsx",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_comicpeekingcatbuddy",
+      "target": "src_components_comicpeekingcatbuddy_comicpeekingcatbuddy",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/ComicPeekingCatBuddy.jsx",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
       "source": "src_components_communitychat",
       "target": "src_components_communitychat_tag_filters",
       "relation": "contains",
@@ -7885,6 +8787,17 @@
       "weight": 1.0
     },
     {
+      "source": "src_components_cubescanvas",
+      "target": "src_components_cubescanvas_cubescanvas",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/CubesCanvas.jsx",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
       "source": "src_components_customcursor",
       "target": "src_components_customcursor_customcursor",
       "relation": "contains",
@@ -7918,6 +8831,17 @@
       "weight": 1.0
     },
     {
+      "source": "src_components_ditherbackground",
+      "target": "src_components_ditherbackground_ditherbackground",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/DitherBackground.jsx",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
       "source": "src_components_errorlogview",
       "target": "src_components_errorlogview_errorlogview",
       "relation": "contains",
@@ -7940,6 +8864,28 @@
       "weight": 1.0
     },
     {
+      "source": "src_components_focustransitionportal",
+      "target": "src_components_focustransitionportal_focustransitionportal",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/FocusTransitionPortal.jsx",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_glarehovercard",
+      "target": "src_components_glarehovercard_glarehovercard",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/GlareHoverCard.jsx",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
       "source": "src_components_headerprofiledropdown",
       "target": "src_components_headerprofiledropdown_headerprofiledropdown",
       "relation": "contains",
@@ -7948,6 +8894,17 @@
       "confidence_score": 1.0,
       "source_file": "src/components/HeaderProfileDropdown.jsx",
       "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_liquidintroloader",
+      "target": "src_components_liquidintroloader_liquidintroloader",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/LiquidIntroLoader.jsx",
+      "source_location": "L13",
       "weight": 1.0
     },
     {
@@ -7973,6 +8930,17 @@
       "weight": 1.0
     },
     {
+      "source": "src_components_prestigebadgeemblem",
+      "target": "src_components_prestigebadgeemblem_prestigebadgeemblem",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/PrestigeBadgeEmblem.jsx",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
       "source": "src_components_profileview",
       "target": "src_components_profileview_profileview",
       "relation": "contains",
@@ -7981,6 +8949,17 @@
       "confidence_score": 1.0,
       "source_file": "src/components/ProfileView.jsx",
       "source_location": "L18",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_sadcatguilttripmodal",
+      "target": "src_components_sadcatguilttripmodal_sadcatguilttripmodal",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/SadCatGuiltTripModal.jsx",
+      "source_location": "L13",
       "weight": 1.0
     },
     {
@@ -8035,7 +9014,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/StudyTimerView.jsx",
-      "source_location": "L7",
+      "source_location": "L9",
       "weight": 1.0
     },
     {
@@ -8956,5 +9935,6 @@
       "weight": 1.0
     }
   ],
-  "hyperedges": []
+  "hyperedges": [],
+  "built_at_commit": "e655b3864f00fee1b3aec60f623af3b8172e4cdf"
 }
