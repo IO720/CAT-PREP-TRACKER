@@ -1317,19 +1317,24 @@ button, input, select, textarea {
 }
 
 .streak-bold-val {
-  font-family: 'Syne', sans-serif;
-  font-size: 13px;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-size: 13.5px;
   font-weight: 800;
   color: #f97316;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  transform: translateY(-0.5px);
 }
 
 .streak-unit-label {
-  font-family: var(--font-sans);
-  font-size: 11px;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-secondary);
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Floating Milestone Popover */
@@ -4435,11 +4440,41 @@ html, body {
 
   .theme-popover-menu {
     position: fixed !important;
-    top: 56px !important;
-    right: 12px !important;
+    top: calc(54px + env(safe-area-inset-top, 0px)) !important;
+    right: 10px !important;
     left: auto !important;
-    width: 240px !important;
+    width: 320px !important;
+    max-width: calc(100vw - 20px) !important;
     z-index: 2200 !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8) !important;
+  }
+
+  .popover-themes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    padding: 10px !important;
+    max-height: min(340px, 60vh) !important;
+  }
+
+  .theme-grid-card {
+    padding: 8px !important;
+    min-width: 0 !important;
+  }
+
+  .theme-card-name {
+    font-size: 11px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 0 !important;
+  }
+
+  .theme-card-info {
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 4px !important;
   }
 
   .theme-switch-toast-overlay {
@@ -5778,6 +5813,158 @@ html, body {
     max-width: 145px !important;
     padding: 8px 10px !important;
     font-size: 11px !important;
+  }
+}
+
+/* Comic Edge Peek Stance (Paws & Ears with "Will you continue?") */
+.comic-edge-peek-container {
+  position: fixed;
+  right: 20px;
+  bottom: 0px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  pointer-events: auto;
+  animation: peekSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes peekSlideUp {
+  0% { transform: translateY(40px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.comic-peek-dialogue-bubble {
+  position: relative;
+  background: var(--bg-primary, rgba(15, 23, 42, 0.96));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--accent-color, #38bdf8);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 20px var(--accent-glow, rgba(56, 189, 248, 0.25));
+  max-width: 210px;
+  margin-bottom: 2px;
+}
+
+.comic-peek-bubble-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.comic-peek-title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--accent-color, #38bdf8);
+  letter-spacing: -0.01em;
+}
+
+.comic-peek-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.comic-peek-close-btn:hover {
+  color: var(--text-primary);
+}
+
+.comic-peek-subtitle {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 4px 0 10px 0;
+  line-height: 1.35;
+}
+
+.comic-peek-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.comic-peek-continue-btn {
+  flex: 1;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--accent-color, #38bdf8);
+  color: #000000;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.comic-peek-continue-btn:hover {
+  transform: translateY(-1px);
+}
+
+.comic-peek-cancel-btn {
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.08));
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.comic-peek-bubble-tail {
+  position: absolute;
+  bottom: -6px;
+  right: 50px;
+  width: 10px;
+  height: 10px;
+  background: var(--bg-primary, rgba(15, 23, 42, 0.96));
+  border-right: 1px solid var(--accent-color, #38bdf8);
+  border-bottom: 1px solid var(--accent-color, #38bdf8);
+  transform: rotate(45deg);
+}
+
+.comic-ears-paws-peek-body {
+  width: 120px;
+  height: 72px;
+  cursor: pointer;
+  pointer-events: auto;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.comic-ears-paws-peek-body:hover {
+  transform: translateY(-4px);
+}
+
+.cat-ears-paws-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+@media (max-width: 768px) {
+  .comic-edge-peek-container {
+    right: 12px;
+    bottom: calc(70px + max(8px, env(safe-area-inset-bottom, 8px)));
+  }
+  .comic-peek-dialogue-bubble {
+    max-width: 190px;
+    padding: 10px 12px;
+  }
+  .comic-ears-paws-peek-body {
+    width: 105px;
+    height: 64px;
   }
 }
 

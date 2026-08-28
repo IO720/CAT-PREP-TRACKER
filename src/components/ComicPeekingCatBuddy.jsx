@@ -20,6 +20,7 @@ export default function ComicPeekingCatBuddy({
   const [isHovered, setIsHovered] = useState(false);
   const [speechIdx, setSpeechIdx] = useState(0);
   const [isBubbleVisible, setIsBubbleVisible] = useState(true);
+  const [isPeekingPrompt, setIsPeekingPrompt] = useState(false);
 
   const comicCallouts = [
     { sound: "*PSST!*", text: "Hey! A 25-minute sprint today makes all the difference. Come study!" },
@@ -67,6 +68,201 @@ export default function ComicPeekingCatBuddy({
     );
   }
 
+  // Edge Peek Stance (After initial click: just paws, ears, and head showing with "Will you continue?")
+  if (isPeekingPrompt) {
+    return (
+      <div className="comic-edge-peek-container animate-slide-up">
+        {/* Sleek Glassmorphic "Will you continue?" Speech Bubble */}
+        <div className="comic-peek-dialogue-bubble">
+          <div className="comic-peek-bubble-top">
+            <span className="comic-peek-title">Will you continue?</span>
+            <button 
+              type="button" 
+              className="comic-peek-close-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsPeekingPrompt(false);
+              }}
+              title="Close"
+            >
+              ×
+            </button>
+          </div>
+          <p className="comic-peek-subtitle">
+            Ready to lock in for your {timerState?.subject || 'Quant'} session?
+          </p>
+          <div className="comic-peek-btn-row">
+            <button 
+              type="button" 
+              className="comic-peek-continue-btn"
+              onClick={() => {
+                setIsPeekingPrompt(false);
+                onOpenTimer();
+              }}
+            >
+              Continue ➔
+            </button>
+            <button 
+              type="button" 
+              className="comic-peek-cancel-btn"
+              onClick={() => setIsPeekingPrompt(false)}
+            >
+              Not now
+            </button>
+          </div>
+          <div className="comic-peek-bubble-tail" />
+        </div>
+
+        {/* Paws, Ears, and Top of Head Peeking Over the Edge (Identical Scholar Cat) */}
+        <div 
+          className="comic-ears-paws-peek-body"
+          onClick={() => {
+            setIsPeekingPrompt(false);
+            onOpenTimer();
+          }}
+          role="button"
+          tabIndex={0}
+          title="Click to continue focus session"
+        >
+          <svg viewBox="0 0 160 96" className="cat-ears-paws-svg" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="edgePeekHeadGrad" x1="20" y1="10" x2="140" y2="90" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="var(--accent-color, #38bdf8)" />
+                <stop offset="50%" stopColor="var(--accent-secondary, #818cf8)" />
+                <stop offset="100%" stopColor="var(--accent-color, #38bdf8)" stopOpacity="0.95" />
+              </linearGradient>
+              <linearGradient id="edgePeekEarGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#ec4899" />
+                <stop offset="100%" stopColor="var(--accent-color, #38bdf8)" />
+              </linearGradient>
+            </defs>
+
+            {/* Left Ear */}
+            <polygon points="46,52 56,16 74,44" fill="var(--accent-color, #38bdf8)" />
+            <polygon points="51,48 58,23 70,44" fill="url(#edgePeekEarGrad)" opacity="0.85" />
+
+            {/* Right Ear */}
+            <polygon points="114,52 104,16 86,44" fill="var(--accent-secondary, #c084fc)" />
+            <polygon points="109,48 102,23 90,44" fill="url(#edgePeekEarGrad)" opacity="0.85" />
+
+            {/* Scholar Head Silhouette */}
+            <circle cx="80" cy="62" r="34" fill="url(#edgePeekHeadGrad)" />
+
+            {/* Glowing Focus Headphones Arch */}
+            <path 
+              d="M46 62 C46 38, 114 38, 114 62" 
+              stroke="#f1f5f9" 
+              strokeWidth="3.5" 
+              strokeLinecap="round" 
+              fill="none" 
+            />
+            {/* Left Ear Cup */}
+            <rect 
+              x="39" 
+              y="52" 
+              width="11" 
+              height="20" 
+              rx="5.5" 
+              fill="#0f172a" 
+              stroke="var(--accent-color, #38bdf8)" 
+              strokeWidth="2" 
+            />
+            {/* Right Ear Cup */}
+            <rect 
+              x="110" 
+              y="52" 
+              width="11" 
+              height="20" 
+              rx="5.5" 
+              fill="#0f172a" 
+              stroke="var(--accent-secondary, #c084fc)" 
+              strokeWidth="2" 
+            />
+
+            {/* Identical Round Scholar Glasses */}
+            <circle cx="68" cy="62" r="9.5" fill="rgba(15, 23, 42, 0.65)" stroke="#f8fafc" strokeWidth="1.8" />
+            <circle cx="92" cy="62" r="9.5" fill="rgba(15, 23, 42, 0.65)" stroke="#f8fafc" strokeWidth="1.8" />
+            <line x1="77.5" y1="62" x2="82.5" y2="62" stroke="#f8fafc" strokeWidth="1.8" />
+
+            {/* Expressive Emotive Eyes (Sparkling inside glasses) */}
+            <circle cx="68" cy="62" r="3.2" fill="var(--accent-color, #38bdf8)" />
+            <circle cx="69.2" cy="60.8" r="1.1" fill="#ffffff" />
+            <circle cx="67" cy="63" r="0.5" fill="#ffffff" />
+
+            <circle cx="92" cy="62" r="3.2" fill="var(--accent-color, #38bdf8)" />
+            <circle cx="93.2" cy="60.8" r="1.1" fill="#ffffff" />
+            <circle cx="91" cy="63" r="0.5" fill="#ffffff" />
+
+            {/* Rosy Blushing Cheeks */}
+            <ellipse cx="57" cy="69" rx="4" ry="2.2" fill="#f472b6" opacity="0.6" />
+            <ellipse cx="103" cy="69" rx="4" ry="2.2" fill="#f472b6" opacity="0.6" />
+
+            {/* Cute Nose & Happy Mouth (:3) */}
+            <circle cx="80" cy="70" r="1.8" fill="#f8fafc" />
+            <path 
+              d="M76 72 Q80 75 80 72 Q80 75 84 72" 
+              stroke="#f8fafc" 
+              strokeWidth="1.2" 
+              strokeLinecap="round" 
+              fill="none" 
+            />
+
+            {/* Soft Whiskers */}
+            <line x1="51" y1="69" x2="59" y2="70" stroke="rgba(255,255,255,0.6)" strokeWidth="0.9" strokeLinecap="round" />
+            <line x1="51" y1="73" x2="59" y2="73" stroke="rgba(255,255,255,0.6)" strokeWidth="0.9" strokeLinecap="round" />
+            <line x1="109" y1="69" x2="101" y2="70" stroke="rgba(255,255,255,0.6)" strokeWidth="0.9" strokeLinecap="round" />
+            <line x1="109" y1="73" x2="101" y2="73" stroke="rgba(255,255,255,0.6)" strokeWidth="0.9" strokeLinecap="round" />
+
+            {/* Two Front Paws Resting and Gripping the Edge (Matching Cat Body Gradient) */}
+            {/* Left Paw */}
+            <g className="scholar-peek-paw-left">
+              <ellipse 
+                cx="52" 
+                cy="84" 
+                rx="11" 
+                ry="7.5" 
+                fill="url(#edgePeekHeadGrad)" 
+                stroke="rgba(255, 255, 255, 0.35)" 
+                strokeWidth="1.4" 
+              />
+              {/* Soft white mitt highlight */}
+              <ellipse cx="52" cy="85.5" rx="7" ry="4" fill="rgba(255, 255, 255, 0.15)" />
+              {/* Toe indentations */}
+              <line x1="48.5" y1="81" x2="48.5" y2="87" stroke="rgba(255, 255, 255, 0.4)" strokeWidth="1" strokeLinecap="round" />
+              <line x1="55.5" y1="81" x2="55.5" y2="87" stroke="rgba(255, 255, 255, 0.4)" strokeWidth="1" strokeLinecap="round" />
+              {/* Pink Toe Beans */}
+              <circle cx="46" cy="84" r="1.5" fill="#f472b6" />
+              <circle cx="52" cy="82" r="1.6" fill="#f472b6" />
+              <circle cx="58" cy="84" r="1.5" fill="#f472b6" />
+            </g>
+
+            {/* Right Paw */}
+            <g className="scholar-peek-paw-right">
+              <ellipse 
+                cx="108" 
+                cy="84" 
+                rx="11" 
+                ry="7.5" 
+                fill="url(#edgePeekHeadGrad)" 
+                stroke="rgba(255, 255, 255, 0.35)" 
+                strokeWidth="1.4" 
+              />
+              {/* Soft white mitt highlight */}
+              <ellipse cx="108" cy="85.5" rx="7" ry="4" fill="rgba(255, 255, 255, 0.15)" />
+              {/* Toe indentations */}
+              <line x1="104.5" y1="81" x2="104.5" y2="87" stroke="rgba(255, 255, 255, 0.4)" strokeWidth="1" strokeLinecap="round" />
+              <line x1="111.5" y1="81" x2="111.5" y2="87" stroke="rgba(255, 255, 255, 0.4)" strokeWidth="1" strokeLinecap="round" />
+              {/* Pink Toe Beans */}
+              <circle cx="102" cy="84" r="1.5" fill="#f472b6" />
+              <circle cx="108" cy="82" r="1.6" fill="#f472b6" />
+              <circle cx="114" cy="84" r="1.5" fill="#f472b6" />
+            </g>
+          </svg>
+        </div>
+      </div>
+    );
+  }
+
   const currentCallout = isTimerRunning 
     ? { sound: "*FOCUSED!*", text: `Studying ${timerState?.subject || 'Quant'} alongside you! Keep up the momentum!` }
     : comicCallouts[speechIdx];
@@ -83,7 +279,7 @@ export default function ComicPeekingCatBuddy({
       {showBubble && (
         <div 
           className={`comic-speech-bubble ${isHovered ? 'hover-expanded' : ''}`}
-          onClick={onOpenTimer}
+          onClick={() => setIsPeekingPrompt(true)}
           role="button"
           tabIndex={0}
           title="Click to launch Study Session"
@@ -116,7 +312,7 @@ export default function ComicPeekingCatBuddy({
       {/* Identical Vector Scholar Cat Peeking In with Rich Emotion & Beckoning Paw */}
       <div 
         className="comic-cat-peeking-body" 
-        onClick={onOpenTimer}
+        onClick={() => setIsPeekingPrompt(true)}
         role="button"
         tabIndex={0}
         title="Cat Study Buddy - Click to open Study Timer"
