@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { loadState, saveState, exportStateAsFile, getInitialState, mergeTrackerStates } from './utils/storage';
 import { 
   auth, 

@@ -1,7 +1,9 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-gsap.registerPlugin(ScrollTrigger);
+if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 /**
  * Initializes scroll clip-cut triggers and refreshes layout without any container fade/translation.
