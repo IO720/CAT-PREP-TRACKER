@@ -1,8 +1,9 @@
 const rawIcons = {
   Logo: ({ size = 20, className = "" }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" className={className}>
-      <path d="M12 3L21 19H3L12 3Z" />
-      <circle cx="12" cy="13.5" r="2" fill="currentColor" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M17 7.5C15.2 5.5 12.8 4.5 10 5C6.5 5.6 4 8.7 4 12.3C4 16 7 19 11 19C14 19 16.5 17.5 18 15" />
+      <path d="M12 6L19 9L15 10.5L18 14L13 11L15 9.5L12 6Z" fill="currentColor" strokeWidth="1" />
+      <circle cx="10.5" cy="12" r="1.5" fill="currentColor" />
     </svg>
   ),
   Close: ({ size = 16, className = "" }) => (

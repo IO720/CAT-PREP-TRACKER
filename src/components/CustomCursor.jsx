@@ -1,36 +1,100 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 
+/**
+ * CustomCursor - High-performance 120fps hardware-accelerated reticle cursor
+ * Zero React re-renders on mousemove (pure direct GSAP manipulation)
+ * Zero event-listener teardown/rebind cycling
+ */
 export default function CustomCursor({ activeTheme }) {
   const coreRef = useRef(null);
   const reticleRef = useRef(null);
-  const [cursorMode, setCursorMode] = useState('default'); // 'default', 'target', 'text'
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const modeRef = useRef('default'); // 'default' | 'target' | 'text'
 
   useEffect(() => {
-    // Disable on touch devices
+    // Disable on touch devices or fine pointer absent
     const hasTouch = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-    if (hasTouch) {
-      setIsTouchDevice(true);
-      return;
-    }
+    const canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (hasTouch || !canHover) return;
 
     const core = coreRef.current;
     const reticle = reticleRef.current;
     if (!core || !reticle) return;
 
-    // Ultra high-performance 120fps GSAP quickTo interpolation
-    const setCoreX = gsap.quickTo(core, 'x', { duration: 0.06, ease: 'power3.out' });
-    const setCoreY = gsap.quickTo(core, 'y', { duration: 0.06, ease: 'power3.out' });
+    // Ultra high-performance GSAP quickTo interpolation
+    const setCoreX = gsap.quickTo(core, 'x', { duration: 0.05, ease: 'power3.out' });
+    const setCoreY = gsap.quickTo(core, 'y', { duration: 0.05, ease: 'power3.out' });
 
-    const setReticleX = gsap.quickTo(reticle, 'x', { duration: 0.22, ease: 'power3.out' });
-    const setReticleY = gsap.quickTo(reticle, 'y', { duration: 0.22, ease: 'power3.out' });
+    const setReticleX = gsap.quickTo(reticle, 'x', { duration: 0.18, ease: 'power3.out' });
+    const setReticleY = gsap.quickTo(reticle, 'y', { duration: 0.18, ease: 'power3.out' });
 
     let isVisible = false;
 
+    const applyModeAnimations = (newMode) => {
+      if (modeRef.current === newMode) return;
+      modeRef.current = newMode;
+
+      if (newMode === 'target') {
+        reticle.classList.add('target');
+        reticle.classList.remove('text');
+        core.classList.add('target');
+        core.classList.remove('text');
+
+        gsap.to(reticle, {
+          scale: 1.35,
+          rotate: 45,
+          duration: 0.22,
+          ease: 'power2.out',
+          overwrite: 'auto'
+        });
+        gsap.to(core, {
+          scale: 0.65,
+          duration: 0.18,
+          ease: 'power2.out',
+          overwrite: 'auto'
+        });
+      } else if (newMode === 'text') {
+        reticle.classList.add('text');
+        reticle.classList.remove('target');
+        core.classList.add('text');
+        core.classList.remove('target');
+
+        gsap.to(reticle, {
+          scale: 0.7,
+          rotate: 0,
+          duration: 0.18,
+          ease: 'power2.out',
+          overwrite: 'auto'
+        });
+        gsap.to(core, {
+          scale: 1.2,
+          duration: 0.18,
+          ease: 'power2.out',
+          overwrite: 'auto'
+        });
+      } else {
+        reticle.classList.remove('target', 'text');
+        core.classList.remove('target', 'text');
+
+        gsap.to(reticle, {
+          scale: 1,
+          rotate: 0,
+          duration: 0.25,
+          ease: 'power2.out',
+          overwrite: 'auto'
+        });
+        gsap.to(core, {
+          scale: 1,
+          duration: 0.18,
+          ease: 'power2.out',
+          overwrite: 'auto'
+        });
+      }
+    };
+
     const onMouseMove = (e) => {
       if (!isVisible) {
-        gsap.to([core, reticle], { opacity: 1, duration: 0.2 });
+        gsap.to([core, reticle], { opacity: 1, duration: 0.18 });
         isVisible = true;
       }
       setCoreX(e.clientX);
@@ -45,43 +109,45 @@ export default function CustomCursor({ activeTheme }) {
         'button, a, input[type="submit"], input[type="button"], .btn-primary, .btn-secondary, ' +
         '.nav-link, .theme-option-item, .settings-theme-emblem-btn, .sidebar-toggle-btn, ' +
         '.stat-card, .metric-card, .theme-dropdown-trigger, .hub-badge-item, .clickable, ' +
-        '.achievement-card, .mock-test-item'
+        '.mock-test-item'
       );
 
       const isText = target.closest('input[type="text"], input[type="password"], input[type="email"], textarea, [contenteditable="true"]');
 
       if (isInteractive) {
-        setCursorMode('target');
+        applyModeAnimations('target');
       } else if (isText) {
-        setCursorMode('text');
+        applyModeAnimations('text');
       } else {
-        setCursorMode('default');
+        applyModeAnimations('default');
       }
     };
 
     const onMouseDown = () => {
-      gsap.to(reticle, { scale: 0.7, rotate: 45, duration: 0.12, ease: 'power2.out' });
-      gsap.to(core, { scale: 1.5, duration: 0.12, ease: 'power2.out' });
+      gsap.to(reticle, { scale: 0.75, rotate: 45, duration: 0.1, ease: 'power2.out', overwrite: 'auto' });
+      gsap.to(core, { scale: 1.4, duration: 0.1, ease: 'power2.out', overwrite: 'auto' });
     };
 
     const onMouseUp = () => {
+      const isTarget = modeRef.current === 'target';
       gsap.to(reticle, { 
-        scale: cursorMode === 'target' ? 1.4 : 1, 
-        rotate: cursorMode === 'target' ? 45 : 0, 
-        duration: 0.35, 
-        ease: 'elastic.out(1.2, 0.4)' 
+        scale: isTarget ? 1.35 : 1, 
+        rotate: isTarget ? 45 : 0, 
+        duration: 0.28, 
+        ease: 'power2.out',
+        overwrite: 'auto'
       });
-      gsap.to(core, { scale: 1, duration: 0.2, ease: 'power2.out' });
+      gsap.to(core, { scale: 1, duration: 0.18, ease: 'power2.out', overwrite: 'auto' });
     };
 
     const onMouseLeave = () => {
-      gsap.to([core, reticle], { opacity: 0, duration: 0.2 });
+      gsap.to([core, reticle], { opacity: 0, duration: 0.18 });
       isVisible = false;
     };
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    window.addEventListener('mousedown', onMouseDown, { passive: true });
+    window.addEventListener('mouseup', onMouseUp, { passive: true });
     document.body.addEventListener('mouseleave', onMouseLeave);
 
     return () => {
@@ -90,69 +156,21 @@ export default function CustomCursor({ activeTheme }) {
       window.removeEventListener('mouseup', onMouseUp);
       document.body.removeEventListener('mouseleave', onMouseLeave);
     };
-  }, [cursorMode]);
-
-  // Handle mode transitions (Target Lock / Text Focus / Default Reticle)
-  useEffect(() => {
-    if (isTouchDevice || !reticleRef.current || !coreRef.current) return;
-
-    if (cursorMode === 'target') {
-      // Precision Target Acquisition Mode: Corner brackets lock & expand with theme color glow
-      gsap.to(reticleRef.current, {
-        scale: 1.4,
-        rotate: 45,
-        duration: 0.25,
-        ease: 'power2.out'
-      });
-      gsap.to(coreRef.current, {
-        scale: 0.6,
-        duration: 0.2,
-        ease: 'power2.out'
-      });
-    } else if (cursorMode === 'text') {
-      // Text Focus Alignment
-      gsap.to(reticleRef.current, {
-        scale: 0.7,
-        rotate: 0,
-        duration: 0.2,
-        ease: 'power2.out'
-      });
-      gsap.to(coreRef.current, {
-        scale: 1.2,
-        duration: 0.2,
-        ease: 'power2.out'
-      });
-    } else {
-      // Default Precision Focus Reticle
-      gsap.to(reticleRef.current, {
-        scale: 1,
-        rotate: 0,
-        duration: 0.3,
-        ease: 'power2.out'
-      });
-      gsap.to(coreRef.current, {
-        scale: 1,
-        duration: 0.2,
-        ease: 'power2.out'
-      });
-    }
-  }, [cursorMode, activeTheme, isTouchDevice]);
-
-  if (isTouchDevice) return null;
+  }, []);
 
   return (
     <>
       {/* Central Laser Star Core */}
       <div 
         ref={coreRef} 
-        className={`focus-cursor-core ${cursorMode}`} 
+        className="focus-cursor-core" 
         style={{ opacity: 0 }}
       />
 
       {/* Precision Corner Brackets Targeting Reticle */}
       <div 
         ref={reticleRef} 
-        className={`focus-cursor-reticle ${cursorMode}`} 
+        className="focus-cursor-reticle" 
         style={{ opacity: 0 }}
       >
         <span className="reticle-corner top-left" />

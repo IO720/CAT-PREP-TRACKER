@@ -267,14 +267,6 @@ export default function App() {
     }
   }, []);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobileScreen(window.innerWidth <= 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   const [availableUpdate, setAvailableUpdate] = useState(null);
 
   // Auto-check for over-the-air updates on mount and periodically
