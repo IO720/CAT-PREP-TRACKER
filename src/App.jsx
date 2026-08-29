@@ -239,16 +239,12 @@ export default function App() {
   const [loadingFriendTracker, setLoadingFriendTracker] = useState(false);
   const [isEditProfileDirectOpen, setIsEditProfileDirectOpen] = useState(false);
   const [profileSubTab, setProfileSubTab] = useState('profile');
-  const [loungeTargetFriend, setLoungeTargetFriend] = useState(null);
-  const [isMobileScreen, setIsMobileScreen] = useState(() => {
-    return typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
-  });
 
   const handleOpenDirectMessage = (friend) => {
     if (!friend) return;
-    setLoungeTargetFriend(friend);
     setSelectedFriend(null);
-    setActiveTab('lounge');
+    setProfileSubTab('friends');
+    setActiveTab('profile');
   };
 
   // Restore UI Font Scale and Font on Initial Mount
@@ -413,56 +409,55 @@ export default function App() {
 
   const fileInputRef = useRef(null);
 
-  // Global Progress metrics calculation
-  let totalQuantSolved = 0;
-  let totalLrdidSolved = 0;
-  let totalVarcSolved = 0;
-  let completedDaysCount = 0;
+  // Memoized Global Progress & Streak Metrics Calculation
+  const { totalSolved, activeStreak, totalMocksCount } = useMemo(() => {
+    let totalQuant = 0;
+    let totalLrdi = 0;
+    let totalVarc = 0;
+    const allDays = [];
 
-  for (const [month, weeks] of Object.entries(state.tracker)) {
-    weeks.forEach(week => {
-      week.days.forEach(day => {
-        totalQuantSolved += Number(day.quantCount) || 0;
-        totalLrdidSolved += Number(day.lrdiCount) || 0;
-        totalVarcSolved += Number(day.varcCount) || 0;
-
-        if (day.quantCompleted || day.lrdiCompleted || day.varcCompleted) {
-          completedDaysCount++;
+    if (state?.tracker) {
+      for (const weeks of Object.values(state.tracker)) {
+        if (Array.isArray(weeks)) {
+          weeks.forEach(week => {
+            if (Array.isArray(week.days)) {
+              week.days.forEach(day => {
+                totalQuant += Number(day.quantCount) || 0;
+                totalLrdi += Number(day.lrdiCount) || 0;
+                totalVarc += Number(day.varcCount) || 0;
+                allDays.push(Boolean(day.quantCompleted || day.lrdiCompleted || day.varcCompleted));
+              });
+            }
+          });
         }
-      });
-    });
-  }
-
-  const grandTargets = { quant: 3160, lrdi: 650, varc: 620 };
-  const totalSolved = totalQuantSolved + totalLrdidSolved + totalVarcSolved;
-  const grandTargetTotal = grandTargets.quant + grandTargets.lrdi + grandTargets.varc;
-  const globalPercent = Math.min(100, Math.round((totalSolved / grandTargetTotal) * 100));
-
-  // Determine active streak (simplified check)
-  const allDaysChronological = [];
-  for (const [month, weeks] of Object.entries(state.tracker)) {
-    weeks.forEach(week => {
-      week.days.forEach(day => {
-        allDaysChronological.push(day.quantCompleted || day.lrdiCompleted || day.varcCompleted);
-      });
-    });
-  }
-  let activeStreak = 0;
-  for (let i = allDaysChronological.length - 1; i >= 0; i--) {
-    if (allDaysChronological[i]) {
-      activeStreak++;
-    } else {
-      if (activeStreak > 0) break;
+      }
     }
-  }
 
-  const totalMocksCount = (state?.mocks || []).filter(m => m.status === 'Taken').length;
+    let streak = 0;
+    for (let i = allDays.length - 1; i >= 0; i--) {
+      if (allDays[i]) {
+        streak++;
+      } else if (streak > 0) {
+        break;
+      }
+    }
 
-  const userBadges = calculateUserBadges({
-    streak: activeStreak,
-    solvedQs: totalSolved,
-    mocksCount: totalMocksCount
-  });
+    const mocksCount = (state?.mocks || []).filter(m => m.status === 'Taken').length;
+
+    return {
+      totalSolved: totalQuant + totalLrdi + totalVarc,
+      activeStreak: streak,
+      totalMocksCount: mocksCount
+    };
+  }, [state?.tracker, state?.mocks]);
+
+  const userBadges = useMemo(() => {
+    return calculateUserBadges({
+      streak: activeStreak,
+      solvedQs: totalSolved,
+      mocksCount: totalMocksCount
+    });
+  }, [activeStreak, totalSolved, totalMocksCount]);
 
   const handleOpenRedeemModal = (themeId = null) => {
     setRedeemPreselectTheme(themeId);
@@ -925,18 +920,23 @@ export default function App() {
     }
   };
 
-  // 1. Update week status in overall Study Plan
-  const updateWeekStatus = (weekTitle, status) => {
+  // 1. Update week status and data in overall Study Plan
+  const updateWeekPlan = (weekTitle, updatesOrStatus) => {
     setState(prev => {
-      const updatedPlan = prev.studyPlan.map(w => {
+      const updatedPlan = (prev.studyPlan || []).map(w => {
         if (w.week === weekTitle) {
-          return { ...w, status };
+          if (typeof updatesOrStatus === 'string') {
+            return { ...w, status: updatesOrStatus };
+          }
+          return { ...w, ...updatesOrStatus };
         }
         return w;
       });
       return { ...prev, studyPlan: updatedPlan, lastUpdated: Date.now() };
     });
   };
+  const updateWeekStatus = (weekTitle, status) => updateWeekPlan(weekTitle, status);
+
 
   // 2. Update Quantities and Completion status in Daily Tracker
   const updateDayMetric = (month, weekName, dayName, subject, isCompleted, qty) => {
@@ -993,6 +993,16 @@ export default function App() {
     setState(prev => {
       const updatedMocks = prev.mocks.map(mock => {
         if (mock.id === mockId) {
+          if (typeof field === 'object' && field !== null) {
+            const updated = { ...mock, ...field };
+            const q = parseFloat(updated.quantScore) || 0;
+            const l = parseFloat(updated.lrdiScore) || 0;
+            const v = parseFloat(updated.varcScore) || 0;
+            if (updated.status === 'Taken') {
+              updated.totalScore = updated.totalScore || (q + l + v);
+            }
+            return updated;
+          }
           const updated = { ...mock, [field]: value };
           if (['quantScore', 'lrdiScore', 'varcScore'].includes(field)) {
             const q = parseFloat(field === 'quantScore' ? value : mock.quantScore) || 0;
@@ -1731,7 +1741,7 @@ export default function App() {
               <div className="header-title-badge">
                 <span className="header-protocol-tag">// PROTOCOL</span>
                 <span className="header-page-name" key={activeTab}>
-                  {activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'lounge' ? 'Study Lounge' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'achievements' ? 'Achievements' : activeTab === 'errors' ? 'Error Log' : activeTab === 'profile' ? 'Profile & Buddies' : activeTab === 'settings' ? 'Settings' : 'Dashboard'}
+                  {activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'lounge' ? 'Study Lounge' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'achievements' ? 'Achievements' : activeTab === 'errors' ? 'Error Log' : activeTab === 'profile' ? 'Profile' : activeTab === 'settings' ? 'Settings' : 'Dashboard'}
                 </span>
               </div>
             </div>
@@ -1814,6 +1824,7 @@ export default function App() {
             <TimelineView 
               state={state} 
               updateWeekStatus={updateWeekStatus} 
+              updateWeekPlan={updateWeekPlan}
               onWeekClick={handleJumpToWeek} 
             />
           )}

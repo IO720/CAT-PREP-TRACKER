@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icons } from './AspirantIcons';
-import { PRESTIGE_BADGE } from '../utils/badgeUtils';
 import GlareHoverCard from './GlareHoverCard';
 import CubesCanvas from './CubesCanvas';
 import PrestigeBadgeEmblem from './PrestigeBadgeEmblem';

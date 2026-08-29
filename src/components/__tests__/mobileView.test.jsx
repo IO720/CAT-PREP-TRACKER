@@ -41,9 +41,9 @@ describe('Mobile View & Component Test Cases', () => {
     );
 
     expect(screen.getByText(/Daily Drills/i)).toBeDefined();
-    expect(screen.getByText(/Jump to Today/i)).toBeDefined();
-    expect(screen.getByText(/Monday/i)).toBeDefined();
-    expect(screen.getByText(/Tuesday/i)).toBeDefined();
+    expect(screen.getByTitle(/Jump to today/i)).toBeDefined();
+    expect(screen.getByText('Mon')).toBeDefined();
+    expect(screen.getByText('Tue')).toBeDefined();
   });
 
   it('handles Quant checkbox drill updates on mobile layout', () => {

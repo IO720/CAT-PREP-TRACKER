@@ -1,621 +1,766 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import gsap from 'gsap';
 import { Icons } from './AspirantIcons';
+import { 
+  AnimatedFlameIcon, 
+  AnimatedTargetIcon, 
+  AnimatedLightningIcon,
+  AnimatedCrownIcon
+} from './AnimatedUiIcons';
+import { playGamingAchievementSound } from '../utils/audioUtils';
+import { stripEmojis } from '../utils/textUtils';
+
+// CAT Percentile Estimator based on scaled composite scores
+const estimateCatPercentile = (score) => {
+  const s = parseFloat(score) || 0;
+  if (s >= 105) return 99.8;
+  if (s >= 92) return 99.2;
+  if (s >= 80) return 98.0;
+  if (s >= 70) return 95.5;
+  if (s >= 60) return 92.0;
+  if (s >= 50) return 86.0;
+  if (s >= 40) return 78.0;
+  if (s >= 30) return 65.0;
+  return Math.max(10, Math.round(s * 1.5));
+};
 
 export default function MockTrackerView({ state, updateMockRow }) {
-  const { mocks } = state;
-  const [expandedMockId, setExpandedMockId] = useState(null);
-  const [activeFilter, setActiveFilter] = useState('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  const { mocks = [] } = state;
+  const [selectedMockId, setSelectedMockId] = useState(1);
+  const [activePhaseFilter, setActivePhaseFilter] = useState('ALL'); // 'ALL' | 'PHASE_1' | 'PHASE_2' | 'PHASE_3' | 'TAKEN'
+  const [editingMock, setEditingMock] = useState(null);
+  const containerRef = useRef(null);
 
-  const handleRowChange = (mockId, field, value) => {
-    updateMockRow(mockId, field, value);
-  };
-
-  const toggleExpand = (id) => {
-    setExpandedMockId(expandedMockId === id ? null : id);
-  };
-
-  // Calculations & Analytics
-  const takenMocks = mocks.filter(m => m.status === 'Taken');
-  const scheduledMocks = mocks.filter(m => m.status === 'Scheduled');
-  const notStartedMocks = mocks.filter(m => m.status === 'Not Started' || !m.status);
-  const totalTaken = takenMocks.length;
-  const completionRate = Math.round((totalTaken / (mocks.length || 30)) * 100);
-
-  let avgQuant = 0;
-  let avgLrdi = 0;
-  let avgVarc = 0;
-  let avgTotal = 0;
-  let maxPercentile = 0;
-  let highestScore = 0;
-
-  if (totalTaken > 0) {
-    let qSum = 0, lSum = 0, vSum = 0, tSum = 0;
-    takenMocks.forEach(m => {
-      const q = parseFloat(m.quantScore) || 0;
-      const l = parseFloat(m.lrdiScore) || 0;
-      const v = parseFloat(m.varcScore) || 0;
-      const t = parseFloat(m.totalScore) || (q + l + v);
-      const p = parseFloat(m.percentile) || 0;
-
-      qSum += q;
-      lSum += l;
-      vSum += v;
-      tSum += t;
-      if (p > 0) maxPercentile = Math.max(maxPercentile, p);
-      if (t > 0) highestScore = Math.max(highestScore, t);
-    });
-
-    avgQuant = Math.round((qSum / totalTaken) * 10) / 10;
-    avgLrdi = Math.round((lSum / totalTaken) * 10) / 10;
-    avgVarc = Math.round((vSum / totalTaken) * 10) / 10;
-    avgTotal = Math.round((tSum / totalTaken) * 10) / 10;
-  }
-
-  // Filtered Mocks List
-  const filteredMocks = mocks.filter(m => {
-    // Status filter
-    if (activeFilter !== 'ALL') {
-      if (activeFilter === 'Not Started') {
-        if (m.status && m.status !== 'Not Started') return false;
-      } else if (m.status !== activeFilter) {
-        return false;
-      }
-    }
-    // Search query
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const titleMatch = (m.title || `Mock Test ${m.id}`).toLowerCase().includes(q);
-      const notesMatch = (m.notes || '').toLowerCase().includes(q);
-      const numMatch = `#${m.id}`.includes(q) || `${m.id}` === q;
-      return titleMatch || notesMatch || numMatch;
-    }
-    return true;
-  });
-
-  // Render SVG Trend Progression Curve
-  const renderTrendChart = () => {
-    const chartData = takenMocks
-      .map((m) => {
+  // Completed mocks sorted by ID
+  const completedMocks = useMemo(() => {
+    return mocks
+      .filter(m => m.status === 'Taken' && (m.totalScore || (parseFloat(m.quantScore) || 0) + (parseFloat(m.lrdiScore) || 0) + (parseFloat(m.varcScore) || 0) > 0))
+      .map(m => {
         const q = parseFloat(m.quantScore) || 0;
         const l = parseFloat(m.lrdiScore) || 0;
         const v = parseFloat(m.varcScore) || 0;
-        const t = parseFloat(m.totalScore) || (q + l + v);
-        return {
-          label: m.title || `M#${m.id}`,
-          score: t,
-          percentile: m.percentile
-        };
-      })
-      .filter(d => d.score > 0);
+        const total = parseFloat(m.totalScore) || (q + l + v);
+        const p = parseFloat(m.percentile) || estimateCatPercentile(total);
+        return { ...m, quantScore: q, lrdiScore: l, varcScore: v, totalScore: total, estimatedPercentile: p };
+      });
+  }, [mocks]);
 
-    if (chartData.length < 2) {
-      return (
-        <div className="mock-chart-empty-state">
-          <div className="empty-chart-icon-wrap">
-            <Icons.TrendingUp size={24} />
-          </div>
-          <div className="empty-chart-text">
-            <h4>No Score Progression Yet</h4>
-            <p>Log scores for at least 2 completed mocks to unlock performance trajectory & percentile trends.</p>
-          </div>
-        </div>
-      );
+  // Next upcoming mock (first uncompleted mock)
+  const nextMock = useMemo(() => {
+    return mocks.find(m => m.status !== 'Taken') || mocks[0];
+  }, [mocks]);
+
+  // Set default selected mock to nextMock if not explicitly chosen
+  useEffect(() => {
+    if (nextMock) {
+      setSelectedMockId(nextMock.id);
+    }
+  }, [nextMock?.id]);
+
+  // Overall Statistics & Improvement Calculations
+  const stats = useMemo(() => {
+    const totalTaken = completedMocks.length;
+    if (totalTaken === 0) {
+      return {
+        totalTaken: 0,
+        avgScore: 0,
+        peakScore: 0,
+        maxPercentile: 0,
+        baselineScore: 0,
+        latestScore: 0,
+        latestPercentile: 0,
+        scoreDelta: 0,
+        overallGain: 0,
+        gainStreak: 0,
+        strongestSection: 'Balanced',
+        opportunitySection: 'Pending Mocks',
+        sectionalAverages: { quant: 0, lrdi: 0, varc: 0 }
+      };
     }
 
-    const width = 560;
-    const height = 160;
-    const padding = 28;
+    let qSum = 0, lSum = 0, vSum = 0, tSum = 0;
+    let peak = 0;
+    let maxPct = 0;
 
-    const scores = chartData.map(d => d.score);
-    const minScore = Math.max(0, Math.min(...scores) - 10);
-    const maxScore = Math.max(...scores) + 12;
-    const scoreRange = maxScore - minScore || 1;
-
-    const points = chartData.map((d, idx) => {
-      const x = padding + (idx / (chartData.length - 1)) * (width - padding * 2);
-      const y = height - padding - ((d.score - minScore) / scoreRange) * (height - padding * 2);
-      return { x, y, score: d.score, label: d.label, percentile: d.percentile };
+    completedMocks.forEach(m => {
+      qSum += m.quantScore;
+      lSum += m.lrdiScore;
+      vSum += m.varcScore;
+      tSum += m.totalScore;
+      if (m.totalScore > peak) peak = m.totalScore;
+      if (m.estimatedPercentile > maxPct) maxPct = m.estimatedPercentile;
     });
 
-    let pathD = `M ${points[0].x} ${points[0].y}`;
-    for (let i = 1; i < points.length; i++) {
-      pathD += ` L ${points[i].x} ${points[i].y}`;
+    const latest = completedMocks[completedMocks.length - 1];
+    const previous = completedMocks.length > 1 ? completedMocks[completedMocks.length - 2] : null;
+    const baseline = completedMocks[0];
+
+    const scoreDelta = previous ? latest.totalScore - previous.totalScore : 0;
+    const overallGain = latest.totalScore - baseline.totalScore;
+
+    // Calculate Positive Improvement Streak
+    let streak = 0;
+    for (let i = completedMocks.length - 1; i >= 1; i--) {
+      if (completedMocks[i].totalScore >= completedMocks[i - 1].totalScore) {
+        streak++;
+      } else {
+        break;
+      }
     }
 
-    const areaD = `${pathD} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
+    const avgQ = Math.round((qSum / totalTaken) * 10) / 10;
+    const avgL = Math.round((lSum / totalTaken) * 10) / 10;
+    const avgV = Math.round((vSum / totalTaken) * 10) / 10;
 
-    return (
-      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" className="mock-trend-svg">
-        <defs>
-          <linearGradient id="mockAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="var(--accent-color, #38bdf8)" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="var(--accent-color, #38bdf8)" stopOpacity="0.0" />
-          </linearGradient>
-          <filter id="pointGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
-          </filter>
-        </defs>
+    const sections = [
+      { name: 'Quant', avg: avgQ },
+      { name: 'DILR', avg: avgL },
+      { name: 'VARC', avg: avgV }
+    ];
+    sections.sort((a, b) => b.avg - a.avg);
 
-        {/* Grid reference lines */}
-        {[0, 0.5, 1].map((ratio, i) => {
-          const y = padding + ratio * (height - padding * 2);
-          const val = Math.round(maxScore - ratio * scoreRange);
-          return (
-            <g key={i}>
-              <line
-                x1={padding}
-                y1={y}
-                x2={width - padding}
-                y2={y}
-                stroke="rgba(255, 255, 255, 0.08)"
-                strokeDasharray="4 4"
-                strokeWidth={1}
-              />
-              <text
-                x={padding - 6}
-                y={y + 4}
-                textAnchor="end"
-                fontSize="10"
-                fontWeight="700"
-                fill="#64748b"
-              >
-                {val}
-              </text>
-            </g>
-          );
-        })}
+    return {
+      totalTaken,
+      avgScore: Math.round((tSum / totalTaken) * 10) / 10,
+      peakScore: peak,
+      maxPercentile: maxPct,
+      baselineScore: baseline.totalScore,
+      latestScore: latest.totalScore,
+      latestPercentile: latest.estimatedPercentile,
+      scoreDelta,
+      overallGain,
+      gainStreak: streak,
+      strongestSection: sections[0]?.name || 'Quant',
+      opportunitySection: sections[2]?.name || 'DILR',
+      sectionalAverages: { quant: avgQ, lrdi: avgL, varc: avgV }
+    };
+  }, [completedMocks]);
 
-        {/* Shaded Area Under Curve */}
-        <path d={areaD} fill="url(#mockAreaGrad)" />
+  // Selected Mock Object & previous score calculation
+  const selectedMock = useMemo(() => {
+    return mocks.find(m => m.id === selectedMockId) || mocks[0] || {};
+  }, [mocks, selectedMockId]);
 
-        {/* Main Line Curve */}
-        <path
-          d={pathD}
-          fill="none"
-          stroke="var(--accent-color, #38bdf8)"
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+  const selectedMockDetails = useMemo(() => {
+    const isTaken = selectedMock.status === 'Taken';
+    const q = parseFloat(selectedMock.quantScore) || 0;
+    const l = parseFloat(selectedMock.lrdiScore) || 0;
+    const v = parseFloat(selectedMock.varcScore) || 0;
+    const total = parseFloat(selectedMock.totalScore) || (q + l + v);
+    const p = parseFloat(selectedMock.percentile) || (isTaken ? estimateCatPercentile(total) : 0);
 
-        {/* Data Markers */}
-        {points.map((p, idx) => (
-          <g key={idx} className="chart-point-group">
-            <circle
-              cx={p.x}
-              cy={p.y}
-              r={4.5}
-              fill="var(--accent-color, #38bdf8)"
-              stroke="#0f172a"
-              strokeWidth={2}
-            />
-            <text
-              x={p.x}
-              y={p.y - 9}
-              textAnchor="middle"
-              fontSize="11"
-              fontWeight="800"
-              fill="#ffffff"
-            >
-              {p.score}
-            </text>
-            <text
-              x={p.x}
-              y={height - 8}
-              textAnchor="middle"
-              fontSize="10"
-              fontWeight="600"
-              fill="#94a3b8"
-            >
-              {p.label}
-            </text>
-          </g>
-        ))}
-      </svg>
-    );
+    let delta = null;
+    if (isTaken) {
+      const idx = completedMocks.findIndex(m => m.id === selectedMock.id);
+      if (idx > 0) {
+        delta = total - completedMocks[idx - 1].totalScore;
+      }
+    }
+
+    return { isTaken, q, l, v, total, p, delta };
+  }, [selectedMock, completedMocks]);
+
+  // Phase Definitions for the 30-Mock Grid
+  const phases = useMemo(() => [
+    {
+      id: 'PHASE_1',
+      name: 'Phase 1: Diagnostic & Foundation',
+      range: 'Mocks 01 - 10',
+      description: 'Establish baseline test stamina, pacing benchmark, and uncover conceptual blind spots.',
+      mocks: mocks.slice(0, 10)
+    },
+    {
+      id: 'PHASE_2',
+      name: 'Phase 2: Strategy & Speed Elevation',
+      range: 'Mocks 11 - 20',
+      description: 'Refine question selection filters, error elimination routines, and DILR set targeting.',
+      mocks: mocks.slice(10, 20)
+    },
+    {
+      id: 'PHASE_3',
+      name: 'Phase 3: Peak Exam Simulation',
+      range: 'Mocks 21 - 30',
+      description: 'Simulate high-pressure exam day conditions to lock in 99.0+%ile consistency.',
+      mocks: mocks.slice(20, 30)
+    }
+  ], [mocks]);
+
+  // Filtered Phases based on user selection
+  const displayedPhases = useMemo(() => {
+    if (activePhaseFilter === 'ALL') return phases;
+    if (activePhaseFilter === 'TAKEN') {
+      return phases.map(p => ({
+        ...p,
+        mocks: p.mocks.filter(m => m.status === 'Taken')
+      })).filter(p => p.mocks.length > 0);
+    }
+    return phases.filter(p => p.id === activePhaseFilter);
+  }, [phases, activePhaseFilter]);
+
+  // Modal Form State
+  const [modalForm, setModalForm] = useState({
+    id: 1,
+    title: '',
+    status: 'Taken',
+    date: '',
+    quantScore: '',
+    lrdiScore: '',
+    varcScore: '',
+    percentile: '',
+    notes: ''
+  });
+
+  const openEditModal = (mock) => {
+    setModalForm({
+      id: mock.id,
+      title: mock.title || `Mock Test ${mock.id}`,
+      status: mock.status || 'Taken',
+      date: mock.date || new Date().toISOString().split('T')[0],
+      quantScore: mock.quantScore ?? '',
+      lrdiScore: mock.lrdiScore ?? '',
+      varcScore: mock.varcScore ?? '',
+      percentile: mock.percentile ?? '',
+      notes: mock.notes || ''
+    });
+    setEditingMock(mock);
   };
 
+  const handleSaveModal = (e) => {
+    e.preventDefault();
+    const q = parseFloat(modalForm.quantScore) || 0;
+    const l = parseFloat(modalForm.lrdiScore) || 0;
+    const v = parseFloat(modalForm.varcScore) || 0;
+    const total = q + l + v;
+    const p = modalForm.percentile 
+      ? parseFloat(modalForm.percentile) 
+      : (modalForm.status === 'Taken' ? estimateCatPercentile(total) : '');
+
+    const updates = {
+      title: stripEmojis(modalForm.title),
+      status: modalForm.status,
+      date: modalForm.date,
+      quantScore: modalForm.status === 'Taken' ? q : '',
+      lrdiScore: modalForm.status === 'Taken' ? l : '',
+      varcScore: modalForm.status === 'Taken' ? v : '',
+      totalScore: modalForm.status === 'Taken' ? total : '',
+      percentile: p ? String(p) : '',
+      notes: stripEmojis(modalForm.notes)
+    };
+
+    updateMockRow(modalForm.id, updates);
+    if (modalForm.status === 'Taken') {
+      playGamingAchievementSound(0.035);
+    }
+    setEditingMock(null);
+  };
+
+  // Readiness Tier Brackets
+  const readinessTiers = [
+    { label: 'Foundation', range: '< 70%ile', min: 0, max: 70 },
+    { label: 'Contender', range: '70-85%ile', min: 70, max: 85 },
+    { label: 'Top Tier', range: '85-95%ile', min: 85, max: 95 },
+    { label: 'IIM Elite', range: '99+%ile', min: 95, max: 100 }
+  ];
+
+  const currentTier = useMemo(() => {
+    const p = stats.latestPercentile || 0;
+    if (p >= 95) return 'IIM Elite';
+    if (p >= 85) return 'Top Tier';
+    if (p >= 70) return 'Contender';
+    return 'Foundation';
+  }, [stats.latestPercentile]);
+
   return (
-    <div className="mock-tracker-view-wrapper fade-in">
-      {/* Top Header Row */}
-      <div className="mock-header-hero-card">
-        <div className="mock-hero-top-row">
-          <div className="mock-hero-left">
-            <div className="mock-icon-badge">
-              <Icons.Trophy size={22} />
-            </div>
-            <div>
-              <h1 className="mock-main-title">Mock Tests Tracker</h1>
-              <p className="mock-sub-title">
-                Comprehensive 30 full-length mock exam series, sectional score telemetry, and percentile projection.
-              </p>
+    <div ref={containerRef} className="mock-terminal-container fade-in">
+      
+      {/* 1. SPACIOUS TOP TELEMETRY DECK (3 COHESIVE PILLARS) */}
+      <div className="mock-cockpit-hero">
+        
+        {/* Pillar 1: Next Mission Spotlight */}
+        <div className="cockpit-card mission-spotlight">
+          <div className="card-top-tag">
+            <span className="live-ping-dot" />
+            <span>ACTIVE FLIGHT STATUS</span>
+          </div>
+
+          <div className="spotlight-title-row">
+            <span className="spotlight-id-badge">MOCK #{nextMock.id < 10 ? `0${nextMock.id}` : nextMock.id}</span>
+            <div className="spotlight-text-block">
+              <h2 className="spotlight-title">{nextMock.title || `Mock Test ${nextMock.id}`}</h2>
+              <span className="spotlight-subtitle">
+                {nextMock.status === 'Scheduled' ? `Scheduled for ${nextMock.date}` : 'Awaiting flight simulation'}
+              </span>
             </div>
           </div>
 
-          <div className="mock-rate-pill">
-            <span className="rate-num">{completionRate}%</span>
-            <span className="rate-lbl">Mocks Completed</span>
+          <div className="spotlight-cta-row">
+            <button
+              type="button"
+              className="cockpit-primary-btn"
+              onClick={() => openEditModal(nextMock)}
+            >
+              <AnimatedLightningIcon size={15} color="#04101e" />
+              <span>Log Mock #{nextMock.id} Scores</span>
+            </button>
+            <span className="spotlight-stage-badge">
+              {nextMock.id <= 10 ? 'Phase 1: Diagnostic' : nextMock.id <= 20 ? 'Phase 2: Speed' : 'Phase 3: Peak'}
+            </span>
           </div>
         </div>
 
-        {/* Analytics Dual Grid */}
-        <div className="mock-analytics-hero-grid">
-          {/* Card 1: Metric Badges & Sectional Breakdown */}
-          <div className="mock-stat-panel-card">
-            <div className="panel-card-header">
-              <Icons.Activity size={14} />
-              <span>Series Performance Overview</span>
+        {/* Pillar 2: Telemetry Readout & Percentile Tier Stepper */}
+        <div className="cockpit-card telemetry-readout">
+          <div className="card-top-tag">
+            <span>PERFORMANCE TELEMETRY</span>
+          </div>
+
+          <div className="readout-hero-metric">
+            <div className="metric-score-group">
+              <span className="metric-num">{stats.latestScore > 0 ? stats.latestScore : '--'}</span>
+              <span className="metric-unit">pts</span>
             </div>
-
-            <div className="mock-hero-stats-row">
-              <div className="mock-metric-box">
-                <span className="metric-box-lbl">Completed</span>
-                <span className="metric-box-val">{totalTaken} / {mocks.length || 30}</span>
-                <span className="metric-box-sub">Full Length Mocks</span>
-              </div>
-
-              <div className="mock-metric-box">
-                <span className="metric-box-lbl">Avg Score</span>
-                <span className="metric-box-val accent">{avgTotal}</span>
-                <span className="metric-box-sub">Points / Test</span>
-              </div>
-
-              <div className="mock-metric-box">
-                <span className="metric-box-lbl">Peak Score</span>
-                <span className="metric-box-val">{highestScore || '-'}</span>
-                <span className="metric-box-sub">Max Achieved</span>
-              </div>
-
-              <div className="mock-metric-box">
-                <span className="metric-box-lbl">Max Percentile</span>
-                <span className="metric-box-val emerald">{maxPercentile > 0 ? `${maxPercentile}%` : '-'}</span>
-                <span className="metric-box-sub">Target: 99.5+%ile</span>
-              </div>
-            </div>
-
-            {/* Sectional Averages Strip */}
-            <div className="mock-sectionals-strip">
-              <span className="sectionals-label">Sectional Averages:</span>
-              <div className="sectional-chip quant">
-                <span className="chip-code">QUANT</span>
-                <span className="chip-val">{avgQuant}</span>
-              </div>
-              <div className="sectional-chip lrdi">
-                <span className="chip-code">LRDI</span>
-                <span className="chip-val">{avgLrdi}</span>
-              </div>
-              <div className="sectional-chip varc">
-                <span className="chip-code">VARC</span>
-                <span className="chip-val">{avgVarc}</span>
-              </div>
+            <div className="metric-details-group">
+              <span className="metric-percentile-tag">
+                {stats.latestPercentile > 0 ? `${stats.latestPercentile}%ile Current` : 'Target: 99.0+%ile'}
+              </span>
+              <span className="metric-delta-text">
+                {stats.scoreDelta !== 0 
+                  ? (stats.scoreDelta > 0 ? `▲ +${stats.scoreDelta} pts vs prior` : `▼ ${stats.scoreDelta} pts vs prior`)
+                  : `Overall Gain: ${stats.overallGain >= 0 ? `+${stats.overallGain}` : stats.overallGain} pts`}
+              </span>
             </div>
           </div>
 
-          {/* Card 2: Trend Line Graph */}
-          <div className="mock-stat-panel-card">
-            <div className="panel-card-header">
-              <Icons.TrendingUp size={14} />
-              <span>Score Progression Trajectory</span>
+          {/* Linear-Style Percentile Bracket Stepper */}
+          <div className="readout-stepper-track">
+            {readinessTiers.map((tier) => (
+              <div 
+                key={tier.label}
+                className={`stepper-step ${currentTier === tier.label ? 'active' : ''}`}
+              >
+                <div className="step-bar" />
+                <span className="step-label">{tier.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pillar 3: Cadence Streak & Sectional Balance */}
+        <div className="cockpit-card cadence-balance">
+          <div className="card-top-tag">
+            <span>CADENCE & SECTIONAL RADAR</span>
+          </div>
+
+          <div className="streak-hero-block">
+            <div className="streak-flame-wrap">
+              <AnimatedFlameIcon size={18} color="#fbbf24" />
             </div>
-            <div className="mock-chart-wrapper">
-              {renderTrendChart()}
+            <div className="streak-text-wrap">
+              <span className="streak-main-title">
+                {stats.gainStreak > 0 ? `${stats.gainStreak} Test Score Gain Streak` : `${stats.totalTaken} of 30 Mocks Cleared`}
+              </span>
+              <span className="streak-progress-sub">
+                Completion Rate: {Math.round((stats.totalTaken / (mocks.length || 30)) * 100)}% • Avg: {stats.avgScore} pts
+              </span>
+            </div>
+          </div>
+
+          {/* Sectional Tri-Bar */}
+          <div className="cockpit-sectional-tri-bar">
+            <div className="sec-tri-item quant">
+              <span className="sec-tri-label">QA</span>
+              <span className="sec-tri-val">{stats.sectionalAverages.quant}</span>
+            </div>
+            <div className="sec-tri-item lrdi">
+              <span className="sec-tri-label">DILR</span>
+              <span className="sec-tri-val">{stats.sectionalAverages.lrdi}</span>
+            </div>
+            <div className="sec-tri-item varc">
+              <span className="sec-tri-label">VARC</span>
+              <span className="sec-tri-val">{stats.sectionalAverages.varc}</span>
             </div>
           </div>
         </div>
 
-        {/* Filter & Search Controls Bar */}
-        <div className="mock-controls-bar">
-          <div className="mock-filter-tabs">
-            <button
-              type="button"
-              className={`mock-filter-btn ${activeFilter === 'ALL' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('ALL')}
-            >
-              <span>All Mocks ({mocks.length || 30})</span>
-            </button>
-            <button
-              type="button"
-              className={`mock-filter-btn ${activeFilter === 'Taken' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('Taken')}
-            >
-              <span>Completed ({totalTaken})</span>
-            </button>
-            <button
-              type="button"
-              className={`mock-filter-btn ${activeFilter === 'Scheduled' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('Scheduled')}
-            >
-              <span>Scheduled ({scheduledMocks.length})</span>
-            </button>
-            <button
-              type="button"
-              className={`mock-filter-btn ${activeFilter === 'Not Started' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('Not Started')}
-            >
-              <span>Not Started ({notStartedMocks.length})</span>
-            </button>
-          </div>
+      </div>
 
-          <div className="mock-search-input-wrap">
-            <Icons.Target size={14} className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search mock name, review notes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="mock-search-input"
-            />
-          </div>
+      {/* 2. FILTER STRIP & ACTIONS */}
+      <div className="mock-command-toolbar">
+        <div className="phase-filter-tabs">
+          <button
+            type="button"
+            className={`phase-tab-btn ${activePhaseFilter === 'ALL' ? 'active' : ''}`}
+            onClick={() => setActivePhaseFilter('ALL')}
+          >
+            All 30 Mocks (30)
+          </button>
+          <button
+            type="button"
+            className={`phase-tab-btn ${activePhaseFilter === 'PHASE_1' ? 'active' : ''}`}
+            onClick={() => setActivePhaseFilter('PHASE_1')}
+          >
+            Phase 1: Diagnostic (1-10)
+          </button>
+          <button
+            type="button"
+            className={`phase-tab-btn ${activePhaseFilter === 'PHASE_2' ? 'active' : ''}`}
+            onClick={() => setActivePhaseFilter('PHASE_2')}
+          >
+            Phase 2: Speed (11-20)
+          </button>
+          <button
+            type="button"
+            className={`phase-tab-btn ${activePhaseFilter === 'PHASE_3' ? 'active' : ''}`}
+            onClick={() => setActivePhaseFilter('PHASE_3')}
+          >
+            Phase 3: Peak (21-30)
+          </button>
+          <button
+            type="button"
+            className={`phase-tab-btn ${activePhaseFilter === 'TAKEN' ? 'active' : ''}`}
+            onClick={() => setActivePhaseFilter('TAKEN')}
+          >
+            Completed ({stats.totalTaken})
+          </button>
+        </div>
+
+        <div className="toolbar-legend">
+          <span className="legend-chip"><span className="dot taken" /> Evaluated</span>
+          <span className="legend-chip"><span className="dot next" /> Next Mission</span>
+          <span className="legend-chip"><span className="dot pending" /> Pending</span>
         </div>
       </div>
 
-      {/* DESKTOP TABLE VIEW */}
-      <div className="desktop-only mock-table-card-container animate-slide-up">
-        <table className="modern-mocks-table">
-          <thead>
-            <tr>
-              <th style={{ width: '70px' }}>Mock</th>
-              <th style={{ width: '140px' }}>Status</th>
-              <th style={{ width: '160px' }}>Mock Series & Name</th>
-              <th style={{ width: '140px' }}>Date Taken</th>
-              <th style={{ width: '80px', textAlign: 'center' }}>Quant</th>
-              <th style={{ width: '80px', textAlign: 'center' }}>LRDI</th>
-              <th style={{ width: '80px', textAlign: 'center' }}>VARC</th>
-              <th style={{ width: '85px', textAlign: 'center' }}>Total</th>
-              <th style={{ width: '100px', textAlign: 'center' }}>%ile</th>
-              <th>Analytical Notes & Strategy Review</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredMocks.map((mock) => {
-              const calculatedTotal = (parseFloat(mock.quantScore) || 0) + (parseFloat(mock.lrdiScore) || 0) + (parseFloat(mock.varcScore) || 0);
-              const displayTotal = mock.status === 'Taken' ? (mock.totalScore !== "" ? mock.totalScore : calculatedTotal) : "";
-
-              return (
-                <tr key={mock.id} className="modern-mock-row">
-                  <td className="mock-cell-id">
-                    <span className="mock-id-badge">#{mock.id < 10 ? `0${mock.id}` : mock.id}</span>
-                  </td>
-
-                  <td>
-                    <select
-                      value={mock.status || 'Not Started'}
-                      onChange={(e) => handleRowChange(mock.id, 'status', e.target.value)}
-                      className={`mock-status-pill-select ${mock.status === 'Taken' ? 'taken' : mock.status === 'Scheduled' ? 'scheduled' : 'not-started'}`}
-                    >
-                      <option value="Not Started">Not Started</option>
-                      <option value="Scheduled">Scheduled</option>
-                      <option value="Taken">Taken</option>
-                    </select>
-                  </td>
-
-                  <td>
-                    <input
-                      type="text"
-                      className="mock-inline-input name"
-                      placeholder={`Mock Test ${mock.id}`}
-                      value={mock.title}
-                      onChange={(e) => handleRowChange(mock.id, 'title', e.target.value)}
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      type="date"
-                      className="mock-inline-input date"
-                      value={mock.date}
-                      onChange={(e) => handleRowChange(mock.id, 'date', e.target.value)}
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      type="number"
-                      className="mock-inline-input score quant"
-                      placeholder="0"
-                      disabled={mock.status !== 'Taken'}
-                      value={mock.quantScore}
-                      onChange={(e) => handleRowChange(mock.id, 'quantScore', e.target.value)}
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      type="number"
-                      className="mock-inline-input score lrdi"
-                      placeholder="0"
-                      disabled={mock.status !== 'Taken'}
-                      value={mock.lrdiScore}
-                      onChange={(e) => handleRowChange(mock.id, 'lrdiScore', e.target.value)}
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      type="number"
-                      className="mock-inline-input score varc"
-                      placeholder="0"
-                      disabled={mock.status !== 'Taken'}
-                      value={mock.varcScore}
-                      onChange={(e) => handleRowChange(mock.id, 'varcScore', e.target.value)}
-                    />
-                  </td>
-
-                  <td style={{ textAlign: 'center' }}>
-                    <div className={`mock-total-display ${displayTotal ? 'active' : ''}`}>
-                      {displayTotal || '-'}
-                    </div>
-                  </td>
-
-                  <td>
-                    <input
-                      type="text"
-                      className="mock-inline-input percentile"
-                      placeholder="99.0"
-                      disabled={mock.status !== 'Taken'}
-                      value={mock.percentile}
-                      onChange={(e) => handleRowChange(mock.id, 'percentile', e.target.value)}
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      type="text"
-                      className="mock-inline-input notes"
-                      placeholder="Silly mistakes, pacing summary, topics to revise..."
-                      value={mock.notes}
-                      onChange={(e) => handleRowChange(mock.id, 'notes', e.target.value)}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* MOBILE COLLAPSIBLE CARDS VIEW */}
-      <div className="mobile-only mock-cards-list">
-        {filteredMocks.map((mock) => {
-          const calculatedTotal = (parseFloat(mock.quantScore) || 0) + (parseFloat(mock.lrdiScore) || 0) + (parseFloat(mock.varcScore) || 0);
-          const displayTotal = mock.status === 'Taken' ? (mock.totalScore !== "" ? mock.totalScore : calculatedTotal) : "";
-          const isExpanded = expandedMockId === mock.id;
-
-          return (
-            <div 
-              key={mock.id} 
-              className={`mock-mobile-card ${mock.status === 'Taken' ? 'taken' : mock.status === 'Scheduled' ? 'scheduled' : ''}`}
-            >
-              {/* Header */}
-              <div className="mock-card-header" onClick={() => toggleExpand(mock.id)}>
-                <div className="card-header-left">
-                  <span className="mock-id-badge">#{mock.id}</span>
-                  <span className="mock-card-title">{mock.title || `Mock Test ${mock.id}`}</span>
+      {/* 3. SPACIOUS TWO-COLUMN WORKSPACE: 30-MISSION GRID & INSPECTOR */}
+      <div className="mock-workspace-grid">
+        
+        {/* LEFT: 30-MOCK EXAM ORBIT TILES */}
+        <div className="mock-board-panel">
+          <div className="phases-flow-stack">
+            {displayedPhases.map((phase) => (
+              <div key={phase.id} className="phase-card-block">
+                <div className="phase-block-head">
+                  <div className="phase-title-row">
+                    <span className="phase-title-text">{phase.name}</span>
+                    <span className="phase-range-badge">{phase.range}</span>
+                  </div>
+                  <p className="phase-subtext">{phase.description}</p>
                 </div>
-                <div className="card-header-right">
-                  {mock.status === 'Taken' && displayTotal && (
-                    <span className="mock-card-badge-score">
-                      {displayTotal} pts {mock.percentile ? `(${mock.percentile}%)` : ''}
-                    </span>
-                  )}
-                  <span className={`mock-card-status-dot ${mock.status || 'not-started'}`} />
-                  <span className="mock-card-arrow">
-                    <Icons.ArrowRight size={14} style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
-                  </span>
-                </div>
-              </div>
 
-              {/* Collapsible content body */}
-              {isExpanded && (
-                <div className="mock-card-body animate-fade-in">
-                  <div className="mock-card-row">
-                    <div className="mock-card-field">
-                      <label>Mock Name</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. SIMCAT 1"
-                        value={mock.title}
-                        onChange={(e) => handleRowChange(mock.id, 'title', e.target.value)}
-                        className="mock-card-input"
-                      />
-                    </div>
-                    <div className="mock-card-field">
-                      <label>Status</label>
-                      <select
-                        value={mock.status}
-                        onChange={(e) => handleRowChange(mock.id, 'status', e.target.value)}
-                        className="mock-card-select"
+                {/* Generous 5-Column Flight Grid */}
+                <div className="phase-tiles-grid">
+                  {phase.mocks.map((m) => {
+                    const isTaken = m.status === 'Taken';
+                    const isScheduled = m.status === 'Scheduled';
+                    const isNext = m.id === nextMock.id;
+                    const isSelected = m.id === selectedMockId;
+                    const totalScore = parseFloat(m.totalScore) || (
+                      (parseFloat(m.quantScore) || 0) + (parseFloat(m.lrdiScore) || 0) + (parseFloat(m.varcScore) || 0)
+                    );
+
+                    return (
+                      <div
+                        key={m.id}
+                        className={`mock-flight-tile ${isTaken ? 'is-taken' : isScheduled ? 'is-scheduled' : 'is-pending'} ${isNext ? 'is-next' : ''} ${isSelected ? 'is-selected' : ''}`}
+                        onClick={() => setSelectedMockId(m.id)}
                       >
-                        <option value="Not Started">Not Started</option>
-                        <option value="Scheduled">Scheduled</option>
-                        <option value="Taken">Taken</option>
-                      </select>
-                    </div>
-                  </div>
+                        <div className="tile-top-bar">
+                          <span className="tile-num-badge">#{m.id < 10 ? `0${m.id}` : m.id}</span>
+                          {isTaken ? (
+                            <span className="tile-status-icon taken">
+                              <Icons.Check size={11} />
+                            </span>
+                          ) : isNext ? (
+                            <span className="tile-pulse-indicator">NEXT</span>
+                          ) : isScheduled ? (
+                            <span className="tile-status-icon scheduled">
+                              <Icons.Calendar size={11} />
+                            </span>
+                          ) : (
+                            <span className="tile-status-icon pending" />
+                          )}
+                        </div>
 
-                  <div className="mock-card-row">
-                    <div className="mock-card-field">
-                      <label>Date Taken</label>
-                      <input
-                        type="date"
-                        value={mock.date}
-                        onChange={(e) => handleRowChange(mock.id, 'date', e.target.value)}
-                        className="mock-card-input"
+                        <div className="tile-body-score">
+                          {isTaken ? (
+                            <div className="tile-score-readout">
+                              <span className="score-big">{totalScore}</span>
+                              <span className="score-unit">pts</span>
+                            </div>
+                          ) : (
+                            <div className="tile-score-placeholder">
+                              <span>--</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="tile-bottom-meta">
+                          <span className="tile-mock-label">{m.title || `Mock Test ${m.id}`}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* RIGHT: SPACIOUS MISSION INSPECTOR PANEL */}
+        <div className="mock-inspector-panel">
+          <div className="inspector-head">
+            <div className="inspector-badge-row">
+              <span className="inspector-badge-lbl">MISSION INSPECTOR</span>
+              <span className="inspector-id-code">MOCK #{selectedMock.id < 10 ? `0${selectedMock.id}` : selectedMock.id}</span>
+            </div>
+            <button
+              type="button"
+              className="inspector-action-btn"
+              onClick={() => openEditModal(selectedMock)}
+            >
+              <Icons.Edit size={13} />
+              <span>{selectedMockDetails.isTaken ? 'Edit Scores' : 'Log Exam'}</span>
+            </button>
+          </div>
+
+          <div className="inspector-body">
+            <div className="inspector-title-block">
+              <h3 className="inspector-mock-name">{selectedMock.title || `Mock Test ${selectedMock.id}`}</h3>
+              <div className="inspector-meta-row">
+                <span className={`status-pill ${selectedMock.status || 'Not Started'}`}>
+                  {selectedMock.status === 'Taken' ? 'Evaluated & Cleared' : selectedMock.status === 'Scheduled' ? 'Exam Scheduled' : 'Awaiting Attempt'}
+                </span>
+                <span className="date-tag">
+                  {selectedMock.date ? `Date: ${selectedMock.date}` : 'No date set'}
+                </span>
+              </div>
+            </div>
+
+            {selectedMockDetails.isTaken ? (
+              <div className="inspector-score-breakdown">
+                {/* Composite Score Card */}
+                <div className="composite-score-hero">
+                  <div className="composite-left">
+                    <span className="score-huge">{selectedMockDetails.total}</span>
+                    <span className="score-huge-lbl">Composite Points</span>
+                  </div>
+                  <div className="composite-right">
+                    <span className="percentile-highlight">{selectedMockDetails.p}%ile</span>
+                    {selectedMockDetails.delta !== null && (
+                      <span className={`delta-tag ${selectedMockDetails.delta >= 0 ? 'gain' : 'drop'}`}>
+                        {selectedMockDetails.delta >= 0 ? `▲ +${selectedMockDetails.delta}` : `▼ ${selectedMockDetails.delta}`} vs prior
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3 Sectional Cards with Progress Bars */}
+                <div className="sectional-meters-grid">
+                  <div className="sec-meter-card quant">
+                    <div className="sec-meter-top">
+                      <span className="sec-name">Quantitative (QA)</span>
+                      <span className="sec-points">{selectedMockDetails.q} pts</span>
+                    </div>
+                    <div className="sec-meter-track">
+                      <div 
+                        className="sec-meter-fill qa" 
+                        style={{ width: `${Math.min(100, Math.round((selectedMockDetails.q / 60) * 100))}%` }}
                       />
                     </div>
                   </div>
 
-                  {mock.status === 'Taken' && (
-                    <>
-                      <div className="mock-card-row three-cols">
-                        <div className="mock-card-field">
-                          <label>Quant</label>
-                          <input
-                            type="number"
-                            placeholder="0"
-                            value={mock.quantScore}
-                            onChange={(e) => handleRowChange(mock.id, 'quantScore', e.target.value)}
-                            className="mock-card-input text-center"
-                          />
-                        </div>
-                        <div className="mock-card-field">
-                          <label>LRDI</label>
-                          <input
-                            type="number"
-                            placeholder="0"
-                            value={mock.lrdiScore}
-                            onChange={(e) => handleRowChange(mock.id, 'lrdiScore', e.target.value)}
-                            className="mock-card-input text-center"
-                          />
-                        </div>
-                        <div className="mock-card-field">
-                          <label>VARC</label>
-                          <input
-                            type="number"
-                            placeholder="0"
-                            value={mock.varcScore}
-                            onChange={(e) => handleRowChange(mock.id, 'varcScore', e.target.value)}
-                            className="mock-card-input text-center"
-                          />
-                        </div>
-                      </div>
+                  <div className="sec-meter-card lrdi">
+                    <div className="sec-meter-top">
+                      <span className="sec-name">Data Interpretation & LR</span>
+                      <span className="sec-points">{selectedMockDetails.l} pts</span>
+                    </div>
+                    <div className="sec-meter-track">
+                      <div 
+                        className="sec-meter-fill dilr" 
+                        style={{ width: `${Math.min(100, Math.round((selectedMockDetails.l / 60) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
 
-                      <div className="mock-card-row">
-                        <div className="mock-card-field">
-                          <label>Total Score</label>
-                          <div className="mock-card-readonly-val">{displayTotal || '0'}</div>
-                        </div>
-                        <div className="mock-card-field">
-                          <label>Percentile</label>
-                          <input
-                            type="text"
-                            placeholder="e.g. 99.4"
-                            value={mock.percentile}
-                            onChange={(e) => handleRowChange(mock.id, 'percentile', e.target.value)}
-                            className="mock-card-input"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mock-card-field full-width">
-                        <label>Review Summary / Notes</label>
-                        <textarea
-                          rows="2"
-                          placeholder="Silly mistakes, strategy notes..."
-                          value={mock.notes}
-                          onChange={(e) => handleRowChange(mock.id, 'notes', e.target.value)}
-                          className="mock-card-textarea"
-                        />
-                      </div>
-                    </>
-                  )}
+                  <div className="sec-meter-card varc">
+                    <div className="sec-meter-top">
+                      <span className="sec-name">Verbal Ability & RC</span>
+                      <span className="sec-points">{selectedMockDetails.v} pts</span>
+                    </div>
+                    <div className="sec-meter-track">
+                      <div 
+                        className="sec-meter-fill varc" 
+                        style={{ width: `${Math.min(100, Math.round((selectedMockDetails.v / 60) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-          );
-        })}
+
+                {/* Strategy Review & Mistake Notes */}
+                <div className="strategy-notes-card">
+                  <div className="strategy-notes-header">
+                    <Icons.Target size={13} />
+                    <span>Strategy Takeaways & Error Log</span>
+                  </div>
+                  <p className="strategy-notes-text">
+                    {selectedMock.notes 
+                      ? `"${stripEmojis(selectedMock.notes)}"`
+                      : 'No analytical review logged yet. Record silly mistakes and pacing insights to refine set selection.'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="inspector-pending-card">
+                <div className="pending-icon-circle">
+                  <Icons.Award size={26} />
+                </div>
+                <h4 className="pending-title">Exam Flight Not Attempted</h4>
+                <p className="pending-desc">
+                  Take this 2-hour full-length CAT exam to unlock precision sectional telemetry, velocity delta, and projected percentile bracket.
+                </p>
+                <button
+                  type="button"
+                  className="record-exam-btn"
+                  onClick={() => openEditModal(selectedMock)}
+                >
+                  <AnimatedLightningIcon size={14} color="#ffffff" />
+                  <span>Record Mock #{selectedMock.id} Scores</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
+
+      {/* 4. SCORE LOGGER MODAL */}
+      {editingMock && (
+        <div className="mock-modal-overlay" onClick={() => setEditingMock(null)}>
+          <div className="mock-modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <span className="modal-mock-id">MOCK #{modalForm.id}</span>
+                <h3>{modalForm.title || `Mock Test ${modalForm.id}`}</h3>
+              </div>
+              <button type="button" className="modal-close-btn" onClick={() => setEditingMock(null)}>
+                <Icons.Close size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveModal} className="modal-body-form">
+              <div className="form-row two-cols">
+                <div className="form-field">
+                  <label>Mock Exam Title</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. SIMCAT 1, AIMCAT 2601"
+                    value={modalForm.title}
+                    onChange={(e) => setModalForm(prev => ({ ...prev, title: e.target.value }))}
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label>Status</label>
+                  <select
+                    value={modalForm.status}
+                    onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))}
+                  >
+                    <option value="Taken">Taken (Completed)</option>
+                    <option value="Scheduled">Scheduled</option>
+                    <option value="Not Started">Not Started</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-field">
+                  <label>Date Attempted</label>
+                  <input
+                    type="date"
+                    value={modalForm.date}
+                    onChange={(e) => setModalForm(prev => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {modalForm.status === 'Taken' && (
+                <>
+                  <div className="form-row sectional-scores-row">
+                    <div className="form-field">
+                      <label>Quant (QA)</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={modalForm.quantScore}
+                        onChange={(e) => setModalForm(prev => ({ ...prev, quantScore: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="form-field">
+                      <label>DILR</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={modalForm.lrdiScore}
+                        onChange={(e) => setModalForm(prev => ({ ...prev, lrdiScore: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="form-field">
+                      <label>VARC</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={modalForm.varcScore}
+                        onChange={(e) => setModalForm(prev => ({ ...prev, varcScore: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Auto-Calculated Composite Display */}
+                  <div className="modal-total-calc-banner">
+                    <div>
+                      <span className="calc-label">Total Composite Score</span>
+                      <span className="calc-val">
+                        {(parseFloat(modalForm.quantScore) || 0) + (parseFloat(modalForm.lrdiScore) || 0) + (parseFloat(modalForm.varcScore) || 0)} pts
+                      </span>
+                    </div>
+                    <div>
+                      <span className="calc-label">Projected CAT Percentile</span>
+                      <span className="calc-val accent">
+                        {modalForm.percentile || estimateCatPercentile(
+                          (parseFloat(modalForm.quantScore) || 0) + (parseFloat(modalForm.lrdiScore) || 0) + (parseFloat(modalForm.varcScore) || 0)
+                        )}%ile
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="form-field full">
+                <label>Review Notes & Strategy Takeaways</label>
+                <textarea
+                  rows="3"
+                  placeholder="What went wrong? Silly calculation errors, poor set selection in DILR, pacing issues..."
+                  value={modalForm.notes}
+                  onChange={(e) => setModalForm(prev => ({ ...prev, notes: e.target.value }))}
+                />
+              </div>
+
+              <div className="modal-footer-actions">
+                <button type="button" className="btn-cancel" onClick={() => setEditingMock(null)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-save">
+                  Save Mock Results
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

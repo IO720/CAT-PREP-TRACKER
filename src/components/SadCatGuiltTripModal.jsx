@@ -49,14 +49,14 @@ export default function SadCatGuiltTripModal({
           >
             <defs>
               <linearGradient id="sadCatBodyGrad" x1="40" y1="20" x2="130" y2="150" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#38bdf8" />
-                <stop offset="60%" stopColor="#2563eb" />
-                <stop offset="100%" stopColor="#1e1b4b" />
+                <stop offset="0%" stopColor="var(--accent-color, #38bdf8)" />
+                <stop offset="60%" stopColor="var(--accent-secondary, #818cf8)" />
+                <stop offset="100%" stopColor="var(--accent-color, #38bdf8)" stopOpacity="0.85" />
               </linearGradient>
 
               <linearGradient id="sadTearGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#67e8f9" />
-                <stop offset="100%" stopColor="#0284c7" />
+                <stop offset="0%" stopColor="var(--accent-color, #67e8f9)" />
+                <stop offset="100%" stopColor="var(--accent-secondary, #0284c7)" />
               </linearGradient>
 
               <filter id="sadTearGlow">
@@ -75,9 +75,9 @@ export default function SadCatGuiltTripModal({
             {/* Drooping Head */}
             <g className="sad-cat-head-group">
               {/* Droopy / Flattened Cat Ears (Sign of sadness) */}
-              <polygon points="46,74 32,54 62,56" fill="#38bdf8" />
+              <polygon points="46,74 32,54 62,56" fill="var(--accent-color, #38bdf8)" />
               <polygon points="50,70 38,56 60,58" fill="#f472b6" opacity="0.8" />
-              <polygon points="124,74 138,54 108,56" fill="#2563eb" />
+              <polygon points="124,74 138,54 108,56" fill="var(--accent-secondary, #c084fc)" />
               <polygon points="120,70 132,56 110,58" fill="#f472b6" opacity="0.8" />
 
               {/* Head Silhouette */}
@@ -85,8 +85,8 @@ export default function SadCatGuiltTripModal({
 
               {/* Focus Headphones slipping down slightly */}
               <path d="M52 82 C52 50, 118 50, 118 82" stroke="#f1f5f9" strokeWidth="3.5" strokeLinecap="round" fill="none" />
-              <rect x="46" y="74" width="11" height="20" rx="5" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.8" />
-              <rect x="113" y="74" width="11" height="20" rx="5" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.8" />
+              <rect x="46" y="74" width="11" height="20" rx="5" fill="#0f172a" stroke="var(--accent-color, #38bdf8)" strokeWidth="1.8" />
+              <rect x="113" y="74" width="11" height="20" rx="5" fill="#0f172a" stroke="var(--accent-secondary, #c084fc)" strokeWidth="1.8" />
 
               {/* Scholar Glasses with Drooping Angle */}
               <g transform="rotate(3 85 78)">

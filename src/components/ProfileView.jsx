@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   signUpUser, 
   logInUser, 
@@ -12,8 +12,44 @@ import {
   isFirebaseConfigured 
 } from '../utils/firebase';
 import AvatarRenderer, { AVATAR_PRESETS } from './AvatarRenderer';
-import AspirantProfileCard from './AspirantProfileCard';
+import StudyContributionHeatmap from './StudyContributionHeatmap';
+import { calculateUserBadges } from '../utils/badgeUtils';
 import { Icons } from './AspirantIcons';
+import { 
+  AnimatedFlameIcon, 
+  AnimatedTargetIcon, 
+  AnimatedCrownIcon, 
+  AnimatedLightningIcon,
+  AnimatedSparkleIcon,
+  AnimatedShieldCheckIcon,
+  AnimatedRadarBeaconIcon
+} from './AnimatedUiIcons';
+import { stripEmojis } from '../utils/textUtils';
+
+const BG_COLORS = [
+  '#38bdf8', '#818cf8', '#c084fc', '#f472b6', '#fb7185',
+  '#fb923c', '#fbbf24', '#34d399', '#2dd4bf', '#94a3b8'
+];
+
+const BANNER_THEMES = [
+  { id: 'cyber-sky', name: 'Cyber Sky', bg: 'linear-gradient(135deg, #0284c7 0%, #0f172a 100%)' },
+  { id: 'emerald-matrix', name: 'Emerald Matrix', bg: 'linear-gradient(135deg, #059669 0%, #064e3b 100%)' },
+  { id: 'violet-nebula', name: 'Violet Nebula', bg: 'linear-gradient(135deg, #7c3aed 0%, #1e1b4b 100%)' },
+  { id: 'solar-flare', name: 'Solar Flare', bg: 'linear-gradient(135deg, #ea580c 0%, #451a03 100%)' },
+  { id: 'neon-rose', name: 'Neon Rose', bg: 'linear-gradient(135deg, #e11d48 0%, #4c0519 100%)' },
+  { id: 'teal-aurora', name: 'Teal Aurora', bg: 'linear-gradient(135deg, #0d9488 0%, #042f2e 100%)' },
+  { id: 'imperial-gold', name: 'Imperial Gold', bg: 'linear-gradient(135deg, #d97706 0%, #291e03 100%)' },
+  { id: 'midnight-stealth', name: 'Midnight Stealth', bg: 'linear-gradient(135deg, #1e293b 0%, #0b1120 100%)' }
+];
+
+const TARGET_PRESETS = [
+  'CAT 2025 (99.5+%ile • IIM-A Focus)',
+  'CAT 2025 (99.0+%ile • IIM-B/C Focus)',
+  'CAT 2025 (98.0+%ile • Top IIMs & FMS)',
+  'CAT 2026 Foundation & Early Prep',
+  'XAT + CAT Dual Target (XLRI Focus)',
+  'Custom Target Goal'
+];
 
 export default function ProfileView({ 
   user, 
@@ -33,77 +69,74 @@ export default function ProfileView({
   onReset,
   fileInputRef,
   setActiveTab,
-  initialSubTab = 'profile',
+  initialSubTab = 'passport',
   onResetSubTab = null,
   isEditOpen = false,
   onResetEditOpen = null
 }) {
-  // Sub-tabs: 'profile' (View Profile & Edit) | 'friends' (Add Friends & Buddy Network)
-  const [activeSubTab, setActiveSubTab] = useState(initialSubTab || 'profile');
+  // Navigation Section: 'passport' (Full Executive Profile) | 'network' (Friends & Invitations) | 'settings' (Data & Cloud)
+  const [activeSection, setActiveSection] = useState(initialSubTab === 'friends' ? 'network' : 'passport');
 
   useEffect(() => {
-    if (initialSubTab) {
-      setActiveSubTab(initialSubTab);
+    if (initialSubTab === 'friends') {
+      setActiveSection('network');
     }
   }, [initialSubTab]);
 
-  // Edit Profile Hover / Modal Pop-up State
+  // Edit Profile Modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(isEditOpen);
 
   useEffect(() => {
     if (isEditOpen) {
       setIsEditModalOpen(true);
-      setActiveSubTab('profile');
       if (onResetEditOpen) onResetEditOpen();
     }
-  }, [isEditOpen]);
+  }, [isEditOpen, onResetEditOpen]);
 
-  // Authentication State
+  // Auth Modal State
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authDisplayName, setAuthDisplayName] = useState('');
   const [authError, setAuthError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
 
   // Profile customization state
   const [profName, setProfName] = useState(userProfile?.displayName || user?.displayName || '');
-  const [profUsername, setProfUsername] = useState(userProfile?.username || (user?.email ? user.email.split('@')[0] : ''));
+  const [profUsername, setProfUsername] = useState(userProfile?.username || (user?.email ? user.email.split('@')[0] : 'aspirant'));
   const [profAvatar, setProfAvatar] = useState(userProfile?.avatar || 'rocket');
-  const [profAvatarBg, setProfAvatarBg] = useState(userProfile?.avatarBg || '#5865f2');
-  const [profBannerBg, setProfBannerBg] = useState(userProfile?.bannerBg || '#1e1f22');
+  const [profAvatarBg, setProfAvatarBg] = useState(userProfile?.avatarBg || '#38bdf8');
+  const [profBannerBg, setProfBannerBg] = useState(userProfile?.bannerBg || '#0b1120');
   const [profBannerUrl, setProfBannerUrl] = useState(userProfile?.bannerUrl || '');
   const [profBio, setProfBio] = useState(userProfile?.bio || '');
   const [profTarget, setProfTarget] = useState(userProfile?.target || 'CAT 2025 (99.5+%ile • IIM-A Focus)');
   const [profLocation, setProfLocation] = useState(userProfile?.location || '');
-  const [editModalTab, setEditModalTab] = useState('appearance'); // 'appearance' | 'identity' | 'goals'
+  const [editModalTab, setEditModalTab] = useState('appearance');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
-  const [customImageUrl, setCustomImageUrl] = useState('');
   const imageUploadInputRef = useRef(null);
-  const [customBannerUrl, setCustomBannerUrl] = useState('');
   const bannerUploadInputRef = useRef(null);
 
-  // Unique Aspirant ID State
+  // Unique Aspirant ID
   const currentAspirantId = userProfile?.aspirantId || (user ? generateUniqueAspirantId(user.uid) : getLocalAspirantId());
   const [copiedMyId, setCopiedMyId] = useState(false);
-  const [floatingToastMsg, setFloatingToastMsg] = useState('');
+  const [toastMsg, setToastMsg] = useState('');
 
-  const showAssuranceToast = (msg) => {
-    setFloatingToastMsg(msg);
-    setTimeout(() => setFloatingToastMsg(''), 3200);
+  const showToast = (msg) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(''), 3000);
   };
 
   // Add Friend & Requests State
   const [friendSearchInput, setFriendSearchInput] = useState('');
   const [friendActionLoading, setFriendActionLoading] = useState(false);
-  const [friendError, setFriendError] = useState('');
-  const [friendSuccess, setFriendSuccess] = useState('');
+  const [friendFeedback, setFriendFeedback] = useState({ type: '', text: '' });
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [processingRequestId, setProcessingRequestId] = useState(null);
   const [removingFriendId, setRemovingFriendId] = useState(null);
 
-  // Sync state when userProfile loads
+  // Sync state when userProfile updates
   useEffect(() => {
     if (userProfile) {
       if (userProfile.displayName) setProfName(userProfile.displayName);
@@ -133,23 +166,23 @@ export default function ProfileView({
     }
   }, [user]);
 
-  // Copy own Unique ID with feedback
-  const handleCopyMyId = () => {
+  // Copy own Unique ID
+  const handleCopyMyId = (e) => {
+    if (e) e.stopPropagation();
     navigator.clipboard.writeText(currentAspirantId);
     setCopiedMyId(true);
-    setTimeout(() => setCopiedMyId(false), 2500);
+    showToast(`Copied Aspirant ID ${currentAspirantId} to clipboard!`);
+    setTimeout(() => setCopiedMyId(false), 2400);
   };
 
-  // Handle local image file upload & compression
+  // Avatar Upload
   const handleImageFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (file.size > 5 * 1024 * 1024) {
       alert("Avatar image size must be under 5MB.");
       return;
     }
-
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
@@ -175,36 +208,25 @@ export default function ProfileView({
         ctx.drawImage(img, 0, 0, width, height);
         const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
         setProfAvatar(compressedDataUrl);
-        showAssuranceToast("Avatar photo successfully applied to preview!");
+        showToast("Avatar image updated!");
       };
       img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
 
-  const handleApplyImageUrl = () => {
-    if (!customImageUrl.trim()) return;
-    setProfAvatar(customImageUrl.trim());
-    setCustomImageUrl('');
-    showAssuranceToast("Avatar image URL successfully applied!");
-  };
-
-  // Handle local banner file upload (supports JPG, PNG, WebP, and animated GIFs)
+  // Banner Upload
   const handleBannerFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (file.size > 8 * 1024 * 1024) {
       alert("Banner file size must be under 8MB.");
       return;
     }
-
     const isGif = file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
-
     if (isGif) {
-      // Check GIF file size - directly embedded animated GIFs in Firestore must be <= 400KB
       if (file.size > 400 * 1024) {
-        alert("Animated GIF file is too large (" + Math.round(file.size / 1024) + "KB). Direct file uploads must be under 400KB. Tip: Paste an image URL (e.g. from Tenor, Giphy, or Imgur) in the URL box below to use any GIF without size limits!");
+        alert("Animated GIF must be under 400KB.");
         return;
       }
       const reader = new FileReader();
@@ -212,22 +234,20 @@ export default function ProfileView({
         if (event.target?.result) {
           setProfBannerBg(event.target.result);
           setProfBannerUrl(event.target.result);
-          showAssuranceToast("Animated GIF banner successfully applied!");
+          showToast("Animated banner applied!");
         }
       };
       reader.readAsDataURL(file);
     } else {
-      // Optimize image formats with canvas downscaling and compression
       const reader = new FileReader();
       reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_W = 750;
+          const MAX_W = 850;
           const MAX_H = 320;
           let width = img.width;
           let height = img.height;
-
           if (width > MAX_W) {
             height = Math.round((height * MAX_W) / width);
             width = MAX_W;
@@ -236,19 +256,14 @@ export default function ProfileView({
             width = Math.round((width * MAX_H) / height);
             height = MAX_H;
           }
-
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-
           let compressed = canvas.toDataURL('image/jpeg', 0.80);
-          if (compressed.length > 300000) {
-            compressed = canvas.toDataURL('image/jpeg', 0.65);
-          }
           setProfBannerBg(compressed);
           setProfBannerUrl(compressed);
-          showAssuranceToast("Header banner photo successfully applied!");
+          showToast("Banner image applied!");
         };
         img.src = event.target.result;
       };
@@ -256,27 +271,11 @@ export default function ProfileView({
     }
   };
 
-  const handleApplyBannerUrl = () => {
-    if (!customBannerUrl.trim()) return;
-    setProfBannerBg(customBannerUrl.trim());
-    setProfBannerUrl(customBannerUrl.trim());
-    setCustomBannerUrl('');
-    showAssuranceToast("Banner image URL successfully applied!");
-  };
-
+  // Save Profile Changes
   const handleSaveProfile = async (e) => {
     if (e) e.preventDefault();
     if (!user) {
-      alert("Please sign in to save and sync your profile to cloud.");
-      return;
-    }
-
-    if (profBannerBg && profBannerBg.length > 750000) {
-      alert("Banner image is too large for cloud storage. Please select a smaller image or paste an image URL.");
-      return;
-    }
-    if (profAvatar && profAvatar.length > 500000) {
-      alert("Avatar image is too large for cloud storage. Please select a smaller photo.");
+      alert("Please sign in to sync profile changes with cloud.");
       return;
     }
 
@@ -297,491 +296,645 @@ export default function ProfileView({
           aspirantId: currentAspirantId
         });
       }
-      setProfileSuccessMsg("Profile changes successfully applied and cloud-synced!");
-      showAssuranceToast("Profile changes successfully applied and cloud-synced!");
-      setTimeout(() => {
-        setProfileSuccessMsg('');
-        setIsEditModalOpen(false);
-      }, 1000);
+      setProfileSuccessMsg("Profile updated and synced!");
+      showToast("Profile changes saved successfully!");
+      setTimeout(() => setIsEditModalOpen(false), 1000);
     } catch (err) {
-      console.error("Save profile error:", err);
-      alert("Failed to update profile: " + err.message);
+      console.error(err);
+      alert("Failed to save profile. Please check connection.");
     } finally {
       setProfileSaving(false);
     }
   };
 
-  // Handle Send Friend Request by Unique ID or Email
-  const handleSendFriendRequest = async (e) => {
-    e.preventDefault();
-    setFriendError('');
-    setFriendSuccess('');
-    setFriendActionLoading(true);
+  // Live Live Aggregated Metrics Calculation
+  const liveStats = useMemo(() => {
+    let streak = 0;
+    let solvedQs = 0;
+    let quantQs = 0;
+    let lrdiQs = 0;
+    let varcQs = 0;
+    let activeDaysCount = 0;
 
-    try {
-      if (!user) {
-        setFriendError("Please sign in with your CATalyze account to send friend requests.");
-        return;
-      }
-
-      const cleanInput = friendSearchInput.trim();
-      if (!cleanInput) {
-        setFriendError("Please enter a friend's Unique Aspirant ID or Email.");
-        return;
-      }
-
-      const res = await sendFriendRequest(user, cleanInput, {
-        displayName: profName,
-        username: profUsername,
-        avatar: profAvatar,
-        avatarBg: profAvatarBg,
-        target: profTarget,
-        aspirantId: currentAspirantId
+    if (tracker) {
+      const allDays = [];
+      ['Month 1', 'Month 2', 'Month 3', 'Month 4'].forEach(mKey => {
+        const weeks = tracker[mKey] || [];
+        weeks.forEach(w => {
+          (w.days || []).forEach(d => {
+            const q = Number(d.quantCount) || 0;
+            const l = Number(d.lrdiCount) || 0;
+            const v = Number(d.varcCount) || 0;
+            quantQs += q;
+            lrdiQs += l;
+            varcQs += v;
+            solvedQs += (q + l + v);
+            const isCompleted = d.quantCompleted || d.lrdiCompleted || d.varcCompleted || (q + l + v > 0);
+            if (isCompleted) activeDaysCount++;
+            allDays.push(isCompleted);
+          });
+        });
       });
 
-      setFriendSuccess(`Friend request sent successfully to ${res.targetUser?.displayName || 'aspirant'} (ID: ${res.targetUser?.aspirantId || 'ASP-peer'})! They will be notified in their Friend Requests panel.`);
+      for (let i = allDays.length - 1; i >= 0; i--) {
+        if (allDays[i]) streak++;
+        else if (streak > 0) break;
+      }
+    }
+
+    const takenMocks = (mocks || []).filter(m => m.status === 'Taken');
+    const mocksCount = takenMocks.length;
+    let mockTotalPoints = 0;
+    takenMocks.forEach(m => {
+      mockTotalPoints += parseFloat(m.totalScore) || 0;
+    });
+    const avgMockScore = mocksCount > 0 ? Math.round((mockTotalPoints / mocksCount) * 10) / 10 : 0;
+
+    return {
+      streak: userProfile?.streak !== undefined ? userProfile.streak : streak,
+      solvedQs: userProfile?.solvedQs !== undefined ? userProfile.solvedQs : solvedQs,
+      quantQs,
+      lrdiQs,
+      varcQs,
+      activeDaysCount,
+      mocksCount: userProfile?.mocksCount !== undefined ? userProfile.mocksCount : mocksCount,
+      avgMockScore
+    };
+  }, [tracker, mocks, userProfile]);
+
+  // Badges & Trophy calculation
+  const badges = useMemo(() => {
+    return calculateUserBadges({
+      streak: liveStats.streak,
+      solvedQs: liveStats.solvedQs,
+      mocksCount: liveStats.mocksCount
+    });
+  }, [liveStats]);
+
+  const unlockedBadges = badges.filter(b => b.isUnlocked);
+
+  // Send Friend Request
+  const handleSendFriendRequest = async (e) => {
+    e.preventDefault();
+    if (!friendSearchInput.trim()) return;
+    if (!user) {
+      setFriendFeedback({ type: 'error', text: 'Sign in to send friend requests.' });
+      return;
+    }
+
+    setFriendActionLoading(true);
+    setFriendFeedback({ type: '', text: '' });
+
+    try {
+      const res = await sendFriendRequest(user, friendSearchInput.trim(), userProfile);
+      setFriendFeedback({ type: 'success', text: `Friend request sent to ${res.targetName}!` });
       setFriendSearchInput('');
+      showToast("Invitation sent successfully!");
     } catch (err) {
-      setFriendError(err.message || "Failed to send friend request.");
+      setFriendFeedback({ type: 'error', text: err.message || 'Unable to find user with that ID or email.' });
     } finally {
       setFriendActionLoading(false);
     }
   };
 
-  // Handle Accept or Decline Friend Request
-  const handleRespondRequest = async (request, action) => {
-    setProcessingRequestId(request.id);
+  // Accept / Decline Request
+  const handleRespondRequest = async (req, action) => {
+    setProcessingRequestId(req.id);
     try {
-      await respondToFriendRequest(request.id, request.fromUid, user.uid, action);
-      if (action === 'accept') {
-        setFriendSuccess(`Accepted friend request from ${request.fromName}! You are now study buddies.`);
-        if (onAddFriendSuccess) onAddFriendSuccess();
-      } else {
-        setFriendSuccess(`Declined friend request from ${request.fromName}.`);
-      }
-      // Remove from local list optimistically
-      setIncomingRequests(prev => prev.filter(r => r.id !== request.id));
-      setTimeout(() => setFriendSuccess(''), 4000);
+      await respondToFriendRequest(req.id, action);
+      setIncomingRequests(prev => prev.filter(r => r.id !== req.id));
+      showToast(action === 'accept' ? 'Friend request accepted!' : 'Request declined.');
     } catch (err) {
-      console.error("Error responding to request:", err);
-      alert(`Failed to ${action} request: ` + err.message);
+      alert("Error responding to request: " + err.message);
     } finally {
       setProcessingRequestId(null);
     }
   };
 
-  // Handle Remove Friend
+  // Remove Friend
   const handleRemoveFriend = async (friend) => {
-    if (!user) return;
-    const confirmRemove = window.confirm(`Are you sure you want to remove ${friend.name || friend.displayName || 'this friend'} from your Study Buddy list?`);
-    if (!confirmRemove) return;
-
-    setRemovingFriendId(friend.id || friend.uid);
+    const friendId = friend.id || friend.uid;
+    if (!window.confirm(`Remove ${friend.displayName || friend.name} from your study network?`)) return;
+    setRemovingFriendId(friendId);
     try {
-      await removeFriend(user.uid, friend.id || friend.uid);
-      if (onAddFriendSuccess) onAddFriendSuccess();
-      setFriendSuccess(`Removed ${friend.name || 'friend'} from your buddy list.`);
-      setTimeout(() => setFriendSuccess(''), 3000);
+      await removeFriend(user.uid, friendId);
+      showToast(`Removed from study buddies.`);
     } catch (err) {
-      console.error("Error removing friend:", err);
-      alert("Failed to remove friend: " + err.message);
+      alert("Error removing friend: " + err.message);
     } finally {
       setRemovingFriendId(null);
     }
   };
 
-  const handleAuth = async (e) => {
+  // Auth Handlers
+  const handleAuthSubmit = async (e) => {
     e.preventDefault();
+    setAuthLoading(true);
     setAuthError('');
-    setLoading(true);
-
     try {
+      let loggedUser;
       if (isSignUp) {
-        const u = await signUpUser(email, password, displayName);
-        onAuthSuccess(u);
+        loggedUser = await signUpUser(authEmail, authPassword, authDisplayName);
       } else {
-        const u = await logInUser(email, password);
-        onAuthSuccess(u);
+        loggedUser = await logInUser(authEmail, authPassword);
       }
-      setEmail('');
-      setPassword('');
-      setDisplayName('');
+      if (onAuthSuccess) onAuthSuccess(loggedUser);
+      setIsAuthModalOpen(false);
+      showToast(`Welcome back, ${loggedUser.displayName || 'Aspirant'}!`);
     } catch (err) {
-      setAuthError(err.message.replace("Firebase: ", ""));
+      setAuthError(err.message || 'Authentication failed.');
     } finally {
-      setLoading(false);
+      setAuthLoading(false);
     }
   };
 
-  const handleLogOut = async () => {
+  const handleLogout = async () => {
+    if (!window.confirm("Log out of your account on this device?")) return;
     try {
       await logOutUser();
-      onAuthSuccess(null);
+      if (onAuthSuccess) onAuthSuccess(null);
+      showToast("Logged out successfully.");
     } catch (err) {
-      console.error("Logout failed:", err);
+      console.error(err);
     }
   };
-
-  const BG_COLORS = ['#5865f2', '#3b82f6', '#ec4899', '#10b981', '#8b5cf6', '#f59e0b', '#06b6d4', '#f97316', '#e11d48', '#23272a'];
-  const BANNER_COLORS = ['#1e1f22', '#2b2d42', '#1e3a8a', '#312e81', '#14532d', '#701a75', '#7c2d12', '#0f172a'];
-  
-  const TARGET_PRESETS = [
-    'CAT 2025 (99.5+%ile • IIM-A Focus)',
-    'CAT 2025 (99.0+%ile • Top IIMs)',
-    'CAT 2026 (Foundation & Core)',
-    'XAT 2025 (XLRI Jamshedpur Focus)',
-    'SNAP & NMAT Top Percentile',
-    'Custom Target Goal'
-  ];
-
-  // Calculate live stats from tracker and mocks
-  let liveSolvedQs = 0;
-  let liveStreak = 0;
-  let liveMocksCount = 0;
-
-  if (tracker) {
-    const allDays = [];
-    for (const [_month, weeks] of Object.entries(tracker)) {
-      weeks.forEach(week => {
-        week.days?.forEach(day => {
-          liveSolvedQs += (Number(day.quantCount) || 0) + (Number(day.lrdiCount) || 0) + (Number(day.varcCount) || 0);
-          const isDone = day.quantCompleted || day.lrdiCompleted || day.varcCompleted;
-          allDays.push(isDone);
-        });
-      });
-    }
-    for (let i = allDays.length - 1; i >= 0; i--) {
-      if (allDays[i]) liveStreak++;
-      else if (liveStreak > 0) break;
-    }
-  }
-
-  if (mocks) {
-    liveMocksCount = mocks.filter(m => m.status === 'Taken').length;
-  }
-
-  const previewProfile = {
-    displayName: profName || user?.displayName || 'Your Display Name',
-    username: profUsername || 'handle',
-    aspirantId: currentAspirantId,
-    avatar: profAvatar,
-    avatarBg: profAvatarBg,
-    bannerBg: profBannerBg,
-    bio: profBio,
-    target: profTarget,
-    location: profLocation,
-    streak: userProfile?.streak !== undefined ? userProfile.streak : liveStreak,
-    solvedQs: userProfile?.solvedQs !== undefined ? userProfile.solvedQs : liveSolvedQs,
-    mocksCount: userProfile?.mocksCount !== undefined ? userProfile.mocksCount : liveMocksCount,
-    status: 'online',
-    email: user?.email || 'aspirant@catprep.com'
-  };
-
-  const pendingRequestsCount = incomingRequests.length;
 
   return (
-    <div className="profile-view-container">
-      {/* View Header */}
-      <div className="header-row">
-        <div>
-          <h1 className="page-title">Profile & Buddy Network</h1>
-          <p className="page-subtitle">
-            Manage your aspirant identity, customize your profile, connect with study buddies, and review invitations.
-          </p>
-        </div>
-      </div>
-
-      {/* Mobile-Only Quick Navigation Hub */}
-      {setActiveTab && (
-        <div className="profile-mobile-quick-nav">
-          <button 
-            type="button" 
-            className="btn-secondary mobile-nav-tile highlight-achievement-tile" 
-            onClick={() => setActiveTab('achievements')}
-          >
-            <Icons.Award size={18} />
-            <div>
-              <div className="mobile-nav-tile-title">Achievements</div>
-              <div className="mobile-nav-tile-sub">Prestige badges & perks</div>
-            </div>
-          </button>
-
-          <button 
-            type="button" 
-            className="btn-secondary mobile-nav-tile" 
-            onClick={() => setActiveTab('lounge')}
-          >
-            <Icons.Chat size={18} />
-            <div>
-              <div className="mobile-nav-tile-title">Study Lounge</div>
-              <div className="mobile-nav-tile-sub">Live peers & chat</div>
-            </div>
-          </button>
-
-          <button 
-            type="button" 
-            className="btn-secondary mobile-nav-tile" 
-            onClick={() => setActiveTab('timeline')}
-          >
-            <Icons.BookOpen size={18} />
-            <div>
-              <div className="mobile-nav-tile-title">6-Month Plan</div>
-              <div className="mobile-nav-tile-sub">Syllabus breakdown</div>
-            </div>
-          </button>
-
-          <button 
-            type="button" 
-            className="btn-secondary mobile-nav-tile" 
-            onClick={() => setActiveTab('errors')}
-          >
-            <Icons.Target size={18} />
-            <div>
-              <div className="mobile-nav-tile-title">Error Log</div>
-              <div className="mobile-nav-tile-sub">Formulas & traps</div>
-            </div>
-          </button>
-
-          <button 
-            type="button" 
-            className="btn-secondary mobile-nav-tile" 
-            onClick={() => setActiveTab('settings')}
-          >
-            <Icons.Settings size={18} />
-            <div>
-              <div className="mobile-nav-tile-title">Settings</div>
-              <div className="mobile-nav-tile-sub">Theme, cloud & data</div>
-            </div>
-          </button>
+    <div className="profile-dashboard-wrapper fade-in">
+      
+      {/* Floating Assurance Toast */}
+      {toastMsg && (
+        <div className="profile-floating-toast">
+          <Icons.Check size={14} />
+          <span>{toastMsg}</span>
         </div>
       )}
 
-      {/* ========================================================
-          TWO MAIN SUB-TABS: PROFILE vs. ADD FRIENDS
-         ======================================================== */}
-      <div className="profile-subtabs-nav-bar">
-        <button
-          type="button"
-          className={`profile-subtab-btn ${activeSubTab === 'profile' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('profile')}
-        >
-          <Icons.User size={16} />
-          <span>My Profile</span>
-        </button>
+      {/* TOP NAVIGATION TABS (Passport, Network, Settings) */}
+      <div className="profile-unified-nav-strip">
+        <div className="nav-tabs-left">
+          <button
+            type="button"
+            className={`profile-nav-pill ${activeSection === 'passport' ? 'active' : ''}`}
+            onClick={() => setActiveSection('passport')}
+          >
+            <Icons.User size={14} />
+            <span className="pill-text-desktop">Aspirant Passport</span>
+            <span className="pill-text-mobile">Passport</span>
+          </button>
+          
+          <button
+            type="button"
+            className="profile-nav-pill"
+            onClick={() => setActiveTab && setActiveTab('achievements')}
+          >
+            <Icons.Award size={14} />
+            <span className="pill-text-desktop">Achievements</span>
+            <span className="pill-text-mobile">Badges</span>
+          </button>
 
-        <button
-          type="button"
-          className={`profile-subtab-btn ${activeSubTab === 'friends' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('friends')}
+          <button
+            type="button"
+            className={`profile-nav-pill ${activeSection === 'network' ? 'active' : ''}`}
+            onClick={() => setActiveSection('network')}
+          >
+            <Icons.Users size={14} />
+            <span className="pill-text-desktop">Study Buddies ({friends.length})</span>
+            <span className="pill-text-mobile">Buddies ({friends.length})</span>
+            {incomingRequests.length > 0 && (
+              <span className="nav-ping-badge">{incomingRequests.length}</span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            className={`profile-nav-pill ${activeSection === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveSection('settings')}
+          >
+            <Icons.Database size={14} />
+            <span className="pill-text-desktop">Data & Sync</span>
+            <span className="pill-text-mobile">Sync</span>
+          </button>
+        </div>
+
+        <div className="nav-status-right">
+          {user ? (
+            <div className="cloud-status-chip online">
+              <AnimatedRadarBeaconIcon size={14} color="#34d399" />
+              <span>Cloud Synced ({user.email})</span>
+            </div>
+          ) : (
+            <button 
+              type="button" 
+              className="cloud-sign-in-btn"
+              onClick={() => setIsAuthModalOpen(true)}
+            >
+              <Icons.Shield size={13} />
+              <span>Sign In for Cloud Sync</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ========================================================
+          PANORAMIC ASPIRANT PASSPORT HERO
+         ======================================================== */}
+      <div className="aspirant-passport-hero">
+        <div 
+          className="passport-banner-cover"
+          style={{
+            background: profBannerBg || 'linear-gradient(135deg, #0284c7 0%, #0f172a 100%)',
+            backgroundImage: profBannerUrl ? `url(${profBannerUrl})` : undefined,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
         >
-          <Icons.Users size={16} />
-          <span>Add Friends & Buddies</span>
-          {pendingRequestsCount > 0 && (
-            <span className="subtab-notification-badge" title={`${pendingRequestsCount} Pending Friend Requests`}>
-              {pendingRequestsCount}
+          <div className="passport-banner-overlay" />
+          <div className="passport-banner-top-tags">
+            <span className="verified-aspirant-pill">
+              <AnimatedShieldCheckIcon size={14} color="#34d399" />
+              <span>CATalyze 2025 Verified</span>
             </span>
-          )}
-        </button>
-      </div>
-
-      {/* Global Alerts / Status */}
-      {friendSuccess && (
-        <div className="auth-success-msg" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Icons.CheckCircle size={15} />
-          <span>{friendSuccess}</span>
-        </div>
-      )}
-      {friendError && (
-        <div className="auth-error-msg" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Icons.Close size={15} />
-          <span>{friendError}</span>
-        </div>
-      )}
-
-      {/* ========================================================
-          TAB 1: VIEW PROFILE & EDIT HOVER CARD
-         ======================================================== */}
-      {activeSubTab === 'profile' && (
-        <div className="profile-page-container fade-in">
-          {/* Floating User Assurance Toast */}
-          {floatingToastMsg && (
-            <div className="profile-global-floating-toast animate-slide-up">
-              <div className="toast-success-icon"><Icons.Check size={14} /></div>
-              <span>{floatingToastMsg}</span>
-            </div>
-          )}
-
-          {/* Primary Identity Profile Card */}
-          <div className="profile-identity-direct-wrap">
-            <AspirantProfileCard 
-              profile={previewProfile}
-              tracker={tracker}
-              isSelf={true}
-              onEditProfile={() => setIsEditModalOpen(true)}
-              onViewAchievements={() => setActiveTab('achievements')}
-            />
+            <span className="aspirant-id-display-pill" onClick={handleCopyMyId} title="Click to copy your unique ID">
+              <Icons.Hash size={11} />
+              <span>{currentAspirantId}</span>
+              {copiedMyId ? <Icons.Check size={11} /> : <Icons.Copy size={11} />}
+            </span>
           </div>
         </div>
-      )}
 
-      {/* ========================================================
-          TAB 2: ADD FRIENDS, NOTIFICATION PANEL & BUDDY NETWORK
-         ======================================================== */}
-      {activeSubTab === 'friends' && (
-        <div className="friends-tab-content fade-in">
-          
-          {/* Top Row: 2-Column Grid (My Unique ID + Connect Peer Search) */}
-          <div className="friends-top-hero-grid">
-            
-            {/* 1. Unique Aspirant ID Showcase Card */}
-            <div className="aspirant-id-hero-card">
-              <div className="id-card-header">
-                <div className="id-card-icon-badge">
-                  <Icons.Hash size={18} />
-                </div>
-                <div>
-                  <span className="id-card-super-title">Your Unique Aspirant ID</span>
-                  <p className="id-card-sub-desc">
-                    Share this ID so peers can connect instantly without email.
-                  </p>
-                </div>
-              </div>
-
-              <div className="id-card-action-box">
-                <span className="id-card-code-text">{currentAspirantId}</span>
-                <button
-                  type="button"
-                  onClick={handleCopyMyId}
-                  className="id-card-copy-btn"
-                  title="Click to copy your unique ID"
-                >
-                  {copiedMyId ? (
-                    <>
-                      <Icons.Check size={14} />
-                      <span>Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Icons.Copy size={14} />
-                      <span>Copy ID</span>
-                    </>
-                  )}
-                </button>
-              </div>
+        {/* Hero Identity Body */}
+        <div className="passport-identity-row">
+          <div className="passport-avatar-block">
+            <div className="passport-avatar-frame">
+              <AvatarRenderer 
+                avatar={profAvatar} 
+                name={profName || user?.displayName || 'Aspirant'} 
+                avatarBg={profAvatarBg} 
+                size={82}
+                status={user ? 'online' : 'offline'}
+              />
             </div>
+          </div>
 
-            {/* 2. ADD NEW FRIEND FORM (By Unique ID or Email) */}
-            <div className="send-invite-hero-card">
-              <div className="invite-card-header">
-                <div className="invite-card-icon-badge">
-                  <Icons.UserPlus size={18} />
-                </div>
-                <div>
-                  <span className="id-card-super-title">Connect with a Study Buddy</span>
-                  <p className="id-card-sub-desc">
-                    Enter your peer's Unique ID (e.g. <code>ASP-749201</code>) or email.
-                  </p>
-                </div>
-              </div>
-
-              <form className="send-invite-form" onSubmit={handleSendFriendRequest}>
-                <div className="invite-input-container">
-                  <Icons.Search size={15} className="invite-search-icon" />
-                  <input 
-                    type="text" 
-                    placeholder="Enter Unique ID (e.g. ASP-849201) or email" 
-                    value={friendSearchInput}
-                    onChange={(e) => setFriendSearchInput(e.target.value)}
-                    disabled={!user || friendActionLoading}
-                    className="invite-text-input"
-                  />
-                  <button 
-                    type="submit" 
-                    className="invite-submit-btn"
-                    disabled={!user || friendActionLoading || !friendSearchInput.trim()}
-                  >
-                    {friendActionLoading ? (
-                      <span>Sending...</span>
-                    ) : (
-                      <>
-                        <Icons.UserPlus size={14} />
-                        <span>Send Invite</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-              {!user && (
-                <div className="invite-guest-warning">
-                  <Icons.Shield size={12} /> Sign in to send friend invitations.
-                </div>
+          <div className="passport-meta-block">
+            <div className="passport-name-line">
+              <h1 className="passport-display-name">{profName || user?.displayName || 'Your Display Name'}</h1>
+              <span className="passport-handle">@{profUsername || 'aspirant'}</span>
+              {profLocation && (
+                <span className="passport-location-tag">
+                  <Icons.MapPin size={11} /> {profLocation}
+                </span>
               )}
             </div>
 
+            <div className="passport-target-line">
+              <div className="target-goal-badge">
+                <AnimatedTargetIcon size={14} color="#38bdf8" />
+                <span>{profTarget}</span>
+              </div>
+              <p className="passport-bio-text">
+                {profBio || 'Daily Quant drills, strategic LRDI set selection, and weekly mock analysis.'}
+              </p>
+            </div>
           </div>
 
-          {/* 3. INCOMING FRIEND REQUESTS (Rendered prominently only if requests exist, or sleek minimal bar) */}
-          {pendingRequestsCount > 0 ? (
-            <div className="friend-requests-panel-card animate-slide-up">
-              <div className="panel-header-with-badge">
-                <div className="panel-header-title-wrap">
-                  <div className="notification-bell-icon-wrap has-notifications">
-                    <Icons.Bell size={16} />
-                  </div>
-                  <div>
-                    <h3 className="panel-main-title">Pending Invitations ({pendingRequestsCount})</h3>
-                    <p className="panel-sub-desc">Aspirants wishing to connect as study peers.</p>
-                  </div>
+          <div className="passport-actions-block">
+            <button
+              type="button"
+              className="passport-primary-edit-btn"
+              onClick={() => setIsEditModalOpen(true)}
+            >
+              <Icons.Edit3 size={14} />
+              <span>Edit Profile</span>
+            </button>
+
+            {user ? (
+              <button
+                type="button"
+                className="passport-secondary-btn"
+                onClick={handleLogout}
+              >
+                <span>Log Out</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="passport-secondary-btn highlight"
+                onClick={() => setIsAuthModalOpen(true)}
+              >
+                <span>Sign In / Join</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================
+          SECTION 1: ASPIRANT PASSPORT (Full Workspace)
+         ======================================================== */}
+      {activeSection === 'passport' && (
+        <div className="passport-workspace-grid">
+          
+          {/* 4 LIVE TELEMETRY STAT CARDS */}
+          <div className="passport-telemetry-row">
+            
+            {/* 1. Consistency Streak */}
+            <div className="telemetry-stat-card">
+              <div className="stat-card-head">
+                <span className="stat-label">CONSISTENCY MOMENTUM</span>
+                <div className="stat-icon-wrap streak">
+                  <AnimatedFlameIcon size={16} color="#fbbf24" />
                 </div>
-                <span className="pending-badge-pill">{pendingRequestsCount} Action Required</span>
+              </div>
+              <div className="stat-value-group">
+                <span className="stat-number">{liveStats.streak}</span>
+                <span className="stat-unit">Days Active</span>
+              </div>
+              <div className="stat-subtext">
+                {liveStats.activeDaysCount} total active study days recorded
+              </div>
+            </div>
+
+            {/* 2. Questions Conquered */}
+            <div className="telemetry-stat-card">
+              <div className="stat-card-head">
+                <span className="stat-label">PRACTICE VELOCITY</span>
+                <div className="stat-icon-wrap velocity">
+                  <Icons.Target size={16} />
+                </div>
+              </div>
+              <div className="stat-value-group">
+                <span className="stat-number">{liveStats.solvedQs.toLocaleString()}</span>
+                <span className="stat-unit">Qs Solved</span>
+              </div>
+              <div className="stat-subtext">
+                QA: {liveStats.quantQs} • DILR: {liveStats.lrdiQs} • VARC: {liveStats.varcQs}
+              </div>
+            </div>
+
+            {/* 3. Mocks Completed */}
+            <div className="telemetry-stat-card">
+              <div className="stat-card-head">
+                <span className="stat-label">EXAM READINESS</span>
+                <div className="stat-icon-wrap exam">
+                  <Icons.BookOpen size={16} />
+                </div>
+              </div>
+              <div className="stat-value-group">
+                <span className="stat-number">{liveStats.mocksCount} / 30</span>
+                <span className="stat-unit">Mocks</span>
+              </div>
+              <div className="stat-subtext">
+                {liveStats.avgMockScore > 0 ? `Avg Composite: ${liveStats.avgMockScore} pts` : 'Awaiting first completed mock'}
+              </div>
+            </div>
+
+            {/* 4. Trophies & Prestige */}
+            <div 
+              className="telemetry-stat-card clickable-telemetry"
+              onClick={() => setActiveTab && setActiveTab('achievements')}
+              title="Click to view all Achievement Badges"
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="stat-card-head">
+                <span className="stat-label">PRESTIGE MILESTONES</span>
+                <div className="stat-icon-wrap prestige">
+                  <AnimatedCrownIcon size={16} color="#f472b6" />
+                </div>
+              </div>
+              <div className="stat-value-group">
+                <span className="stat-number">{unlockedBadges.length} / {badges.length}</span>
+                <span className="stat-unit">Badges</span>
+              </div>
+              <div className="stat-subtext">
+                {unlockedBadges.length === badges.length ? 'Grandmaster Mastery Achieved' : 'Unlock badges via daily consistency'} ➔
+              </div>
+            </div>
+
+          </div>
+
+          {/* TWO COLUMN LOWER WORKSPACE */}
+          <div className="passport-details-columns">
+            
+            {/* LEFT COLUMN: Study Activity Heatmap & Badges */}
+            <div className="passport-left-col">
+              
+              {/* GitHub-Style Study Contribution Heatmap */}
+              <div className="passport-glass-panel">
+                <div className="panel-top-title-row">
+                  <div className="title-left">
+                    <Icons.Calendar size={16} className="panel-ico" />
+                    <h3>Study Contribution Activity Matrix</h3>
+                  </div>
+                  <span className="panel-tag">4-Month Cadence</span>
+                </div>
+                <p className="panel-explainer">
+                  Visual intensity corresponds to daily questions conquered and sectional drills completed.
+                </p>
+
+                <div className="embedded-heatmap-container">
+                  <StudyContributionHeatmap tracker={tracker || {}} compact={false} />
+                </div>
               </div>
 
-              <div className="incoming-requests-list">
-                {incomingRequests.map((req) => (
-                  <div key={req.id} className="incoming-request-card">
-                    <div className="request-user-info">
-                      <AvatarRenderer 
-                        avatar={req.fromAvatar || 'rocket'}
-                        name={req.fromName}
-                        avatarBg={req.fromAvatarBg || '#5865f2'}
-                        size={42}
-                        status="online"
-                      />
-                      <div className="request-user-meta">
-                        <div className="request-name-row">
-                          <span className="request-sender-name">{req.fromName}</span>
-                          {req.fromAspirantId && (
-                            <span className="request-aspirant-id-badge">
-                              <Icons.Hash size={10} /> {req.fromAspirantId}
-                            </span>
-                          )}
-                        </div>
-                        <div className="request-target-text">
-                          <Icons.Target size={11} /> {req.fromTarget || 'CAT Aspirant'}
-                        </div>
-                      </div>
-                    </div>
+              {/* Prestige Trophy Showcase */}
+              <div className="passport-glass-panel">
+                <div className="panel-top-title-row">
+                  <div className="title-left">
+                    <Icons.Trophy size={16} className="panel-ico" />
+                    <h3>Collected Badges & Prestige Perks ({unlockedBadges.length}/{badges.length})</h3>
+                  </div>
+                  {setActiveTab && (
+                    <button 
+                      type="button" 
+                      className="panel-link-btn"
+                      onClick={() => setActiveTab('achievements')}
+                    >
+                      View All Achievements →
+                    </button>
+                  )}
+                </div>
 
-                    {/* Accept & Decline Actions */}
-                    <div className="request-actions-row">
+                <div className="badges-horizontal-rack">
+                  {badges.map((badge) => {
+                    const IconComp = Icons[badge.iconName] || Icons.Award;
+                    return (
+                      <div 
+                        key={badge.id} 
+                        className={`badge-rack-item ${badge.isUnlocked ? 'unlocked' : 'locked'}`}
+                        title={`${badge.name}: ${badge.description}`}
+                      >
+                        <div 
+                          className="badge-emblem-circle"
+                          style={{ '--accent-color': badge.color }}
+                        >
+                          <IconComp size={18} />
+                        </div>
+                        <span className="badge-rack-name">{badge.name}</span>
+                        <span className="badge-rack-status">
+                          {badge.isUnlocked ? 'Unlocked' : `Lock (${badge.threshold})`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+
+            {/* RIGHT COLUMN: Peer Quick Connect & Study Buddies Preview */}
+            <div className="passport-right-col">
+              
+              {/* Quick Buddy Connect Card */}
+              <div className="passport-glass-panel">
+                <div className="panel-top-title-row">
+                  <div className="title-left">
+                    <Icons.UserPlus size={16} className="panel-ico" />
+                    <h3>Connect with a Peer</h3>
+                  </div>
+                </div>
+                <p className="panel-explainer">
+                  Enter your study buddy's Unique Aspirant ID (e.g. <code>ASP-849201</code>) or email to link progress.
+                </p>
+
+                <form onSubmit={handleSendFriendRequest} className="quick-connect-form">
+                  <div className="quick-connect-input-wrap">
+                    <Icons.Search size={14} className="input-search-ico" />
+                    <input
+                      type="text"
+                      placeholder="e.g. ASP-849201 or peer@gmail.com"
+                      value={friendSearchInput}
+                      onChange={(e) => setFriendSearchInput(e.target.value)}
+                      disabled={!user || friendActionLoading}
+                    />
+                    <button
+                      type="submit"
+                      className="quick-connect-btn"
+                      disabled={!user || friendActionLoading || !friendSearchInput.trim()}
+                    >
+                      {friendActionLoading ? 'Sending...' : 'Connect'}
+                    </button>
+                  </div>
+                </form>
+
+                {friendFeedback.text && (
+                  <div className={`connect-feedback-tag ${friendFeedback.type}`}>
+                    {friendFeedback.type === 'success' ? <Icons.Check size={12} /> : <Icons.Close size={12} />}
+                    <span>{friendFeedback.text}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Study Buddies Preview */}
+              <div className="passport-glass-panel">
+                <div className="panel-top-title-row">
+                  <div className="title-left">
+                    <Icons.Users size={16} className="panel-ico" />
+                    <h3>Active Study Network ({friends.length})</h3>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="panel-link-btn"
+                    onClick={() => setActiveSection('network')}
+                  >
+                    Manage Buddies →
+                  </button>
+                </div>
+
+                {friends.length === 0 ? (
+                  <div className="empty-network-callout">
+                    <Icons.Users size={28} />
+                    <p>No study buddies added yet. Share your Unique ID <strong>{currentAspirantId}</strong> with friends to compare prep momentum!</p>
+                  </div>
+                ) : (
+                  <div className="friends-mini-stack">
+                    {friends.slice(0, 4).map((f) => (
+                      <div key={f.id || f.uid} className="friend-mini-row">
+                        <AvatarRenderer 
+                          avatar={f.avatar || 'rocket'} 
+                          name={f.displayName || f.name} 
+                          avatarBg={f.avatarBg || '#38bdf8'} 
+                          size={34}
+                          status={f.status || 'offline'}
+                        />
+                        <div className="friend-mini-meta">
+                          <span className="friend-mini-name">{f.displayName || f.name}</span>
+                          <span className="friend-mini-sub">{f.streak || 0}d streak • {f.solvedQs || 0} Qs</span>
+                        </div>
+                        {onInspectFriend && (
+                          <button
+                            type="button"
+                            className="mini-inspect-btn"
+                            onClick={() => onInspectFriend(f)}
+                            title="Inspect progress"
+                          >
+                            <Icons.Target size={13} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* ========================================================
+          SECTION 2: STUDY BUDDY NETWORK & INVITATIONS
+         ======================================================== */}
+      {activeSection === 'network' && (
+        <div className="network-section-content fade-in">
+          
+          {/* Pending Invitations Banner */}
+          {incomingRequests.length > 0 && (
+            <div className="pending-requests-card">
+              <div className="pending-card-head">
+                <div className="pending-title-group">
+                  <Icons.Bell size={16} className="pending-bell" />
+                  <h4>Pending Invitations ({incomingRequests.length})</h4>
+                </div>
+                <span className="pending-pill">Action Required</span>
+              </div>
+
+              <div className="pending-requests-grid">
+                {incomingRequests.map((req) => (
+                  <div key={req.id} className="pending-request-row">
+                    <AvatarRenderer 
+                      avatar={req.fromAvatar || 'rocket'}
+                      name={req.fromName}
+                      avatarBg={req.fromAvatarBg || '#38bdf8'}
+                      size={40}
+                      status="online"
+                    />
+                    <div className="pending-request-details">
+                      <span className="req-name">{req.fromName}</span>
+                      <span className="req-meta">
+                        #{req.fromAspirantId || 'ASP-ID'} • {req.fromTarget || 'CAT Aspirant'}
+                      </span>
+                    </div>
+                    <div className="pending-actions-row">
                       <button
                         type="button"
-                        className="request-btn accept-btn"
+                        className="btn-req accept"
                         disabled={processingRequestId === req.id}
                         onClick={() => handleRespondRequest(req, 'accept')}
-                        title="Accept friend request"
                       >
-                        <Icons.Check size={14} />
+                        <Icons.Check size={13} />
                         <span>Accept</span>
                       </button>
                       <button
                         type="button"
-                        className="request-btn decline-btn"
+                        className="btn-req decline"
                         disabled={processingRequestId === req.id}
                         onClick={() => handleRespondRequest(req, 'decline')}
-                        title="Decline friend request"
                       >
-                        <Icons.Close size={14} />
+                        <Icons.Close size={13} />
                         <span>Decline</span>
                       </button>
                     </div>
@@ -789,117 +942,101 @@ export default function ProfileView({
                 ))}
               </div>
             </div>
-          ) : null}
+          )}
 
-          {/* 4. MY STUDY BUDDIES & CONNECTED PEERS */}
-          <div className="study-buddies-section-card">
-            <div className="buddies-header-row">
-              <div className="buddies-header-left">
-                <div className="buddies-icon-wrap">
-                  <Icons.Users size={18} />
-                </div>
-                <div>
-                  <h3 className="panel-main-title">
-                    My Study Buddies ({friends.length})
-                  </h3>
-                  <p className="panel-sub-desc">
-                    Real-time status, streak momentum, and study activity.
-                  </p>
-                </div>
+          {/* Full Study Buddies Grid */}
+          <div className="full-buddies-panel">
+            <div className="buddies-panel-header">
+              <div>
+                <h3 className="buddies-title">My Study Buddies ({friends.length})</h3>
+                <p className="buddies-subtitle">Real-time study status, daily streaks, and peer accountability.</p>
               </div>
-
-              {friends.length > 0 && (
-                <div className="buddies-online-pill">
-                  <span className="live-dot" />
-                  <span>{friends.filter(f => f.status === 'studying' || f.status === 'online').length} Active</span>
-                </div>
-              )}
+              <div className="buddies-header-actions">
+                <button
+                  type="button"
+                  className="copy-my-id-btn"
+                  onClick={handleCopyMyId}
+                >
+                  <Icons.Hash size={13} />
+                  <span>My ID: {currentAspirantId}</span>
+                  {copiedMyId ? <Icons.Check size={13} /> : <Icons.Copy size={13} />}
+                </button>
+              </div>
             </div>
 
             {friends.length === 0 ? (
-              <div className="empty-friends-clean-state">
-                <div className="empty-friends-icon-box">
-                  <Icons.Users size={28} />
+              <div className="empty-buddies-hero">
+                <div className="empty-icon-wrap">
+                  <Icons.Users size={32} />
                 </div>
-                <h4 className="empty-title">No Study Buddies Added Yet</h4>
-                <p className="empty-desc">
-                  Share your Unique ID <strong>{currentAspirantId}</strong> with peers or use the search above to start tracking progress together.
-                </p>
+                <h4>No Study Buddies Connected</h4>
+                <p>Share your Unique Aspirant ID <strong>{currentAspirantId}</strong> or search using your buddy's ID above to start studying together.</p>
               </div>
             ) : (
-              <div className="buddies-modern-grid">
+              <div className="buddies-card-grid">
                 {friends.map((friend) => (
-                  <div key={friend.id || friend.uid} className="buddy-modern-card">
-                    {/* Top Row: Avatar, Identity, and Top-Right Remove Button */}
-                    <div className="buddy-modern-top">
-                      <div className="buddy-avatar-col">
-                        <AvatarRenderer 
-                          avatar={friend.avatar || 'rocket'}
-                          name={friend.displayName || friend.name}
-                          avatarBg={friend.avatarBg || '#5865f2'}
-                          size={44}
-                          status={friend.status || 'offline'}
-                        />
-                      </div>
-                      <div className="buddy-info-col">
-                        <div className="buddy-name-line">
-                          <span className="buddy-display-name">{friend.displayName || friend.name}</span>
+                  <div key={friend.id || friend.uid} className="buddy-card">
+                    <div className="buddy-card-top">
+                      <AvatarRenderer 
+                        avatar={friend.avatar || 'rocket'}
+                        name={friend.displayName || friend.name}
+                        avatarBg={friend.avatarBg || '#38bdf8'}
+                        size={46}
+                        status={friend.status || 'offline'}
+                      />
+                      <div className="buddy-card-identity">
+                        <div className="buddy-name-bar">
+                          <span className="buddy-name">{friend.displayName || friend.name}</span>
                           {friend.aspirantId && (
-                            <span className="buddy-aspirant-tag">
-                              #{friend.aspirantId}
-                            </span>
+                            <span className="buddy-id-badge">#{friend.aspirantId}</span>
                           )}
                         </div>
-                        <div className="buddy-target-line">{friend.target || 'CAT Aspirant'}</div>
-                        <div className="buddy-live-status">
+                        <span className="buddy-target-txt">{friend.target || 'CAT Aspirant'}</span>
+                        <div className="buddy-status-indicator">
                           <span className={`status-dot ${friend.status || 'offline'}`} />
-                          <span className="status-text">
+                          <span className="status-lbl">
                             {friend.status === 'studying' ? 'Focusing Now' : friend.status === 'online' ? 'Online' : 'Offline'}
                           </span>
                         </div>
                       </div>
                       <button
                         type="button"
-                        className="buddy-remove-action-btn"
+                        className="buddy-remove-btn"
                         onClick={() => handleRemoveFriend(friend)}
                         disabled={removingFriendId === (friend.id || friend.uid)}
-                        title="Remove buddy from your network"
+                        title="Remove friend"
                       >
-                        <Icons.UserX size={15} />
+                        <Icons.UserX size={14} />
                       </button>
                     </div>
 
-                    {/* Middle Row: Prep Stats Badges */}
-                    <div className="buddy-stats-strip">
-                      <div className="buddy-stat-badge">
-                        <Icons.Flame size={12} color="#f97316" />
+                    <div className="buddy-card-metrics">
+                      <div className="b-metric-pill">
+                        <Icons.Flame size={12} color="#fbbf24" />
                         <span>{friend.streak || 0}d streak</span>
                       </div>
-                      <div className="buddy-stat-badge">
+                      <div className="b-metric-pill">
                         <Icons.Target size={12} color="#38bdf8" />
                         <span>{friend.solvedQs || 0} Qs solved</span>
                       </div>
                     </div>
 
-                    {/* Bottom Row: 2 Clean Full-Width Actions */}
-                    <div className="buddy-modern-actions">
+                    <div className="buddy-card-actions">
                       {onMessagePeer && (
                         <button
                           type="button"
-                          className="buddy-action-cta-btn primary"
+                          className="buddy-btn primary"
                           onClick={() => onMessagePeer(friend)}
-                          title={`Direct message with ${friend.displayName || friend.name}`}
                         >
                           <Icons.MessageSquare size={13} />
-                          <span>Message</span>
+                          <span>Direct Message</span>
                         </button>
                       )}
                       {onInspectFriend && (
                         <button
                           type="button"
-                          className="buddy-action-cta-btn secondary"
+                          className="buddy-btn secondary"
                           onClick={() => onInspectFriend(friend)}
-                          title={`Inspect ${friend.displayName || friend.name}'s progress`}
                         >
                           <Icons.Target size={13} />
                           <span>Inspect</span>
@@ -911,120 +1048,209 @@ export default function ProfileView({
               </div>
             )}
           </div>
+
         </div>
       )}
 
       {/* ========================================================
-          EDIT PROFILE HOVER CARD / POP-UP MODAL
+          SECTION 3: DATA MANAGEMENT, BACKUP & CLOUD SYNC
          ======================================================== */}
-      {isEditModalOpen && (
-        <div className="modal-backdrop fade-in" onClick={() => setIsEditModalOpen(false)}>
-          <div 
-            className="modal-card edit-profile-popup-modal animate-slide-up"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="edit-modal-header">
-              <div className="edit-modal-header-left">
-                <div className="edit-modal-icon-wrap">
-                  <Icons.Edit3 size={18} />
-                </div>
+      {activeSection === 'settings' && (
+        <div className="settings-section-content fade-in">
+          <div className="settings-cards-grid">
+            
+            {/* Card 1: Cloud Account Status */}
+            <div className="settings-panel-card">
+              <div className="panel-card-head">
+                <Icons.Cloud size={18} className="panel-head-ico" />
                 <div>
-                  <h3 className="edit-modal-title">Edit Aspirant Profile</h3>
-                  <p className="edit-modal-subtitle">
-                    Customize your profile avatar, banner, handle, and preparation targets.
-                  </p>
+                  <h4>Cloud Synchronization</h4>
+                  <p>Keep your daily drill metrics and mocks backed up across all devices.</p>
                 </div>
               </div>
 
-              <button 
-                type="button"
-                className="modal-close-btn" 
-                onClick={() => setIsEditModalOpen(false)}
-                title="Close"
-              >
-                <Icons.Close size={18} />
+              <div className="panel-card-body">
+                {user ? (
+                  <div className="auth-user-status-box">
+                    <div className="user-info-row">
+                      <span className="lbl">Logged in as:</span>
+                      <span className="val">{user.email}</span>
+                    </div>
+                    <div className="user-info-row">
+                      <span className="lbl">Cloud Status:</span>
+                      <span className="val success">Real-Time Firestore Sync Active</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="auth-action-btn logout"
+                      onClick={handleLogout}
+                    >
+                      Sign Out of Device
+                    </button>
+                  </div>
+                ) : (
+                  <div className="auth-guest-status-box">
+                    <p>You are currently in <strong>Local Offline Mode</strong>. Your progress is saved in this browser, but not synced across devices.</p>
+                    <button
+                      type="button"
+                      className="auth-action-btn signin"
+                      onClick={() => setIsAuthModalOpen(true)}
+                    >
+                      <Icons.Shield size={14} />
+                      <span>Sign In or Create Account</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Card 2: Data Portability (Export & Import) */}
+            <div className="settings-panel-card">
+              <div className="panel-card-head">
+                <Icons.Database size={18} className="panel-head-ico" />
+                <div>
+                  <h4>Data Portability & Backup</h4>
+                  <p>Download a complete JSON snapshot of your 4-month plan, daily drills, and 30 mocks.</p>
+                </div>
+              </div>
+
+              <div className="panel-card-body">
+                <div className="data-action-buttons-row">
+                  {onExport && (
+                    <button
+                      type="button"
+                      className="data-port-btn export"
+                      onClick={onExport}
+                    >
+                      <Icons.Download size={15} />
+                      <span>Export Backup (JSON)</span>
+                    </button>
+                  )}
+                  {onImport && (
+                    <button
+                      type="button"
+                      className="data-port-btn import"
+                      onClick={onImport}
+                    >
+                      <Icons.Upload size={15} />
+                      <span>Restore from JSON File</span>
+                    </button>
+                  )}
+                </div>
+
+                {startDate !== undefined && (
+                  <div className="prep-start-date-row">
+                    <label>Preparation Journey Start Date:</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => onUpdateStartDate && onUpdateStartDate(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {onReset && (
+                  <div className="danger-zone-strip">
+                    <button
+                      type="button"
+                      className="reset-tracker-btn"
+                      onClick={onReset}
+                    >
+                      Reset All Tracker Data
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL: EDIT PROFILE & APPEARANCE
+         ======================================================== */}
+      {isEditModalOpen && (
+        <div className="mock-modal-overlay" onClick={() => setIsEditModalOpen(false)}>
+          <div className="edit-profile-modal-box" onClick={(e) => e.stopPropagation()}>
+            
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <Icons.Edit3 size={16} />
+                <h3>Edit Aspirant Profile</h3>
+              </div>
+              <button type="button" className="modal-close-btn" onClick={() => setIsEditModalOpen(false)}>
+                <Icons.Close size={16} />
               </button>
             </div>
 
-            {/* Live Profile Header Preview Card */}
-            <div className="edit-modal-live-preview">
+            {/* Modal Live Banner & Avatar Preview */}
+            <div className="modal-live-preview-card">
               <div 
-                className="edit-preview-banner" 
-                style={{ 
-                  backgroundColor: profBannerBg || '#1e1f22',
-                  backgroundImage: profBannerUrl ? `url(${profBannerUrl})` : 'none',
+                className="live-preview-banner"
+                style={{
+                  background: profBannerBg || 'linear-gradient(135deg, #0284c7 0%, #0f172a 100%)',
+                  backgroundImage: profBannerUrl ? `url(${profBannerUrl})` : undefined,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center'
                 }}
               >
-                <span className="edit-preview-tag">LIVE PREVIEW</span>
+                <div className="live-preview-banner-tint" />
+                <span className="live-badge">
+                  <span className="live-badge-dot" />
+                  <span>LIVE PREVIEW</span>
+                </span>
               </div>
-              <div className="edit-preview-body">
-                <div className="edit-preview-avatar-wrap">
+              <div className="live-preview-identity">
+                <div className="live-preview-avatar-wrap">
                   <AvatarRenderer 
                     avatar={profAvatar} 
-                    name={profName} 
+                    name={profName || 'Your Name'} 
                     avatarBg={profAvatarBg} 
-                    size={48} 
+                    size={56} 
                   />
                 </div>
-                <div className="edit-preview-meta">
-                  <span className="edit-preview-name">{profName || 'Your Name'}</span>
-                  <span className="edit-preview-target">{profTarget || 'CAT 2025 Aspirant'}</span>
+                <div className="live-preview-text">
+                  <span className="live-name">{profName || 'Your Name'}</span>
+                  <span className="live-target">{profTarget}</span>
                 </div>
               </div>
             </div>
 
-            {/* Modal Navigation Tabs */}
-            <div className="edit-modal-tabs-bar">
+            {/* Modal Sub-Tabs */}
+            <div className="modal-tabs-strip">
               <button
                 type="button"
-                className={`edit-tab-btn ${editModalTab === 'appearance' ? 'active' : ''}`}
+                className={`modal-tab-pill ${editModalTab === 'appearance' ? 'active' : ''}`}
                 onClick={() => setEditModalTab('appearance')}
               >
-                <Icons.Sparkles size={13} />
+                <AnimatedSparkleIcon size={13} color="#38bdf8" />
                 <span>Appearance & Banner</span>
               </button>
               <button
                 type="button"
-                className={`edit-tab-btn ${editModalTab === 'identity' ? 'active' : ''}`}
+                className={`modal-tab-pill ${editModalTab === 'identity' ? 'active' : ''}`}
                 onClick={() => setEditModalTab('identity')}
               >
                 <Icons.User size={13} />
-                <span>Identity & Handle</span>
-              </button>
-              <button
-                type="button"
-                className={`edit-tab-btn ${editModalTab === 'goals' ? 'active' : ''}`}
-                onClick={() => setEditModalTab('goals')}
-              >
-                <Icons.Target size={13} />
-                <span>Target & Bio</span>
+                <span>Identity & Goals</span>
               </button>
             </div>
 
-            {/* Modal Body / Form */}
-            <form onSubmit={handleSaveProfile} className="edit-modal-body">
+            <form onSubmit={handleSaveProfile} className="modal-form-body">
               {profileSuccessMsg && (
-                <div className="edit-modal-success-banner animate-slide-up">
-                  <Icons.Check size={16} />
+                <div className="form-success-banner">
+                  <Icons.Check size={14} />
                   <span>{profileSuccessMsg}</span>
                 </div>
               )}
-              
-              {/* TAB 1: APPEARANCE & BANNER */}
-              {editModalTab === 'appearance' && (
-                <div className="edit-tab-pane animate-fade-in">
-                  
-                  {/* Profile Avatar Block */}
-                  <div className="edit-uniform-block">
-                    <div className="edit-block-title-row">
-                      <Icons.User size={14} className="edit-block-icon" />
-                      <span>Profile Avatar</span>
-                    </div>
 
-                    <div className="edit-upload-action-row">
+              {/* TAB 1: APPEARANCE */}
+              {editModalTab === 'appearance' && (
+                <div className="form-pane">
+                  <div className="form-field-group">
+                    <label>Avatar Photo</label>
+                    <div className="file-upload-row">
                       <input 
                         type="file" 
                         ref={imageUploadInputRef} 
@@ -1034,53 +1260,41 @@ export default function ProfileView({
                       />
                       <button
                         type="button"
-                        className="edit-uniform-upload-btn"
+                        className="file-trigger-btn"
                         onClick={() => imageUploadInputRef.current?.click()}
                       >
                         <Icons.Upload size={14} />
-                        <span>Upload Photo</span>
+                        <span>Upload Custom Photo</span>
                       </button>
-
                       <button
                         type="button"
-                        className={`edit-default-toggle-btn ${profAvatar === 'default' || !profAvatar.startsWith('data:') ? 'active' : ''}`}
+                        className="file-trigger-btn secondary"
                         onClick={() => {
                           setProfAvatar('default');
-                          showAssuranceToast("Reset to default CATalyze icon!");
+                          showToast("Reset to default icon!");
                         }}
                       >
-                        <Icons.Sparkles size={13} />
-                        <span>Default Icon</span>
+                        Use Default Icon
                       </button>
                     </div>
 
-                    <div className="edit-sub-label" style={{ marginTop: '12px' }}>
-                      Default Icon & Glow Color:
-                    </div>
-                    <div className="edit-color-swatches-row">
-                      {BG_COLORS.map(color => (
+                    <label style={{ marginTop: '12px' }}>Avatar Glow / Background Accent</label>
+                    <div className="color-swatches-grid">
+                      {BG_COLORS.map(c => (
                         <button
-                          key={color}
+                          key={c}
                           type="button"
-                          className={`edit-color-swatch-circle ${profAvatarBg === color ? 'active' : ''}`}
-                          onClick={() => {
-                            setProfAvatarBg(color);
-                            showAssuranceToast("Avatar color updated!");
-                          }}
-                          style={{ backgroundColor: color }}
+                          className={`swatch-circle ${profAvatarBg === c ? 'active' : ''}`}
+                          style={{ backgroundColor: c }}
+                          onClick={() => setProfAvatarBg(c)}
                         />
                       ))}
                     </div>
                   </div>
 
-                  {/* Header Banner Block */}
-                  <div className="edit-uniform-block" style={{ marginTop: '14px' }}>
-                    <div className="edit-block-title-row">
-                      <Icons.Image size={14} className="edit-block-icon" />
-                      <span>Header Banner (Photos & Animated GIFs)</span>
-                    </div>
-
-                    <div className="edit-upload-action-row">
+                  <div className="form-field-group" style={{ marginTop: '14px' }}>
+                    <label>Passport Banner (JPG, PNG, or GIF)</label>
+                    <div className="file-upload-row">
                       <input 
                         type="file" 
                         ref={bannerUploadInputRef} 
@@ -1090,152 +1304,196 @@ export default function ProfileView({
                       />
                       <button
                         type="button"
-                        className="edit-uniform-upload-btn"
+                        className="file-trigger-btn"
                         onClick={() => bannerUploadInputRef.current?.click()}
                       >
                         <Icons.Upload size={14} />
-                        <span>Upload Photo or Animated GIF</span>
+                        <span>Upload Banner Photo or GIF</span>
                       </button>
-                      <span className="edit-upload-hint">GIF, PNG, JPG supported</span>
                     </div>
 
-                    <div className="edit-sub-label" style={{ marginTop: '12px' }}>
-                      Or Select Theme Banner Palette:
-                    </div>
-                    <div className="edit-color-swatches-row">
-                      {BANNER_COLORS.map(color => (
+                    <label style={{ marginTop: '12px' }}>Preset Cyber Theme Palettes</label>
+                    <div className="banner-swatches-grid">
+                      {BANNER_THEMES.map(theme => (
                         <button
-                          key={color}
+                          key={theme.id}
                           type="button"
-                          className={`edit-banner-swatch-rect ${profBannerBg === color ? 'active' : ''}`}
+                          title={theme.name}
+                          className={`swatch-rect ${profBannerBg === theme.bg ? 'active' : ''}`}
+                          style={{ background: theme.bg }}
                           onClick={() => {
-                            setProfBannerBg(color);
+                            setProfBannerBg(theme.bg);
                             setProfBannerUrl('');
-                            showAssuranceToast("Banner color updated!");
                           }}
-                          style={{ backgroundColor: color }}
-                        />
+                        >
+                          {profBannerBg === theme.bg && <Icons.Check size={11} />}
+                        </button>
                       ))}
                     </div>
                   </div>
-
                 </div>
               )}
 
-              {/* TAB 2: IDENTITY & HANDLE */}
+              {/* TAB 2: IDENTITY & GOALS */}
               {editModalTab === 'identity' && (
-                <div className="edit-tab-pane animate-fade-in">
-                  <div className="edit-uniform-block">
-                    <div className="edit-grid-2col">
-                      <div className="edit-form-field">
-                        <label className="edit-field-label">Display Name</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Sunny Pathak"
-                          value={profName}
-                          onChange={(e) => setProfName(e.target.value)}
-                          className="edit-uniform-input"
-                          required
-                        />
-                      </div>
-
-                      <div className="edit-form-field">
-                        <label className="edit-field-label">Username / Handle</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. sunnypathak"
-                          value={profUsername}
-                          onChange={(e) => setProfUsername(e.target.value)}
-                          className="edit-uniform-input"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="edit-form-field" style={{ marginTop: '14px' }}>
-                      <label className="edit-field-label">Location / City (Optional)</label>
+                <div className="form-pane">
+                  <div className="form-row two-cols">
+                    <div className="form-field">
+                      <label>Display Name</label>
                       <input
                         type="text"
-                        placeholder="e.g. Bengaluru, Karnataka"
-                        value={profLocation}
-                        onChange={(e) => setProfLocation(e.target.value)}
-                        className="edit-uniform-input"
+                        required
+                        value={profName}
+                        onChange={(e) => setProfName(e.target.value)}
+                        placeholder="e.g. Sunny Pathak"
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label>Username / Handle</label>
+                      <input
+                        type="text"
+                        value={profUsername}
+                        onChange={(e) => setProfUsername(e.target.value)}
+                        placeholder="e.g. sunnypathak"
                       />
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* TAB 3: TARGET & BIO */}
-              {editModalTab === 'goals' && (
-                <div className="edit-tab-pane animate-fade-in">
-                  <div className="edit-uniform-block">
-                    <div className="edit-form-field">
-                      <label className="edit-field-label">Target Examination & Focus Goal</label>
+                  <div className="form-row two-cols">
+                    <div className="form-field">
+                      <label>Target Examination & Goal</label>
                       <select
                         value={profTarget}
                         onChange={(e) => setProfTarget(e.target.value)}
-                        className="edit-uniform-select"
                       >
                         {TARGET_PRESETS.map(t => (
                           <option key={t} value={t}>{t}</option>
                         ))}
                       </select>
-                      {profTarget === 'Custom Target Goal' && (
-                        <input
-                          type="text"
-                          placeholder="Type custom target (e.g. CAT 2026 Core • IIM-A Focus)"
-                          onChange={(e) => setProfTarget(e.target.value)}
-                          className="edit-uniform-input"
-                          style={{ marginTop: '8px' }}
-                        />
-                      )}
                     </div>
-
-                    <div className="edit-form-field" style={{ marginTop: '14px' }}>
-                      <label className="edit-field-label">Aspirant Bio & Strategy Notes</label>
-                      <textarea
-                        rows={4}
-                        placeholder="e.g. Focusing on daily Quant drills, LRDI speed practice, and regular mock analysis."
-                        value={profBio}
-                        onChange={(e) => setProfBio(e.target.value)}
-                        className="edit-uniform-textarea"
+                    <div className="form-field">
+                      <label>Location / City (Optional)</label>
+                      <input
+                        type="text"
+                        value={profLocation}
+                        onChange={(e) => setProfLocation(e.target.value)}
+                        placeholder="e.g. Bengaluru, KA"
                       />
                     </div>
+                  </div>
+
+                  <div className="form-field full">
+                    <label>Aspirant Bio & Strategy Notes</label>
+                    <textarea
+                      rows={3}
+                      value={profBio}
+                      onChange={(e) => setProfBio(e.target.value)}
+                      placeholder="e.g. Targeting 99.5+%ile with disciplined morning Quant drills and weekly full-length analysis."
+                    />
                   </div>
                 </div>
               )}
 
-              {/* Modal Actions Footer */}
-              <div className="edit-modal-footer">
-                <button
-                  type="button"
-                  className="edit-modal-cancel-btn"
-                  onClick={() => setIsEditModalOpen(false)}
-                >
+              <div className="modal-footer-actions">
+                <button type="button" className="btn-cancel" onClick={() => setIsEditModalOpen(false)}>
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="edit-modal-save-btn"
-                  disabled={profileSaving}
-                >
-                  {profileSaving ? (
-                    <>
-                      <span className="btn-spinner"></span>
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Icons.CheckCircle size={15} />
-                      <span>Save Changes</span>
-                    </>
-                  )}
+                <button type="submit" className="btn-save" disabled={profileSaving}>
+                  {profileSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL: AUTHENTICATION (SIGN IN / SIGN UP)
+         ======================================================== */}
+      {isAuthModalOpen && (
+        <div className="mock-modal-overlay" onClick={() => setIsAuthModalOpen(false)}>
+          <div className="auth-modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <Icons.Shield size={16} />
+                <h3>{isSignUp ? 'Create Aspirant Account' : 'Sign In to Account'}</h3>
+              </div>
+              <button type="button" className="modal-close-btn" onClick={() => setIsAuthModalOpen(false)}>
+                <Icons.Close size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAuthSubmit} className="modal-form-body">
+              {authError && (
+                <div className="form-error-banner">
+                  <Icons.Close size={14} />
+                  <span>{authError}</span>
+                </div>
+              )}
+
+              {isSignUp && (
+                <div className="form-field">
+                  <label>Full Display Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Sunny Pathak"
+                    value={authDisplayName}
+                    onChange={(e) => setAuthDisplayName(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <div className="form-field">
+                <label>Email Address</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="aspirant@example.com"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="form-field">
+                <label>Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                />
+              </div>
+
+              <div className="auth-switch-prompt">
+                {isSignUp ? (
+                  <span>
+                    Already have an account?{' '}
+                    <button type="button" onClick={() => setIsSignUp(false)}>Sign In</button>
+                  </span>
+                ) : (
+                  <span>
+                    Don't have an account yet?{' '}
+                    <button type="button" onClick={() => setIsSignUp(true)}>Sign Up</button>
+                  </span>
+                )}
+              </div>
+
+              <div className="modal-footer-actions">
+                <button type="button" className="btn-cancel" onClick={() => setIsAuthModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-save" disabled={authLoading}>
+                  {authLoading ? 'Authenticating...' : isSignUp ? 'Sign Up' : 'Sign In'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }

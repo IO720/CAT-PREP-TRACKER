@@ -1,4 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import gsap from 'gsap';
+import { Icons } from './AspirantIcons';
+import { 
+  AnimatedFlameIcon, 
+  AnimatedTargetIcon, 
+  AnimatedLightningIcon 
+} from './AnimatedUiIcons';
+import { playGamingAchievementSound } from '../utils/audioUtils';
 import { 
   getCalculatedDateForTrackerDay, 
   formatDateMonthDay, 
@@ -22,375 +30,587 @@ export default function DailyTrackerView({
 }) {
   const { tracker, settings } = state;
   const startDateStr = settings?.startDate;
-  const months = Object.keys(tracker || {}).sort((a, b) => {
-    const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
-    const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
-    return numA - numB;
-  });
+  
+  // Sorted month keys
+  const months = useMemo(() => {
+    return Object.keys(tracker || {}).sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+      return numA - numB;
+    });
+  }, [tracker]);
   
   // Available weeks in current month
   const weeks = tracker[activeMonth] || [];
 
-  // Card animation and particle states
-  const [animatingCards, setAnimatingCards] = useState({});
+  // Active days for selected week
+  const activeWeekDays = useMemo(() => {
+    const found = weeks.find(w => w.week === activeWeek);
+    return found?.days || [];
+  }, [weeks, activeWeek]);
+
+  // Today's position in tracker
+  const todayPosition = useMemo(() => {
+    return getTodayTrackerPosition(startDateStr, tracker);
+  }, [startDateStr, tracker]);
+
+  // Selected Day spotlight
+  const [selectedDayName, setSelectedDayName] = useState(() => {
+    return todayPosition.dayName || 'Day 1';
+  });
+
+  // Sparkle particles
   const [particles, setParticles] = useState([]);
 
-  // Calculate today's tracker position for quick jump
-  const todayPosition = getTodayTrackerPosition(startDateStr, tracker);
+  // Container ref
+  const containerRef = useRef(null);
 
+  // Jump to today
   const handleJumpToToday = () => {
     setActiveMonth(todayPosition.activeMonth);
     setActiveWeek(todayPosition.activeWeek);
+    setSelectedDayName(todayPosition.dayName);
   };
 
-  const handleCheckboxChange = (month, weekName, dayName, subject, isChecked, e) => {
-    const cardId = `${dayName}-${subject}`;
-    
-    if (isChecked) {
-      // 1. Trigger Card pop animation
-      setAnimatingCards(prev => ({ ...prev, [cardId]: true }));
-      setTimeout(() => {
-        setAnimatingCards(prev => ({ ...prev, [cardId]: false }));
-      }, 300);
+  // Animate on day change
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        '.drill-item-card, .telemetry-card-clean',
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, duration: 0.25, stagger: 0.03, ease: 'power2.out' }
+      );
+    }, containerRef);
 
-      // 2. Trigger Sparkles Particle Explosion
-      if (e && e.target) {
-        const rect = e.target.getBoundingClientRect();
-        
-        // Spawn 12 tiny particle sparkles radiating from the checkbox center
-        const newParticles = Array.from({ length: 12 }, (_, idx) => {
+    return () => ctx.revert();
+  }, [selectedDayName, activeWeek, activeMonth]);
+
+  // Handle drill completion toggle with sound
+  const handleToggleDrill = (month, weekName, dayName, subject, isCompleted, e) => {
+    const targetCompleted = !isCompleted;
+
+    if (targetCompleted) {
+      playGamingAchievementSound(0.035);
+
+      if (e && e.currentTarget) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const newParticles = Array.from({ length: 10 }, (_, idx) => {
           const angle = Math.random() * Math.PI * 2;
-          const distance = 30 + Math.random() * 50; // Explosion radius
-          const tx = `${Math.cos(angle) * distance}px`;
-          const ty = `${Math.sin(angle) * distance}px`;
-          
+          const distance = 20 + Math.random() * 35;
           return {
             id: Date.now() + idx,
             left: `${rect.left + rect.width / 2}px`,
             top: `${rect.top + rect.height / 2}px`,
-            tx,
-            ty
+            tx: `${Math.cos(angle) * distance}px`,
+            ty: `${Math.sin(angle) * distance}px`
           };
         });
 
         setParticles(prev => [...prev, ...newParticles]);
-        
-        // Cleanup particles after fly transition (600ms)
         setTimeout(() => {
           setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id)));
-        }, 600);
+        }, 500);
       }
     }
 
-    // Determine default quantity based on subject
     let defaultQty = 0;
-    if (isChecked) {
+    if (targetCompleted) {
       if (subject === 'quant') defaultQty = 18;
       if (subject === 'lrdi') defaultQty = 4;
       if (subject === 'varc') defaultQty = 4;
     }
-    
-    updateDayMetric(month, weekName, dayName, subject, isChecked, defaultQty);
+
+    updateDayMetric(month, weekName, dayName, subject, targetCompleted, defaultQty);
   };
 
-  const handleQtyChange = (month, weekName, dayName, subject, val) => {
+  const handleStepQty = (month, weekName, dayName, subject, currentVal, delta) => {
+    const current = parseInt(currentVal) || 0;
+    const nextVal = Math.max(0, current + delta);
+    const isCompleted = nextVal > 0;
+    updateDayMetric(month, weekName, dayName, subject, isCompleted, nextVal);
+  };
+
+  const handleDirectQtyChange = (month, weekName, dayName, subject, val) => {
     const qty = Math.max(0, parseInt(val) || 0);
     const isCompleted = qty > 0;
     updateDayMetric(month, weekName, dayName, subject, isCompleted, qty);
   };
 
+  // Selected Day Data
+  const selectedDay = useMemo(() => {
+    return activeWeekDays.find(d => d.day === selectedDayName) || activeWeekDays[0] || {};
+  }, [activeWeekDays, selectedDayName]);
+
+  const selectedDayDate = getCalculatedDateForTrackerDay(activeMonth, activeWeek, selectedDay.day, startDateStr);
+  const selectedDayDateFormatted = formatDateMonthDay(selectedDayDate);
+  const selectedDayIsToday = isToday(activeMonth, activeWeek, selectedDay.day, startDateStr);
+
+  const selectedCompletedCount = 
+    (selectedDay.quantCompleted ? 1 : 0) + 
+    (selectedDay.lrdiCompleted ? 1 : 0) + 
+    (selectedDay.varcCompleted ? 1 : 0);
+
+  // Subject timer sessions
+  const quantSessions = (selectedDay.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'quant');
+  const lrdiSessions = (selectedDay.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'lrdi');
+  const varcSessions = (selectedDay.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'varc');
+
+  const quantMins = quantSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+  const lrdiMins = lrdiSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+  const varcMins = varcSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+  const totalMins = quantMins + lrdiMins + varcMins;
+
+  // Day shorthand (Maps "Monday" -> "Mon", "Saturday" -> "Sat", "Day 1" -> "D1")
+  const getDayShort = (dayStr) => {
+    if (!dayStr) return 'Day';
+    const clean = dayStr.trim();
+    const dayMap = {
+      'monday': 'Mon',
+      'tuesday': 'Tue',
+      'wednesday': 'Wed',
+      'thursday': 'Thu',
+      'friday': 'Fri',
+      'saturday': 'Sat',
+      'sunday': 'Sun'
+    };
+    const lower = clean.toLowerCase();
+    if (dayMap[lower]) return dayMap[lower];
+
+    const num = clean.replace(/\D/g, '');
+    if (num) {
+      const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const idx = (parseInt(num, 10) - 1) % 7;
+      return names[idx] || `D${num}`;
+    }
+
+    return clean.substring(0, 3);
+  };
+
   return (
-    <div>
-      <div className="header-row">
-        <div>
-          <h1 className="page-title">Daily Drills</h1>
-          <p className="page-subtitle">Track your day-by-day practice checklists synced to your OS/Web calendar.</p>
+    <div ref={containerRef} className="minimal-daily-hub fade-in">
+      
+      {/* 1. COMPACT COMMAND HEADER */}
+      <div className="minimal-header-strip">
+        <div className="minimal-header-left">
+          <div className="minimal-tag">
+            <span className="minimal-ping" />
+            <span>// DAILY QUOTA DISPATCH</span>
+          </div>
+          <h1 className="minimal-title">
+            DAILY DRILLS <span className="minimal-title-italic">& Telemetry</span>
+          </h1>
         </div>
-        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <div className="sync-status-indicator" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)', padding: '6px 12px', borderRadius: '8px', border: hasUnsyncedCloudChanges ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--border-color)' }}>
-            <span style={{ 
-              display: 'inline-block', 
-              width: '8px', 
-              height: '8px', 
-              borderRadius: '50%', 
-              backgroundColor: syncStatus === 'syncing' ? '#eab308' : syncStatus === 'synced' ? '#10b981' : hasUnsyncedCloudChanges ? '#f59e0b' : '#38bdf8',
-              boxShadow: syncStatus === 'synced' ? '0 0 8px #10b981' : hasUnsyncedCloudChanges ? '0 0 6px #f59e0b' : 'none'
-            }}></span>
-            <span>
-              {syncStatus === 'syncing' 
-                ? 'Syncing to Cloud...' 
-                : syncStatus === 'synced' 
-                  ? 'Day Recorded to Cloud!' 
-                  : hasUnsyncedCloudChanges 
-                    ? 'Unsynced Cloud Changes (Saved Locally)' 
-                    : 'All Progress Synced'}
-              {lastSyncedTimeStr ? ` • ${lastSyncedTimeStr}` : ''}
-            </span>
+
+        {/* Action Controls */}
+        <div className="minimal-actions-bar">
+          <div className="minimal-sync-tag" title={lastSyncedTimeStr || 'Synced'}>
+            <span className={`sync-dot ${syncStatus === 'syncing' ? 'syncing' : syncStatus === 'synced' ? 'synced' : 'ready'}`} />
+            <span className="sync-lbl-text">{syncStatus === 'syncing' ? 'Syncing...' : 'Synced'}</span>
           </div>
 
           {onRecordDayProgress && (
             <button 
-              className="btn-secondary record-day-btn" 
+              type="button"
+              className="minimal-btn outline"
               onClick={onRecordDayProgress}
               disabled={syncStatus === 'syncing'}
-              title="Record today's progress to cloud and reserve server quota"
-              style={{ 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                gap: '6px',
-                borderColor: hasUnsyncedCloudChanges ? 'rgba(245, 158, 11, 0.5)' : undefined
-              }}
+              title="Save day progress snapshot"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={syncStatus === 'syncing' ? 'spin-anim' : ''}>
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                <polyline points="7 3 7 8 15 8"></polyline>
-              </svg>
-              <span>{syncStatus === 'syncing' ? 'Recording...' : syncStatus === 'synced' ? 'Recorded' : 'Record Day Progress'}</span>
+              <Icons.Save size={13} />
+              <span>Record</span>
             </button>
           )}
 
           <button 
-            className="btn-primary jump-today-btn" 
+            type="button"
+            className="minimal-btn accent"
             onClick={handleJumpToToday}
-            title="Jump directly to Today's drills"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            title="Jump to today's active day"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-            </svg>
-            <span>Jump to Today ({todayPosition.todayMonthDayStr})</span>
+            <Icons.Zap size={13} />
+            <span>Today ({todayPosition.todayMonthDayStr})</span>
           </button>
         </div>
       </div>
 
-      {/* Month Tabs */}
-      <div className="tracker-tabs-row">
-        {months.map(m => (
-          <button
-            key={m}
-            className={`tracker-tab ${activeMonth === m ? 'active' : ''}`}
-            onClick={() => {
-              setActiveMonth(m);
-              setActiveWeek('Week 1');
-            }}
-          >
-            {m}
-          </button>
-        ))}
+      {/* 2. UNIFIED NAVIGATOR STRIP (Responsive & Perfectly Aligned) */}
+      <div className="unified-nav-strip">
+        
+        {/* Month & Week Pills Scroller */}
+        <div className="nav-period-group">
+          {/* Months */}
+          <div className="period-pills-row">
+            {months.map(m => (
+              <button
+                key={m}
+                type="button"
+                className={`period-pill ${activeMonth === m ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveMonth(m);
+                  setActiveWeek('Week 1');
+                  setSelectedDayName('Day 1');
+                }}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+
+          <div className="nav-pipe" />
+
+          {/* Weeks */}
+          <div className="period-pills-row">
+            {weeks.map(w => (
+              <button
+                key={w.week}
+                type="button"
+                className={`period-pill week ${activeWeek === w.week ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveWeek(w.week);
+                  setSelectedDayName('Day 1');
+                }}
+              >
+                {w.week.replace('Week ', 'W')}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 7-Day Mini Track Grid */}
+        <div className="mini-day-track">
+          {activeWeekDays.map((d, dIdx) => {
+            const isDayToday = isToday(activeMonth, activeWeek, d.day, startDateStr);
+            const isSelected = selectedDayName === d.day;
+            const completed = 
+              (d.quantCompleted ? 1 : 0) + 
+              (d.lrdiCompleted ? 1 : 0) + 
+              (d.varcCompleted ? 1 : 0);
+
+            return (
+              <button
+                key={d.day || dIdx}
+                type="button"
+                className={`mini-day-pill ${isSelected ? 'selected' : ''} ${isDayToday ? 'is-today' : ''}`}
+                onClick={() => setSelectedDayName(d.day)}
+              >
+                <span className="mini-day-name">{getDayShort(d.day)}</span>
+                <span className={`mini-day-dot ${completed === 3 ? 'all' : completed > 0 ? 'some' : ''}`} />
+                {d.studyHours > 0 && <span className="mini-day-hrs">{d.studyHours.toFixed(1)}h</span>}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Week Tabs */}
-      <div className="tracker-subtabs-row">
-        {weeks.map(w => (
-          <button
-            key={w.week}
-            className={`tracker-subtab ${activeWeek === w.week ? 'active' : ''}`}
-            onClick={() => setActiveWeek(w.week)}
-          >
-            {w.week}
-          </button>
-        ))}
-      </div>
+      {/* 3. RESPONSIVE WORKSPACE */}
+      <div className="clean-workspace-grid">
+        
+        {/* LEFT COLUMN: THE 3 DAILY DRILL QUOTAS */}
+        <div className="workspace-main-col">
+          
+          {/* Day Status Header */}
+          <div className="day-overview-header">
+            <div className="day-title-block">
+              <div className="day-title-inline">
+                <h2 className="selected-day-heading">{selectedDay.day}</h2>
+                <span className="selected-date-tag">{selectedDayDateFormatted}</span>
+                {selectedDayIsToday && <span className="today-live-tag">TODAY</span>}
+              </div>
+              <span className="day-syllabus-subtitle">
+                {activeMonth} • {activeWeek} Syllabus Quotas
+              </span>
+            </div>
 
-      {/* Days List */}
-      <div className="days-grid">
-        {weeks.find(w => w.week === activeWeek)?.days.map((day, dIdx) => {
-          const completedCount = 
-            (day.quantCompleted ? 1 : 0) + 
-            (day.lrdiCompleted ? 1 : 0) + 
-            (day.varcCompleted ? 1 : 0);
+            <div className="day-quota-tally">
+              <span className={`tally-score ${selectedCompletedCount === 3 ? 'all-done' : ''}`}>
+                {selectedCompletedCount} / 3
+              </span>
+              <span className="tally-label">Quotas Cleared</span>
+            </div>
+          </div>
 
-          const dayCalculatedDate = getCalculatedDateForTrackerDay(activeMonth, activeWeek, day.day, startDateStr);
-          const dayDateFormatted = formatDateMonthDay(dayCalculatedDate);
-          const dayIsToday = isToday(activeMonth, activeWeek, day.day, startDateStr);
+          {/* The 3 Drill Cards */}
+          <div className="drills-stack">
+            
+            {/* QUANT DRILL */}
+            <div className={`drill-item-card quant ${selectedDay.quantCompleted ? 'done' : ''}`}>
+              <div className="drill-card-top-row">
+                <button 
+                  type="button"
+                  role="checkbox"
+                  aria-checked={Boolean(selectedDay.quantCompleted)}
+                  aria-label="Quant completed"
+                  className={`drill-check-bubble ${selectedDay.quantCompleted ? 'checked' : ''}`}
+                  onClick={(e) => handleToggleDrill(activeMonth, activeWeek, selectedDay.day, 'quant', selectedDay.quantCompleted, e)}
+                  title={selectedDay.quantCompleted ? 'Completed' : 'Mark complete'}
+                >
+                  <Icons.Check size={14} />
+                </button>
 
-          // Subject-specific timer minutes
-          const quantSessions = (day.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'quant');
-          const lrdiSessions = (day.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'lrdi');
-          const varcSessions = (day.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'varc');
-
-          const quantMins = quantSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
-          const lrdiMins = lrdiSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
-          const varcMins = varcSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
-
-          return (
-            <div key={dIdx} className={`day-panel ${dayIsToday ? 'today-panel' : ''}`}>
-              <div className="day-header">
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <h3 className="day-name">{day.day}</h3>
-                    {dayIsToday && (
-                      <span className="today-badge">
-                        <span className="today-live-pulse"></span>
-                        TODAY
-                      </span>
-                    )}
-                  </div>
-                  <div className="day-date-subtext" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                      <line x1="16" y1="2" x2="16" y2="6"></line>
-                      <line x1="8" y1="2" x2="8" y2="6"></line>
-                      <line x1="3" y1="10" x2="21" y2="10"></line>
-                    </svg>
-                    <span>{dayDateFormatted}</span>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                  <span className="day-completions-badge">
-                    {completedCount} / 3 Tasks Done
-                  </span>
-                  {day.studyHours > 0 && (
-                    <span className="day-hours-badge" title="Total hours studied logged from Timer">
-                      {day.studyHours.toFixed(1)} hrs studied
+                <div className="drill-subject-heading-row">
+                  <span className="drill-subject-badge quant">QUANT</span>
+                  <span className="drill-subject-title">Quantitative Aptitude</span>
+                  {quantMins > 0 && (
+                    <span className="drill-timer-pill">
+                      <Icons.Clock size={10} />
+                      <span>{quantMins}m from Timer</span>
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Logged Timer Sessions List */}
-              {day.sessions && day.sessions.length > 0 && (
-                <div className="day-sessions-summary-row">
-                  <span className="sessions-summary-title">Recorded Sessions:</span>
-                  <div className="sessions-chips-list">
-                    {day.sessions.map((s, sIdx) => (
-                      <span key={s.id || sIdx} className="day-session-chip">
-                        {s.startTime} - {s.endTime} ({s.durationMinutes}m {stripEmojis(s.subject)})
-                        {s.notes && ` - "${stripEmojis(s.notes)}"`}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="drill-card-bottom-row">
+                <span className="drill-target-text" title={selectedDay.quantTarget}>
+                  {selectedDay.quantTarget || 'Arithmetic & Algebra Practice Drill'}
+                </span>
 
-              {/* Drills Grid */}
-              <div className="day-drills-row">
-                {/* Quant Drill */}
-                <div className={`drill-card ${day.quantCompleted ? 'completed' : ''} ${animatingCards[`${day.day}-quant`] ? 'pop-active' : ''}`}>
-                  <div className="drill-label-row">
-                    <input
-                      type="checkbox"
-                      id={`${activeMonth}-${activeWeek}-${day.day}-quant`}
-                      className="drill-checkbox"
-                      checked={day.quantCompleted}
-                      onChange={(e) => handleCheckboxChange(activeMonth, activeWeek, day.day, 'quant', e.target.checked, e)}
-                    />
-                    <div className="drill-text">
-                      <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                        <span>Quant Practice</span>
-                        {quantMins > 0 && (
-                          <span className="drill-timer-chip" title="Total Quant time studied from Timer">
-                            Timer: {quantMins}m
-                          </span>
-                        )}
-                      </div>
-                      <div className={`drill-text ${day.quantCompleted ? 'strikethrough' : ''}`} style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                        {day.quantTarget}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="drill-counter-row">
-                    <span>Solved Qs:</span>
-                    <input
+                <div className="drill-stepper-compact">
+                  <span className="stepper-subtext">Solved Qs:</span>
+                  <div className="stepper-buttons-wrap">
+                    <button 
+                      type="button"
+                      className="step-btn"
+                      onClick={() => handleStepQty(activeMonth, activeWeek, selectedDay.day, 'quant', selectedDay.quantCount, -1)}
+                    >
+                      -
+                    </button>
+                    <input 
                       type="number"
-                      className="drill-input"
-                      value={day.quantCount}
                       min="0"
-                      onChange={(e) => handleQtyChange(activeMonth, activeWeek, day.day, 'quant', e.target.value)}
+                      className="step-input"
+                      value={selectedDay.quantCount || 0}
+                      onChange={(e) => handleDirectQtyChange(activeMonth, activeWeek, selectedDay.day, 'quant', e.target.value)}
                     />
+                    <button 
+                      type="button"
+                      className="step-btn"
+                      onClick={() => handleStepQty(activeMonth, activeWeek, selectedDay.day, 'quant', selectedDay.quantCount, 1)}
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
-
-                {/* LRDI Drill */}
-                <div className={`drill-card ${day.lrdiCompleted ? 'completed' : ''} ${animatingCards[`${day.day}-lrdi`] ? 'pop-active' : ''}`}>
-                  <div className="drill-label-row">
-                    <input
-                      type="checkbox"
-                      id={`${activeMonth}-${activeWeek}-${day.day}-lrdi`}
-                      className="drill-checkbox"
-                      checked={day.lrdiCompleted}
-                      onChange={(e) => handleCheckboxChange(activeMonth, activeWeek, day.day, 'lrdi', e.target.checked, e)}
-                    />
-                    <div className="drill-text">
-                      <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                        <span>LRDI Practice</span>
-                        {lrdiMins > 0 && (
-                          <span className="drill-timer-chip" title="Total LRDI time studied from Timer">
-                            Timer: {lrdiMins}m
-                          </span>
-                        )}
-                      </div>
-                      <div className={`drill-text ${day.lrdiCompleted ? 'strikethrough' : ''}`} style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                        {day.lrdiTarget}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="drill-counter-row">
-                    <span>Solved Sets:</span>
-                    <input
-                      type="number"
-                      className="drill-input"
-                      value={day.lrdiCount}
-                      min="0"
-                      onChange={(e) => handleQtyChange(activeMonth, activeWeek, day.day, 'lrdi', e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                {/* VARC Drill */}
-                <div className={`drill-card ${day.varcCompleted ? 'completed' : ''} ${animatingCards[`${day.day}-varc`] ? 'pop-active' : ''}`}>
-                  <div className="drill-label-row">
-                    <input
-                      type="checkbox"
-                      id={`${activeMonth}-${activeWeek}-${day.day}-varc`}
-                      className="drill-checkbox"
-                      checked={day.varcCompleted}
-                      onChange={(e) => handleCheckboxChange(activeMonth, activeWeek, day.day, 'varc', e.target.checked, e)}
-                    />
-                    <div className="drill-text">
-                      <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                        <span>VARC Practice</span>
-                        {varcMins > 0 && (
-                          <span className="drill-timer-chip" title="Total VARC time studied from Timer">
-                            Timer: {varcMins}m
-                          </span>
-                        )}
-                      </div>
-                      <div className={`drill-text ${day.varcCompleted ? 'strikethrough' : ''}`} style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                        {day.varcTarget}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="drill-counter-row">
-                    <span>Solved RCs:</span>
-                    <input
-                      type="number"
-                      className="drill-input"
-                      value={day.varcCount}
-                      min="0"
-                      onChange={(e) => handleQtyChange(activeMonth, activeWeek, day.day, 'varc', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Day Notes & Error Log */}
-              <div className="day-notes-box">
-                <label className="day-notes-label" htmlFor={`notes-${activeMonth}-${activeWeek}-${day.day}`}>
-                  Day Notes & Error Log (Triggers, Mistakes, Formulas)
-                </label>
-                <textarea
-                  id={`notes-${activeMonth}-${activeWeek}-${day.day}`}
-                  className="day-textarea"
-                  placeholder="e.g., Silly mistake in Percentage formula logic. Need to focus on Games & Tournaments set constraints..."
-                  value={day.notes}
-                  onChange={(e) => updateDayNotes(activeMonth, activeWeek, day.day, stripEmojis(e.target.value))}
-                />
               </div>
             </div>
-          );
-        })}
+
+            {/* DILR DRILL */}
+            <div className={`drill-item-card lrdi ${selectedDay.lrdiCompleted ? 'done' : ''}`}>
+              <div className="drill-card-top-row">
+                <button 
+                  type="button"
+                  role="checkbox"
+                  aria-checked={Boolean(selectedDay.lrdiCompleted)}
+                  aria-label="DILR completed"
+                  className={`drill-check-bubble ${selectedDay.lrdiCompleted ? 'checked' : ''}`}
+                  onClick={(e) => handleToggleDrill(activeMonth, activeWeek, selectedDay.day, 'lrdi', selectedDay.lrdiCompleted, e)}
+                  title={selectedDay.lrdiCompleted ? 'Completed' : 'Mark complete'}
+                >
+                  <Icons.Check size={14} />
+                </button>
+
+                <div className="drill-subject-heading-row">
+                  <span className="drill-subject-badge lrdi">DILR</span>
+                  <span className="drill-subject-title">Data Interpretation & LR</span>
+                  {lrdiMins > 0 && (
+                    <span className="drill-timer-pill">
+                      <Icons.Clock size={10} />
+                      <span>{lrdiMins}m from Timer</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="drill-card-bottom-row">
+                <span className="drill-target-text" title={selectedDay.lrdiTarget}>
+                  {selectedDay.lrdiTarget || '4 Matrix & Reasoning Sets'}
+                </span>
+
+                <div className="drill-stepper-compact">
+                  <span className="stepper-subtext">Solved Sets:</span>
+                  <div className="stepper-buttons-wrap">
+                    <button 
+                      type="button"
+                      className="step-btn"
+                      onClick={() => handleStepQty(activeMonth, activeWeek, selectedDay.day, 'lrdi', selectedDay.lrdiCount, -1)}
+                    >
+                      -
+                    </button>
+                    <input 
+                      type="number"
+                      min="0"
+                      className="step-input"
+                      value={selectedDay.lrdiCount || 0}
+                      onChange={(e) => handleDirectQtyChange(activeMonth, activeWeek, selectedDay.day, 'lrdi', e.target.value)}
+                    />
+                    <button 
+                      type="button"
+                      className="step-btn"
+                      onClick={() => handleStepQty(activeMonth, activeWeek, selectedDay.day, 'lrdi', selectedDay.lrdiCount, 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* VARC DRILL */}
+            <div className={`drill-item-card varc ${selectedDay.varcCompleted ? 'done' : ''}`}>
+              <div className="drill-card-top-row">
+                <button 
+                  type="button"
+                  role="checkbox"
+                  aria-checked={Boolean(selectedDay.varcCompleted)}
+                  aria-label="VARC completed"
+                  className={`drill-check-bubble ${selectedDay.varcCompleted ? 'checked' : ''}`}
+                  onClick={(e) => handleToggleDrill(activeMonth, activeWeek, selectedDay.day, 'varc', selectedDay.varcCompleted, e)}
+                  title={selectedDay.varcCompleted ? 'Completed' : 'Mark complete'}
+                >
+                  <Icons.Check size={14} />
+                </button>
+
+                <div className="drill-subject-heading-row">
+                  <span className="drill-subject-badge varc">VARC</span>
+                  <span className="drill-subject-title">Verbal Ability & Reading</span>
+                  {varcMins > 0 && (
+                    <span className="drill-timer-pill">
+                      <Icons.Clock size={10} />
+                      <span>{varcMins}m from Timer</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="drill-card-bottom-row">
+                <span className="drill-target-text" title={selectedDay.varcTarget}>
+                  {selectedDay.varcTarget || '4 Aeon Articles & RC Passages'}
+                </span>
+
+                <div className="drill-stepper-compact">
+                  <span className="stepper-subtext">Solved RCs:</span>
+                  <div className="stepper-buttons-wrap">
+                    <button 
+                      type="button"
+                      className="step-btn"
+                      onClick={() => handleStepQty(activeMonth, activeWeek, selectedDay.day, 'varc', selectedDay.varcCount, -1)}
+                    >
+                      -
+                    </button>
+                    <input 
+                      type="number"
+                      min="0"
+                      className="step-input"
+                      value={selectedDay.varcCount || 0}
+                      onChange={(e) => handleDirectQtyChange(activeMonth, activeWeek, selectedDay.day, 'varc', e.target.value)}
+                    />
+                    <button 
+                      type="button"
+                      className="step-btn"
+                      onClick={() => handleStepQty(activeMonth, activeWeek, selectedDay.day, 'varc', selectedDay.varcCount, 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Clean Day Reflection & Mistake Notes */}
+          <div className="clean-notes-card">
+            <div className="notes-card-head">
+              <span className="notes-card-title">Day Reflection & Error Log</span>
+              <span className="notes-card-hint">Formula slips, trap answers, takeaways</span>
+            </div>
+            <textarea
+              className="clean-notes-textarea"
+              placeholder="Jot down formula triggers, mistakes made today, or question numbers to revise later..."
+              value={selectedDay.notes || ''}
+              onChange={(e) => updateDayNotes(activeMonth, activeWeek, selectedDay.day, stripEmojis(e.target.value))}
+            />
+          </div>
+
+        </div>
+
+        {/* RIGHT COLUMN: TIMER TELEMETRY & FOCUS SUMMARY */}
+        <div className="workspace-side-col">
+          
+          {/* Daily Focus Summary Card */}
+          <div className="telemetry-summary-card">
+            <span className="side-card-tag">TELEMETRY OVERVIEW</span>
+            
+            <div className="side-hours-row">
+              <div className="hours-block">
+                <span className="hours-num">{selectedDay.studyHours ? selectedDay.studyHours.toFixed(1) : '0.0'}</span>
+                <span className="hours-lbl">Hours Studied</span>
+              </div>
+              <div className="hours-target-block">
+                <span className="target-num">4.0h</span>
+                <span className="target-lbl">Daily Quota</span>
+              </div>
+            </div>
+
+            {/* Clean Progress Bar */}
+            <div className="clean-progress-track">
+              <div 
+                className="clean-progress-fill"
+                style={{ width: `${Math.min(100, Math.round(((selectedDay.studyHours || 0) / 4) * 100))}%` }}
+              />
+            </div>
+
+            {totalMins > 0 && (
+              <div className="subject-time-distribution">
+                {quantMins > 0 && <span className="dist-item quant">QA: {quantMins}m</span>}
+                {lrdiMins > 0 && <span className="dist-item lrdi">DILR: {lrdiMins}m</span>}
+                {varcMins > 0 && <span className="dist-item varc">VARC: {varcMins}m</span>}
+              </div>
+            )}
+          </div>
+
+          {/* Incoming Timer Sessions Stream */}
+          <div className="telemetry-stream-panel">
+            <div className="stream-panel-head">
+              <span className="side-card-tag">RECORDED TIMER SESSIONS</span>
+              <span className="stream-count-tag">
+                {(selectedDay.sessions || []).length} Sessions
+              </span>
+            </div>
+
+            {selectedDay.sessions && selectedDay.sessions.length > 0 ? (
+              <div className="stream-sessions-list">
+                {selectedDay.sessions.map((sess, idx) => {
+                  const subj = (sess.subject || 'General').toUpperCase();
+                  const isQuant = subj.includes('QUANT');
+                  const isLrdi = subj.includes('LRDI') || subj.includes('DILR');
+                  const isVarc = subj.includes('VARC');
+                  const sClass = isQuant ? 'quant' : isLrdi ? 'lrdi' : isVarc ? 'varc' : 'general';
+
+                  return (
+                    <div key={sess.id || idx} className={`stream-session-item ${sClass}`}>
+                      <div className="session-item-top">
+                        <span className={`session-pill ${sClass}`}>{subj}</span>
+                        <span className="session-time">{sess.startTime} - {sess.endTime}</span>
+                        <span className="session-mins">{sess.durationMinutes}m</span>
+                      </div>
+                      {sess.notes && (
+                        <p className="session-item-note">"{stripEmojis(sess.notes)}"</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="stream-empty-state">
+                <Icons.Clock size={20} className="stream-empty-icon" />
+                <p>No timer sessions logged today yet. Complete a Pomodoro in Study Timer to auto-record your minutes here!</p>
+              </div>
+            )}
+          </div>
+
+        </div>
+
       </div>
 
       {/* Floating Sparkle Particles */}
@@ -407,6 +627,7 @@ export default function DailyTrackerView({
           }}
         />
       ))}
+
     </div>
   );
 }
