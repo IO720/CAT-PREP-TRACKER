@@ -62,14 +62,32 @@ import { animatePageEntrance, makeMagnetic, triggerThemeWave } from './utils/gsa
 const Icons = {
   Logo: ({ size = 24 }) => (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ display: 'block', margin: 'auto' }}>
-      <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#brandGradA)" stroke="#38bdf8" strokeWidth="1" strokeOpacity="0.3" />
-      <path d="M16 6.5L23 24H19.6L17.9 19.2H14.1L12.4 24H9L16 6.5Z" fill="#ffffff" />
-      <path d="M16 11.8L14.8 16.2H17.2L16 11.8Z" fill="#0f172a" />
-      <circle cx="23" cy="8" r="1.8" fill="#38bdf8" />
+      <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#brandGradA)" stroke="var(--accent-color, #38bdf8)" strokeWidth="1.2" strokeOpacity="0.4" />
+      <path 
+        d="M23 10.5C20.8 8.2 17.8 7 14.5 7.5C10.2 8.2 7.2 12 7.5 16.2C7.8 20.8 11.5 24.5 16 24.5C19.5 24.5 22.2 22.8 24 20" 
+        stroke="url(#brandArcGrad)" 
+        strokeWidth="2.4" 
+        strokeLinecap="round" 
+      />
+      <path 
+        d="M16 8L24.5 12L19.5 13.5L23.5 18L17.5 14.5L20 12.5L16 8Z" 
+        fill="url(#brandSparkGrad)" 
+      />
+      <circle cx="14.5" cy="16" r="1.6" fill="#ffffff" />
+      <circle cx="14.5" cy="16" r="3.2" stroke="var(--accent-color, #38bdf8)" strokeWidth="0.8" opacity="0.8" />
       <defs>
         <linearGradient id="brandGradA" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#0b1329" />
-          <stop offset="1" stopColor="#1e293b" />
+          <stop stopColor="#080d1a" />
+          <stop offset="100%" stopColor="#111827" />
+        </linearGradient>
+        <linearGradient id="brandArcGrad" x1="7" y1="7" x2="25" y2="25" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="var(--accent-color, #38bdf8)" />
+          <stop offset="50%" stopColor="#818cf8" />
+          <stop offset="100%" stopColor="var(--accent-secondary, #c084fc)" />
+        </linearGradient>
+        <linearGradient id="brandSparkGrad" x1="16" y1="8" x2="24" y2="18" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="var(--accent-color, #38bdf8)" />
+          <stop offset="100%" stopColor="#60a5fa" />
         </linearGradient>
       </defs>
     </svg>
