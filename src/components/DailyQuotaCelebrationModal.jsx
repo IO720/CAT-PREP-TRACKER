@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { playGamingAchievementSound } from '../utils/audioUtils';
+import { playObjectiveCompleteGameSound } from '../utils/audioUtils';
 
 /**
  * DailyQuotaCelebrationModal
@@ -16,16 +16,17 @@ export default function DailyQuotaCelebrationModal({
   onClose,
   dayName = 'Today',
   activeStreak = 1,
-  totalSolvedToday = 26
+  totalSolvedToday = 26,
+  onOpenStampRally
 }) {
   const [stampActive, setStampActive] = useState(false);
   const [particles, setParticles] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
-      // Play achievement audio
+      // Play rewarding soft victory fanfare
       try {
-        playGamingAchievementSound(0.06);
+        playObjectiveCompleteGameSound(0.035);
       } catch (e) {
         // Audio fallback
       }
@@ -214,13 +215,30 @@ export default function DailyQuotaCelebrationModal({
           </div>
         </div>
 
-        {/* Action Button */}
+        {/* Action Button Row */}
         <div className="celebrate-btn-row">
           <button 
             type="button" 
-            className="celebrate-claim-btn"
-            onClick={onClose}
+            className="celebrate-claim-btn stamp-rally-action-btn"
+            onClick={() => {
+              if (onOpenStampRally) {
+                onOpenStampRally();
+              }
+              onClose();
+            }}
             autoFocus
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v8M8 12h8" />
+            </svg>
+            <span>Stamp My Japanese Rally Card</span>
+          </button>
+
+          <button 
+            type="button" 
+            className="celebrate-sub-btn"
+            onClick={onClose}
           >
             <span>Claim Victory & Continue</span>
           </button>

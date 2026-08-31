@@ -26,33 +26,40 @@ export function Dock({
 }) {
   const [mousePos, setMousePos] = useState(null);
   const containerRef = useRef(null);
+  const cachedRectRef = useRef(null);
+  const rafRef = useRef(null);
+
+  const handleMouseEnter = useCallback(() => {
+    if (containerRef.current) {
+      cachedRectRef.current = containerRef.current.getBoundingClientRect();
+    }
+  }, []);
 
   const handleMouseMove = useCallback((e) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    if (direction === 'vertical') {
-      setMousePos(e.clientY - rect.top);
-    } else {
-      setMousePos(e.clientX - rect.left);
-    }
+    // Throttle with rAF to prevent layout thrashing
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      if (!cachedRectRef.current && containerRef.current) {
+        cachedRectRef.current = containerRef.current.getBoundingClientRect();
+      }
+      const rect = cachedRectRef.current;
+      if (!rect) return;
+
+      if (direction === 'vertical') {
+        setMousePos(e.clientY - rect.top);
+      } else {
+        setMousePos(e.clientX - rect.left);
+      }
+    });
   }, [direction]);
 
   const handleMouseLeave = useCallback(() => {
-    setMousePos(null);
-  }, []);
-
-  const handleTouchMove = useCallback((e) => {
-    if (!containerRef.current || !e.touches[0]) return;
-    const touch = e.touches[0];
-    const rect = containerRef.current.getBoundingClientRect();
-    if (direction === 'vertical') {
-      setMousePos(touch.clientY - rect.top);
-    } else {
-      setMousePos(touch.clientX - rect.left);
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
-  }, [direction]);
-
-  const handleTouchEnd = useCallback(() => {
+    cachedRectRef.current = null;
     setMousePos(null);
   }, []);
 
@@ -61,10 +68,9 @@ export function Dock({
       <div
         ref={containerRef}
         className={`reactbits-dock-container ${direction} ${className}`}
+        onMouseEnter={handleMouseEnter}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
         style={{
           display: 'flex',
           flexDirection: direction === 'vertical' ? 'column' : 'row',
@@ -92,6 +98,7 @@ export function DockItem({
   const { mousePos, direction, magnification, distance, baseItemSize } = useContext(DockContext);
   const itemRef = useRef(null);
   const [scale, setScale] = useState(1);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     if (!itemRef.current || mousePos === null) {
@@ -120,8 +127,12 @@ export function DockItem({
     <button
       ref={itemRef}
       type="button"
-      className={`reactbits-dock-item ${active ? 'active' : ''} ${className}`}
+      className={`reactbits-dock-item dock-nav-item ${active ? 'active' : ''} ${isHovered ? 'hovered' : ''} ${className}`}
       onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsHovered(true)}
+      onBlur={() => setIsHovered(false)}
       aria-label={ariaLabel || tooltipTitle}
       style={{
         width: baseItemSize,
@@ -129,7 +140,7 @@ export function DockItem({
         transform: `scale(${scale})`,
         transition: mousePos !== null ? 'transform 0.1s ease-out' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         transformOrigin: direction === 'vertical' ? 'left center' : 'center bottom',
-        zIndex: scale > 1.05 ? 10 : 1,
+        zIndex: scale > 1.05 || isHovered ? 20 : 1,
         ...style
       }}
     >
@@ -139,7 +150,7 @@ export function DockItem({
       </div>
 
       {tooltipTitle && (
-        <div className="dock-floating-tooltip">
+        <div className={`dock-floating-tooltip ${isHovered ? 'visible' : ''}`}>
           <span className="tooltip-title">{tooltipTitle}</span>
           {tooltipTag && <span className="tooltip-tag">{tooltipTag}</span>}
         </div>

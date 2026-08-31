@@ -123,6 +123,9 @@ export default function CustomCursor({ activeTheme }) {
       });
     };
 
+    let rafId = null;
+    let lastTarget = null;
+
     const onMouseMove = (e) => {
       if (!isVisible) {
         gsap.to([core, reticle], { opacity: 1, duration: 0.18 });
@@ -131,46 +134,58 @@ export default function CustomCursor({ activeTheme }) {
 
       const mouseX = e.clientX;
       const mouseY = e.clientY;
-
-      setCoreX(mouseX);
-      setCoreY(mouseY);
-
       const target = e.target;
-      if (!target) {
-        if (isLockedRef.current) unlockTarget();
-        setReticleX(mouseX);
-        setReticleY(mouseY);
-        return;
-      }
 
-      // Check for interactive targets
-      const interactiveEl = target.closest(
-        'button, a, input[type="submit"], input[type="button"], .btn-primary, .btn-secondary, ' +
-        '.dock-nav-item, .reactbits-dock-item, .mobile-dock-btn, .step-btn, .week-matrix-col, ' +
-        '.minimal-btn-primary, .minimal-btn-secondary, .month-tab-btn, .theme-option-item, ' +
-        '.edit-session-btn, .delete-session-btn, .hub-badge-banner, .prestige-banner-btn, ' +
-        '.edit-step-btn, .edit-preset-chip, .edit-subj-pill, .edit-cancel-btn, .edit-save-btn, ' +
-        '[data-cursor="target"]'
-      );
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        setCoreX(mouseX);
+        setCoreY(mouseY);
 
-      const isText = target.closest('input[type="text"], input[type="password"], input[type="email"], textarea, [contenteditable="true"]');
+        if (!target) {
+          if (isLockedRef.current) unlockTarget();
+          setReticleX(mouseX);
+          setReticleY(mouseY);
+          return;
+        }
 
-      if (interactiveEl && interactiveEl.offsetWidth > 0) {
-        modeRef.current = 'target';
-        lockOntoTarget(interactiveEl);
-      } else if (isText) {
-        modeRef.current = 'text';
-        if (isLockedRef.current) unlockTarget();
-        setReticleX(mouseX);
-        setReticleY(mouseY);
-        reticle.classList.add('text');
-        core.classList.add('text');
-      } else {
-        modeRef.current = 'default';
-        if (isLockedRef.current) unlockTarget();
-        setReticleX(mouseX);
-        setReticleY(mouseY);
-      }
+        // Avoid expensive DOM tree traversal if mouse is moving inside same element
+        if (target === lastTarget && isLockedRef.current) {
+          return;
+        }
+        lastTarget = target;
+
+        // Check for interactive targets
+        const interactiveEl = target.closest(
+          'button, a, input[type="submit"], input[type="button"], .btn-primary, .btn-secondary, ' +
+          '.dock-nav-item, .reactbits-dock-item, .mobile-dock-btn, .step-btn, .week-matrix-col, ' +
+          '.minimal-btn-primary, .minimal-btn-secondary, .month-tab-btn, .theme-option-item, ' +
+          '.edit-session-btn, .delete-session-btn, .hub-badge-banner, .prestige-banner-btn, ' +
+          '.edit-step-btn, .edit-preset-chip, .edit-subj-pill, .edit-cancel-btn, .edit-save-btn, ' +
+          '[data-cursor="target"]'
+        );
+
+        if (interactiveEl && interactiveEl.offsetWidth > 0) {
+          if (currentTargetRef.current !== interactiveEl) {
+            modeRef.current = 'target';
+            lockOntoTarget(interactiveEl);
+          }
+        } else {
+          const isText = target.closest('input[type="text"], input[type="password"], input[type="email"], textarea, [contenteditable="true"]');
+          if (isText) {
+            modeRef.current = 'text';
+            if (isLockedRef.current) unlockTarget();
+            setReticleX(mouseX);
+            setReticleY(mouseY);
+            reticle.classList.add('text');
+            core.classList.add('text');
+          } else {
+            modeRef.current = 'default';
+            if (isLockedRef.current) unlockTarget();
+            setReticleX(mouseX);
+            setReticleY(mouseY);
+          }
+        }
+      });
     };
 
     const onMouseDown = () => {
@@ -195,6 +210,7 @@ export default function CustomCursor({ activeTheme }) {
     document.body.addEventListener('mouseleave', onMouseLeave);
 
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('mouseup', onMouseUp);

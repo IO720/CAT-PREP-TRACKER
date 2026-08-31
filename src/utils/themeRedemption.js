@@ -1,6 +1,8 @@
 // Premium Theme Redemption and Authorization System
 
 export const PREMIUM_THEME_IDS = [
+  'kyoto-zen',
+  'maneki-gold',
   'sunset-magenta',
   'crimson-twilight',
   'cosmic-nebula',
@@ -13,6 +15,13 @@ const STORAGE_KEY = 'cat_unlocked_premium_themes';
 
 // Secret redemption code lookup table (Case-insensitive, stripped of extra spaces/dashes)
 const REDEMPTION_CODES = {
+  // Japanese Stamp Rally Themes
+  'KYOTO-ZEN': 'kyoto-zen',
+  'ZEN-NEKO': 'kyoto-zen',
+  'MANEKI-GOLD': 'maneki-gold',
+  'MANEKI-NEKO': 'maneki-gold',
+  'NEKO-STAMP': 'kyoto-zen',
+
   // Individual Theme Codes
   'SUNSET-MAGENTA': 'sunset-magenta',
   'MAGENTA-VIP': 'sunset-magenta',
@@ -58,6 +67,8 @@ const REDEMPTION_CODES = {
 };
 
 const THEME_NAMES = {
+  'kyoto-zen': 'Kyoto Zen Sanctuary',
+  'maneki-gold': 'Maneki Fortune Gold',
   'sunset-magenta': 'Sunset Magenta',
   'crimson-twilight': 'Crimson Twilight',
   'cosmic-nebula': 'Cosmic Nebula',
@@ -65,6 +76,23 @@ const THEME_NAMES = {
   'royal-cobalt': 'Royal Cobalt',
   'deep-abyss': 'Deep Abyss'
 };
+
+/**
+ * Direct unlock helper for Stamp Rally rewards
+ */
+export function unlockThemeDirectly(themeId) {
+  try {
+    const current = getUnlockedThemes();
+    if (!current.includes(themeId)) {
+      const next = [...current, themeId];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    }
+    return current;
+  } catch (e) {
+    return [];
+  }
+}
 
 /**
  * Get the list of unlocked premium theme IDs from localStorage

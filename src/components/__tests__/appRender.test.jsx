@@ -26,4 +26,28 @@ describe('App Root Render Test', () => {
     const { container } = render(<App />);
     expect(container).toBeDefined();
   });
+
+  it('renders logo in top bar and dock as a floating overlay without logo', () => {
+    localStorage.setItem('aspiranto_guest_mode', 'true');
+    const { container } = render(<App />);
+    
+    // Logo is in the top bar header
+    const headerLogo = container.querySelector('.header-logo-badge');
+    expect(headerLogo).toBeDefined();
+    expect(headerLogo).not.toBeNull();
+
+    // Dock is a floating overlay dock with drag handle
+    const dock = container.querySelector('.sidebar.floating-overlay-dock');
+    expect(dock).toBeDefined();
+    expect(dock).not.toBeNull();
+
+    // Dock contains drag handle
+    const dragHandle = dock.querySelector('.dock-drag-handle');
+    expect(dragHandle).toBeDefined();
+    expect(dragHandle).not.toBeNull();
+
+    // Dock does NOT contain brand-section / logo
+    const dockBrandSection = dock.querySelector('.brand-section');
+    expect(dockBrandSection).toBeNull();
+  });
 });

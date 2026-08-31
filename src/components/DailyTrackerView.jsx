@@ -16,18 +16,25 @@ import {
 import { stripEmojis } from '../utils/textUtils';
 import DailyQuotaCelebrationModal from './DailyQuotaCelebrationModal';
 
-export default function DailyTrackerView({ 
+function DailyTrackerView({ 
   state, 
   activeMonth, 
   setActiveMonth, 
   activeWeek, 
   setActiveWeek, 
+  activeDayName,
+  setActiveDayName,
   updateDayMetric, 
   updateDayNotes,
+  resetWeekMetrics,
+  resetDayMetrics,
   syncStatus = 'saved',
   lastSyncedTimeStr = '',
   hasUnsyncedCloudChanges = false,
-  onRecordDayProgress
+  onRecordDayProgress,
+  onOpenStampRally,
+  onAwardDailyStamp,
+  stampRallyData
 }) {
   const { tracker, settings } = state;
   const startDateStr = settings?.startDate;
@@ -52,13 +59,28 @@ export default function DailyTrackerView({
 
   // Today's position in tracker
   const todayPosition = useMemo(() => {
-    return getTodayTrackerPosition(startDateStr, tracker);
-  }, [startDateStr, tracker]);
+    return getTodayTrackerPosition(startDateStr);
+  }, [startDateStr]);
 
-  // Selected Day spotlight
-  const [selectedDayName, setSelectedDayName] = useState(() => {
-    return todayPosition.dayName || 'Day 1';
+  // Global week index for study plan syllabus curriculum linkage
+  const monthNum = parseInt(activeMonth?.replace(/\D/g, ''), 10) || 1;
+  const weekNum = parseInt(activeWeek?.replace(/\D/g, ''), 10) || 1;
+  const globalWeekNum = Math.min(16, Math.max(1, (monthNum - 1) * 4 + weekNum));
+  const activeWeekPlan = (state.studyPlan || [])[globalWeekNum - 1] || null;
+
+  // Selected Day spotlight (controlled via activeDayName prop or local fallback)
+  const [internalDayName, setInternalDayName] = useState(() => {
+    return todayPosition.dayName || 'Monday';
   });
+
+  const effectiveDayName = activeDayName || internalDayName;
+  const setEffectiveDayName = (name) => {
+    if (setActiveDayName) setActiveDayName(name);
+    setInternalDayName(name);
+  };
+
+  // Reset confirmation modal state
+  const [resetModal, setResetModal] = useState({ isOpen: false, type: null });
 
   // Sparkle particles
   const [particles, setParticles] = useState([]);
@@ -70,7 +92,7 @@ export default function DailyTrackerView({
   const handleJumpToToday = () => {
     setActiveMonth(todayPosition.activeMonth);
     setActiveWeek(todayPosition.activeWeek);
-    setSelectedDayName(todayPosition.dayName);
+    setEffectiveDayName(todayPosition.dayName || 'Monday');
   };
 
   // Animate on day change
@@ -85,7 +107,7 @@ export default function DailyTrackerView({
     }, containerRef);
 
     return () => ctx.revert();
-  }, [selectedDayName, activeWeek, activeMonth]);
+  }, [effectiveDayName, activeWeek, activeMonth]);
 
   // Handle drill completion toggle with sound
   const handleToggleDrill = (month, weekName, dayName, subject, isCompleted, e) => {
@@ -152,8 +174,8 @@ export default function DailyTrackerView({
 
   // Selected Day Data
   const selectedDay = useMemo(() => {
-    return activeWeekDays.find(d => d.day === selectedDayName) || activeWeekDays[0] || {};
-  }, [activeWeekDays, selectedDayName]);
+    return activeWeekDays.find(d => d.day === effectiveDayName) || activeWeekDays[0] || {};
+  }, [activeWeekDays, effectiveDayName]);
 
   const selectedDayDate = getCalculatedDateForTrackerDay(activeMonth, activeWeek, selectedDay.day, startDateStr);
   const selectedDayDateFormatted = formatDateMonthDay(selectedDayDate);
@@ -174,9 +196,13 @@ export default function DailyTrackerView({
       selectedCompletedCount === 3
     ) {
       setShowCelebrationModal(true);
+      if (onAwardDailyStamp) {
+        const dateStr = new Date().toISOString().split('T')[0];
+        onAwardDailyStamp(dateStr, selectedDay.day || 'Today');
+      }
     }
     prevCompletedCountRef.current = selectedCompletedCount;
-  }, [selectedCompletedCount]);
+  }, [selectedCompletedCount, onAwardDailyStamp, selectedDay.day]);
 
   // Subject timer sessions
   const quantSessions = (selectedDay.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'quant');
@@ -236,6 +262,38 @@ export default function DailyTrackerView({
             <span className="sync-lbl-text">{syncStatus === 'syncing' ? 'Syncing...' : 'Synced'}</span>
           </div>
 
+          {onOpenStampRally && (
+            <button 
+              type="button" 
+              className="minimal-btn outline stamp-rally-tracker-btn"
+              onClick={onOpenStampRally}
+              title="Inspect Japanese Cat Stamp Rally Card"
+              style={{
+                borderColor: 'rgba(244, 63, 94, 0.4)',
+                color: '#fb7185',
+                background: 'rgba(244, 63, 94, 0.08)'
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 8v8M8 12h8" />
+              </svg>
+              <span>Stamp Rally ({stampRallyData?.currentCardStamps?.length || 0}/6)</span>
+            </button>
+          )}
+
+          {resetWeekMetrics && (
+            <button 
+              type="button"
+              className="minimal-btn outline reset-week-trigger-btn"
+              onClick={() => setResetModal({ isOpen: true, type: 'week' })}
+              title={`Reset completed drills for ${activeWeek}`}
+            >
+              <Icons.RotateCcw size={12} />
+              <span>Reset {activeWeek.replace('Week ', 'W')}</span>
+            </button>
+          )}
+
           {onRecordDayProgress && (
             <button 
               type="button"
@@ -276,7 +334,13 @@ export default function DailyTrackerView({
                 onClick={() => {
                   setActiveMonth(m);
                   setActiveWeek('Week 1');
-                  setSelectedDayName('Day 1');
+                  const nextMonthWeeks = tracker[m] || [];
+                  const w1 = nextMonthWeeks.find(w => w.week === 'Week 1');
+                  const w1Days = w1?.days || [];
+                  const targetDay = w1Days.some(d => d.day === effectiveDayName)
+                    ? effectiveDayName
+                    : (todayPosition.dayName || 'Monday');
+                  setEffectiveDayName(targetDay);
                 }}
               >
                 {m}
@@ -295,7 +359,11 @@ export default function DailyTrackerView({
                 className={`period-pill week ${activeWeek === w.week ? 'active' : ''}`}
                 onClick={() => {
                   setActiveWeek(w.week);
-                  setSelectedDayName('Day 1');
+                  const targetDays = w.days || [];
+                  const targetDay = targetDays.some(d => d.day === effectiveDayName)
+                    ? effectiveDayName
+                    : (todayPosition.dayName || 'Monday');
+                  setEffectiveDayName(targetDay);
                 }}
               >
                 {w.week.replace('Week ', 'W')}
@@ -308,7 +376,7 @@ export default function DailyTrackerView({
         <div className="mini-day-track">
           {activeWeekDays.map((d, dIdx) => {
             const isDayToday = isToday(activeMonth, activeWeek, d.day, startDateStr);
-            const isSelected = selectedDayName === d.day;
+            const isSelected = effectiveDayName === d.day;
             const completed = 
               (d.quantCompleted ? 1 : 0) + 
               (d.lrdiCompleted ? 1 : 0) + 
@@ -319,7 +387,7 @@ export default function DailyTrackerView({
                 key={d.day || dIdx}
                 type="button"
                 className={`mini-day-pill ${isSelected ? 'selected' : ''} ${isDayToday ? 'is-today' : ''}`}
-                onClick={() => setSelectedDayName(d.day)}
+                onClick={() => setEffectiveDayName(d.day)}
               >
                 <span className="mini-day-name">{getDayShort(d.day)}</span>
                 <span className={`mini-day-dot ${completed === 3 ? 'all' : completed > 0 ? 'some' : ''}`} />
@@ -339,13 +407,36 @@ export default function DailyTrackerView({
           {/* Day Status Header */}
           <div className="day-overview-header">
             <div className="day-title-block">
-              <div className="day-title-inline">
+              <div className="day-title-inline" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <h2 className="selected-day-heading">{selectedDay.day}</h2>
                 <span className="selected-date-tag">{selectedDayDateFormatted}</span>
                 {selectedDayIsToday && <span className="today-live-tag">TODAY</span>}
+                {resetDayMetrics && (selectedCompletedCount > 0 || (selectedDay.quantCount || 0) + (selectedDay.lrdiCount || 0) + (selectedDay.varcCount || 0) > 0) && (
+                  <button
+                    type="button"
+                    className="day-reset-inline-btn"
+                    onClick={() => setResetModal({ isOpen: true, type: 'day' })}
+                    title={`Reset ${selectedDay.day} drills to 0`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '3px 8px',
+                      fontSize: '11px',
+                      color: 'var(--text-secondary, #a1a1aa)',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
+                      borderRadius: '6px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Icons.RotateCcw size={10} />
+                    <span>Reset Day</span>
+                  </button>
+                )}
               </div>
               <span className="day-syllabus-subtitle">
-                {activeMonth} • {activeWeek} Syllabus Quotas
+                {activeMonth} • {activeWeek} Syllabus Quotas {activeWeekPlan?.phase ? `• ${activeWeekPlan.phase.split(':')[0]}` : ''}
               </span>
             </div>
 
@@ -394,9 +485,28 @@ export default function DailyTrackerView({
               </div>
 
               <div className="drill-card-bottom-row">
-                <span className="drill-target-text" title={selectedDay.quantTarget}>
-                  {selectedDay.quantTarget || 'Arithmetic & Algebra Practice Drill'}
-                </span>
+                <div className="drill-target-col" style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
+                  {activeWeekPlan?.quantFocus && (
+                    <span className="drill-curriculum-pill" style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: 'var(--accent-color, #38bdf8)',
+                      background: 'rgba(56, 189, 248, 0.08)',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      width: 'fit-content'
+                    }}>
+                      <Icons.Target size={11} />
+                      <span>{activeWeekPlan.quantFocus}</span>
+                    </span>
+                  )}
+                  <span className="drill-target-text" title={selectedDay.quantTarget}>
+                    {selectedDay.quantTarget || 'Arithmetic & Algebra Practice Drill'}
+                  </span>
+                </div>
 
                 <div className="drill-stepper-compact">
                   <span className="stepper-subtext">Solved Qs:</span>
@@ -455,9 +565,28 @@ export default function DailyTrackerView({
               </div>
 
               <div className="drill-card-bottom-row">
-                <span className="drill-target-text" title={selectedDay.lrdiTarget}>
-                  {selectedDay.lrdiTarget || '4 Matrix & Reasoning Sets'}
-                </span>
+                <div className="drill-target-col" style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
+                  {activeWeekPlan?.lrdiFocus && (
+                    <span className="drill-curriculum-pill" style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: '#a855f7',
+                      background: 'rgba(168, 85, 247, 0.08)',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      width: 'fit-content'
+                    }}>
+                      <Icons.Puzzle size={11} />
+                      <span>{activeWeekPlan.lrdiFocus}</span>
+                    </span>
+                  )}
+                  <span className="drill-target-text" title={selectedDay.lrdiTarget}>
+                    {selectedDay.lrdiTarget || '4 Matrix & Reasoning Sets'}
+                  </span>
+                </div>
 
                 <div className="drill-stepper-compact">
                   <span className="stepper-subtext">Solved Sets:</span>
@@ -516,9 +645,28 @@ export default function DailyTrackerView({
               </div>
 
               <div className="drill-card-bottom-row">
-                <span className="drill-target-text" title={selectedDay.varcTarget}>
-                  {selectedDay.varcTarget || '4 Aeon Articles & RC Passages'}
-                </span>
+                <div className="drill-target-col" style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
+                  {activeWeekPlan?.varcFocus && (
+                    <span className="drill-curriculum-pill" style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: '#10b981',
+                      background: 'rgba(16, 185, 129, 0.08)',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      width: 'fit-content'
+                    }}>
+                      <Icons.BookOpen size={11} />
+                      <span>{activeWeekPlan.varcFocus}</span>
+                    </span>
+                  )}
+                  <span className="drill-target-text" title={selectedDay.varcTarget}>
+                    {selectedDay.varcTarget || '4 Aeon Articles & RC Passages'}
+                  </span>
+                </div>
 
                 <div className="drill-stepper-compact">
                   <span className="stepper-subtext">Solved RCs:</span>
@@ -646,6 +794,102 @@ export default function DailyTrackerView({
 
       </div>
 
+      {/* Non-destructive Reset Confirmation Modal */}
+      {resetModal.isOpen && (
+        <div className="modal-overlay-blur fade-in" style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px'
+        }} onClick={() => setResetModal({ isOpen: false, type: null })}>
+          <div 
+            className="clean-confirm-modal"
+            style={{
+              background: 'var(--surface-color, #18181b)',
+              border: '1px solid var(--border-color, #27272a)',
+              borderRadius: '16px',
+              padding: '24px',
+              maxWidth: '420px',
+              width: '100%',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: 'rgba(239, 68, 68, 0.15)',
+                color: '#ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Icons.RotateCcw size={20} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 600, color: 'var(--text-primary, #f4f4f5)' }}>
+                  {resetModal.type === 'week' ? `Reset ${activeWeek} Drills?` : `Reset ${selectedDay.day} Drills?`}
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary, #a1a1aa)', lineHeight: 1.4 }}>
+                  {resetModal.type === 'week' 
+                    ? `Clear all 7 days of ${activeMonth} ${activeWeek} back to 0. Study hours and streak remain safe.`
+                    : `Clear drill completions and solved quantities for ${selectedDay.day} back to 0.`}
+                </p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setResetModal({ isOpen: false, type: null })}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color, #27272a)',
+                  background: 'transparent',
+                  color: 'var(--text-primary, #f4f4f5)',
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  if (resetModal.type === 'week' && resetWeekMetrics) {
+                    resetWeekMetrics(activeMonth, activeWeek);
+                  } else if (resetModal.type === 'day' && resetDayMetrics) {
+                    resetDayMetrics(activeMonth, activeWeek, selectedDay.day);
+                  }
+                  setResetModal({ isOpen: false, type: null });
+                }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#ef4444',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }}
+              >
+                Confirm Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 3/3 Daily Quotas Conquered Cat Mascot Celebration Modal */}
       <DailyQuotaCelebrationModal
         isOpen={showCelebrationModal}
@@ -657,6 +901,7 @@ export default function DailyTrackerView({
           (Number(selectedDay.lrdiCount) || 0) + 
           (Number(selectedDay.varcCount) || 0)
         }
+        onOpenStampRally={onOpenStampRally}
       />
 
       {/* Floating Sparkle Particles */}
@@ -677,3 +922,5 @@ export default function DailyTrackerView({
     </div>
   );
 }
+
+export default React.memo(DailyTrackerView);

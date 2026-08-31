@@ -165,8 +165,15 @@ export default function StudyTimerView({
     return `${String(mins).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
   };
 
-  const handleStart = () => {
-    playSoftClick();
+  const handleStart = (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    try {
+      playSoftClick();
+    } catch (err) {}
+
     let targetMins = selectedDuration;
     if (timerMode === 'custom') targetMins = customMinutes;
     if (timerMode === 'stopwatch') targetMins = 0;
@@ -399,7 +406,11 @@ export default function StudyTimerView({
         {/* Primary Controls Bar */}
         <div className="minimal-controls-bar">
           {!isRunning && !isPaused ? (
-            <button className="btn-primary minimal-start-btn" onClick={handleStart}>
+            <button 
+              type="button" 
+              className="btn-primary minimal-start-btn" 
+              onClick={handleStart}
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
               </svg>

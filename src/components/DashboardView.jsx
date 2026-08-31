@@ -6,7 +6,7 @@ import AvatarRenderer from './AvatarRenderer';
 import { Icons } from './AspirantIcons';
 import Counter from './animations/Counter';
 
-export default function DashboardView({ 
+function DashboardView({ 
   state, 
   setActiveTab, 
   friends = [], 
@@ -15,47 +15,59 @@ export default function DashboardView({
   onManageBuddies = null,
   currentUser = null,
   userProfile = null,
-  timerState = null
+  timerState = null,
+  onNavigateToDay = null
 }) {
   const { tracker, studyPlan, mocks, settings } = state;
   const todayPos = getTodayTrackerPosition(settings?.startDate);
 
-  // Calculate totals
-  let totalQuantSolved = 0;
-  let totalLrdidSolved = 0;
-  let totalVarcSolved = 0;
-  let _totalDaysCount = 0;
+  // Memoize heavy aggregations across tracker data
+  const metrics = React.useMemo(() => {
+    let totalQuant = 0;
+    let totalLrdi = 0;
+    let totalVarc = 0;
+    let _totalDays = 0;
+    const allDays = [];
 
-  const allDaysChronological = [];
+    for (const [_month, weeks] of Object.entries(tracker || {})) {
+      weeks.forEach(week => {
+        week.days.forEach(day => {
+          totalQuant += Number(day.quantCount) || 0;
+          totalLrdi += Number(day.lrdiCount) || 0;
+          totalVarc += Number(day.varcCount) || 0;
+          _totalDays++;
 
-  for (const [_month, weeks] of Object.entries(tracker)) {
-    weeks.forEach(week => {
-      week.days.forEach(day => {
-        totalQuantSolved += Number(day.quantCount) || 0;
-        totalLrdidSolved += Number(day.lrdiCount) || 0;
-        totalVarcSolved += Number(day.varcCount) || 0;
-        _totalDaysCount++;
-
-        const isDayDone = day.quantCompleted || day.lrdiCompleted || day.varcCompleted;
-        allDaysChronological.push({
-          ...day,
-          isDone: isDayDone
+          const isDayDone = day.quantCompleted || day.lrdiCompleted || day.varcCompleted;
+          allDays.push({
+            ...day,
+            isDone: isDayDone
+          });
         });
       });
-    });
-  }
-
-  // Calculate Active Streak
-  let activeStreak = 0;
-  for (let i = allDaysChronological.length - 1; i >= 0; i--) {
-    if (allDaysChronological[i].isDone) {
-      activeStreak++;
-    } else {
-      if (activeStreak > 0) break;
     }
-  }
 
-  const mocksTaken = mocks.filter(m => m.status === 'Taken').length;
+    let streak = 0;
+    for (let i = allDays.length - 1; i >= 0; i--) {
+      if (allDays[i].isDone) {
+        streak++;
+      } else {
+        if (streak > 0) break;
+      }
+    }
+
+    const taken = (mocks || []).filter(m => m.status === 'Taken').length;
+
+    return {
+      totalQuantSolved: totalQuant,
+      totalLrdidSolved: totalLrdi,
+      totalVarcSolved: totalVarc,
+      activeStreak: streak,
+      mocksTaken: taken,
+      allDaysChronological: allDays
+    };
+  }, [tracker, mocks]);
+
+  const { totalQuantSolved, totalLrdidSolved, totalVarcSolved, activeStreak, mocksTaken, allDaysChronological } = metrics;
 
   const grandTargets = {
     quant: 3160,
@@ -69,7 +81,9 @@ export default function DashboardView({
   const varcPercent = Math.min(100, Math.round((totalVarcSolved / grandTargets.varc) * 100));
   const mockPercent = Math.min(100, Math.round((mocksTaken / grandTargets.mocks) * 100));
 
-  let activeWeek = studyPlan.find(w => w.status === 'In Progress') || studyPlan.find(w => w.status === 'Not Started') || studyPlan[studyPlan.length - 1];
+  const activeWeek = React.useMemo(() => {
+    return (studyPlan || []).find(w => w.status === 'In Progress') || (studyPlan || []).find(w => w.status === 'Not Started') || (studyPlan || [])[studyPlan.length - 1];
+  }, [studyPlan]);
 
   // Today's Study Hours and Sessions
   const todayMonthObj = tracker[todayPos.activeMonth];
@@ -80,7 +94,9 @@ export default function DashboardView({
   const todayDoneTasks = (todayDayObj?.quantCompleted ? 1 : 0) + (todayDayObj?.lrdiCompleted ? 1 : 0) + (todayDayObj?.varcCompleted ? 1 : 0);
 
   // Online and studying buddies
-  const onlineFriends = friends.filter(f => f.status === 'studying' || f.status === 'online');
+  const onlineFriends = React.useMemo(() => {
+    return (friends || []).filter(f => f.status === 'studying' || f.status === 'online');
+  }, [friends]);
 
   return (
     <div className="dashboard-clean-container">
@@ -215,7 +231,13 @@ export default function DashboardView({
         <WeekContributionHeatmap 
           tracker={tracker}
           startDateStr={settings?.startDate}
-          onNavigateToDay={() => setActiveTab('daily')}
+          onNavigateToDay={(month, week, day) => {
+            if (onNavigateToDay) {
+              onNavigateToDay(month, week, day);
+            } else {
+              setActiveTab('daily');
+            }
+          }}
         />
 
         <div className="dashboard-heatmap-dual-row">
@@ -304,3 +326,5 @@ export default function DashboardView({
     </div>
   );
 }
+
+export default React.memo(DashboardView);

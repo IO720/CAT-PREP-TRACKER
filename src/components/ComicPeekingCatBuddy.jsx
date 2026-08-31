@@ -8,7 +8,7 @@ import { AnimatedPawIcon } from './AnimatedUiIcons';
  * - Exact same theme-reactive colors as StudyCompanionEntity
  * - Dialogue: "*PSST!* Let's go study!" with quick 1-click timer launcher
  */
-export default function ComicPeekingCatBuddy({
+function ComicPeekingCatBuddy({
   onOpenTimer,
   timerState,
   activeTheme = 'dark'
@@ -115,3 +115,5 @@ export default function ComicPeekingCatBuddy({
     </div>
   );
 }
+
+export default React.memo(ComicPeekingCatBuddy);

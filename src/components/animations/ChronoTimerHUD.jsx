@@ -9,7 +9,7 @@ import React, { useMemo } from 'react';
  * - Smooth glowing progression arc with leading orbital laser beacon for countdown
  * - For stopwatch: sleek static bezel (no depletion) as requested
  */
-export default function ChronoTimerHUD({
+function ChronoTimerHUD({
   timerMode = 'pomodoro',
   secondsLeft = 0,
   totalSeconds = 1500,
@@ -67,13 +67,6 @@ export default function ChronoTimerHUD({
             <stop offset="50%" stopColor="var(--accent-secondary, #ec4899)" />
             <stop offset="100%" stopColor="var(--accent-color, #38bdf8)" />
           </linearGradient>
-          <filter id="hudLaserGlow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="4.5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
         </defs>
 
         {/* 60 Precision Radar Perimeter Ticks */}
@@ -113,12 +106,12 @@ export default function ChronoTimerHUD({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
-          filter={isRunning ? "url(#hudLaserGlow)" : "none"}
           className={`chrono-progress-arc ${isStopwatch ? 'static-stopwatch' : ''}`}
           style={{
             transform: 'rotate(-90deg)',
             transformOrigin: '160px 160px',
-            transition: isStopwatch ? 'none' : 'stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1)'
+            transition: isStopwatch ? 'none' : 'stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+            filter: isRunning ? 'drop-shadow(0 0 6px var(--accent-color, #38bdf8))' : 'none'
           }}
           opacity={isStopwatch ? 0.45 : 1}
         />
@@ -149,3 +142,5 @@ export default function ChronoTimerHUD({
     </div>
   );
 }
+
+export default React.memo(ChronoTimerHUD);

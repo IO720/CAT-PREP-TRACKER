@@ -39,6 +39,8 @@ import ThemeSelectorDropdown from './components/ThemeSelectorDropdown';
 import ThemeSwitchToast from './components/ThemeSwitchToast';
 import ThemeRedeemModal from './components/ThemeRedeemModal';
 import { getUnlockedThemes } from './utils/themeRedemption';
+import JapaneseCatStampRallyModal from './components/JapaneseCatStampRallyModal';
+import { getStampRallyData, saveStampRallyData, awardDailyQuotaStamp, redeemStampReward } from './utils/stampRallyStorage';
 import UpdateNotificationToast from './components/UpdateNotificationToast';
 import ActivityNotificationToast from './components/ActivityNotificationToast';
 import { checkForAppUpdate } from './utils/versionCheck';
@@ -235,6 +237,16 @@ const Icons = {
       <line x1="3" y1="6" x2="21" y2="6"></line>
       <line x1="3" y1="18" x2="21" y2="18"></line>
     </svg>
+  ),
+  GripVertical: ({ size = 14, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="9" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="9" cy="5" r="1.5" fill="currentColor" />
+      <circle cx="9" cy="19" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="5" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="19" r="1.5" fill="currentColor" />
+    </svg>
   )
 };
 
@@ -246,7 +258,104 @@ export default function App() {
   const [unlockedThemes, setUnlockedThemes] = useState(() => getUnlockedThemes());
   const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
   const [redeemPreselectTheme, setRedeemPreselectTheme] = useState(null);
+  const [stampRallyData, setStampRallyData] = useState(() => getStampRallyData());
+  const [isStampRallyOpen, setIsStampRallyOpen] = useState(false);
+  const [triggerStampAnimation, setTriggerStampAnimation] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
+
+  const handleOpenStampRally = (shouldAnimate = false) => {
+    setTriggerStampAnimation(shouldAnimate);
+    setIsStampRallyOpen(true);
+  };
+
+  const handleAwardStamp = (dateStr, dayName) => {
+    const res = awardDailyQuotaStamp(dateStr, dayName);
+    if (res.updatedData) {
+      setStampRallyData(res.updatedData);
+      if (res.newStampAwarded) {
+        handleOpenStampRally(true);
+      }
+    }
+  };
+
+  const handleRedeemStampTheme = (themeId) => {
+    const res = redeemStampReward(themeId);
+    if (res.success) {
+      setStampRallyData(res.updatedData);
+      setUnlockedThemes(getUnlockedThemes());
+      setTheme(themeId);
+      setShowThemeToast(true);
+      setState(prev => ({
+        ...prev,
+        settings: { ...(prev.settings || {}), theme: themeId }
+      }));
+    }
+  };
+
+  // Draggable Floating Overlay Dock State (allows users to freely position the dock anywhere)
+  const [dockPos, setDockPos] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cat_floating_dock_pos');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+  const [isDraggingDock, setIsDraggingDock] = useState(false);
+  const dragStartRef = useRef({ mouseX: 0, mouseY: 0, dockX: 0, dockY: 0 });
+
+  const handleDockPointerDown = useCallback((e) => {
+    // Only initiate drag if clicking drag-handle or dock background padding (not icon buttons)
+    if (e.target.closest('.reactbits-dock-item')) return;
+
+    const sidebarEl = e.currentTarget;
+    const rect = sidebarEl.getBoundingClientRect();
+
+    dragStartRef.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      dockX: rect.left,
+      dockY: rect.top
+    };
+    setIsDraggingDock(true);
+
+    const onPointerMove = (moveEvt) => {
+      const dx = moveEvt.clientX - dragStartRef.current.mouseX;
+      const dy = moveEvt.clientY - dragStartRef.current.mouseY;
+
+      const newX = Math.max(8, Math.min(window.innerWidth - 64, dragStartRef.current.dockX + dx));
+      const newY = Math.max(88, Math.min(window.innerHeight - 490, dragStartRef.current.dockY + dy));
+
+      setDockPos({ x: newX, y: newY });
+    };
+
+    const onPointerUp = (upEvt) => {
+      setIsDraggingDock(false);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+
+      const dx = upEvt.clientX - dragStartRef.current.mouseX;
+      const dy = upEvt.clientY - dragStartRef.current.mouseY;
+      const finalX = Math.max(8, Math.min(window.innerWidth - 64, dragStartRef.current.dockX + dx));
+      const finalY = Math.max(88, Math.min(window.innerHeight - 490, dragStartRef.current.dockY + dy));
+      const pos = { x: Math.round(finalX), y: Math.round(finalY) };
+      setDockPos(pos);
+      try {
+        localStorage.setItem('cat_floating_dock_pos', JSON.stringify(pos));
+      } catch (err) {}
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  }, []);
+
+  const handleResetDockPos = useCallback((e) => {
+    e?.stopPropagation();
+    setDockPos(null);
+    try {
+      localStorage.removeItem('cat_floating_dock_pos');
+    } catch (err) {}
+  }, []);
   const [user, setUser] = useState(null);
   const [isGuestMode, setIsGuestMode] = useState(() => {
     return localStorage.getItem('aspiranto_guest_mode') === 'true';
@@ -324,6 +433,15 @@ export default function App() {
   // Daily tracker active selectors - initialized to TODAY's month & week
   const [activeMonth, setActiveMonth] = useState(todayPos.activeMonth);
   const [activeWeek, setActiveWeek] = useState(todayPos.activeWeek);
+  const [activeDayName, setActiveDayName] = useState(todayPos.dayName || 'Monday');
+
+  // Synchronize active tracking selectors if startDate changes
+  useEffect(() => {
+    const pos = getTodayTrackerPosition(state.settings?.startDate);
+    setActiveMonth(pos.activeMonth);
+    setActiveWeek(pos.activeWeek);
+    setActiveDayName(pos.dayName || 'Monday');
+  }, [state.settings?.startDate]);
 
   // Focus Timer State with persistent local storage hydration & drift reconciliation
   const [timerState, setTimerState] = useState(() => {
@@ -381,6 +499,13 @@ export default function App() {
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [showIntro, setShowIntro] = useState(() => !sessionStorage.getItem('catalyze_intro_viewed'));
   const [isFocusTransitioning, setIsFocusTransitioning] = useState(false);
+
+  // Ensure focus transition portal never leaks onto dashboard or other tabs
+  useEffect(() => {
+    if (activeTab !== 'timer' && isFocusTransitioning) {
+      setIsFocusTransitioning(false);
+    }
+  }, [activeTab, isFocusTransitioning]);
 
   const handleIntroComplete = useCallback(() => {
     sessionStorage.setItem('catalyze_intro_viewed', 'true');
@@ -547,12 +672,10 @@ export default function App() {
       
       // Fire reminder after 9:00 PM (21:00)
       if (hours >= 21) {
-        const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const todayName = weekdayNames[now.getDay()];
-        
-        const monthData = state.tracker[activeMonth];
-        const weekData = monthData?.find(w => w.week === activeWeek);
-        const todayData = weekData?.days.find(d => d.day === todayName);
+        const currentTodayPos = getTodayTrackerPosition(state.settings?.startDate);
+        const monthData = state.tracker[currentTodayPos.activeMonth];
+        const weekData = monthData?.find(w => w.week === currentTodayPos.activeWeek);
+        const todayData = weekData?.days.find(d => d.day === currentTodayPos.dayName);
         
         if (todayData && (!todayData.quantCompleted || !todayData.lrdiCompleted || !todayData.varcCompleted)) {
           const lastSent = localStorage.getItem('last_drill_notification_date');
@@ -1000,6 +1123,63 @@ export default function App() {
     });
   };
 
+  // 3b. Reset all 7 days of a specific week back to uncompleted/0 (non-destructive clean state)
+  const resetWeekMetrics = (month, weekName) => {
+    setState(prev => {
+      const updatedTracker = { ...prev.tracker };
+      const monthWeeks = updatedTracker[month] || [];
+
+      updatedTracker[month] = monthWeeks.map(week => {
+        if (week.week === weekName) {
+          const resetDays = (week.days || []).map(day => ({
+            ...day,
+            quantCompleted: false,
+            lrdiCompleted: false,
+            varcCompleted: false,
+            quantCount: 0,
+            lrdiCount: 0,
+            varcCount: 0
+          }));
+          return { ...week, days: resetDays };
+        }
+        return week;
+      });
+
+      return { ...prev, tracker: updatedTracker, lastUpdated: Date.now() };
+    });
+  };
+
+  // 3c. Reset a specific day's metrics back to uncompleted/0
+  const resetDayMetrics = (month, weekName, dayName) => {
+    setState(prev => {
+      const updatedTracker = { ...prev.tracker };
+      const monthWeeks = updatedTracker[month] || [];
+
+      updatedTracker[month] = monthWeeks.map(week => {
+        if (week.week === weekName) {
+          const updatedDays = (week.days || []).map(day => {
+            if (day.day === dayName) {
+              return {
+                ...day,
+                quantCompleted: false,
+                lrdiCompleted: false,
+                varcCompleted: false,
+                quantCount: 0,
+                lrdiCount: 0,
+                varcCount: 0
+              };
+            }
+            return day;
+          });
+          return { ...week, days: updatedDays };
+        }
+        return week;
+      });
+
+      return { ...prev, tracker: updatedTracker, lastUpdated: Date.now() };
+    });
+  };
+
   // 4. Update Mock Row details
   const updateMockRow = (mockId, field, value) => {
     setState(prev => {
@@ -1043,6 +1223,7 @@ export default function App() {
 
       setActiveMonth(monthKey);
       setActiveWeek(weekKey);
+      setActiveDayName('Monday');
       setActiveTab('daily');
     }
   };
@@ -1059,10 +1240,11 @@ export default function App() {
     }));
   };
 
-  // Edit specific day from error logs
-  const handleJumpToDay = (monthKey, weekKey) => {
-    setActiveMonth(monthKey);
-    setActiveWeek(weekKey);
+  // Edit specific day from error logs / heatmaps
+  const handleJumpToDay = (monthKey, weekKey, dayName) => {
+    if (monthKey) setActiveMonth(monthKey);
+    if (weekKey) setActiveWeek(weekKey);
+    if (dayName) setActiveDayName(dayName);
     setActiveTab('daily');
   };
 
@@ -1659,8 +1841,10 @@ export default function App() {
         />
       )}
 
-      {/* ReactBits Dither Background WebGL Shader */}
-      <DitherBackground activeTheme={theme} opacity={0.24} ditherSize={2.5} />
+
+
+      {/* ReactBits Dither Background WebGL Shader (Dynamic continuous retro pixel wave) */}
+      <DitherBackground activeTheme={theme} opacity={0.16} ditherSize={2.2} />
 
       {/* ReactBits ClickSpark Particle Burst Animation */}
       <ClickSpark activeTheme={theme} />
@@ -1668,16 +1852,20 @@ export default function App() {
       {/* Luxury Liquid Glow Custom Cursor with GSAP Physics */}
       <CustomCursor activeTheme={theme} />
 
-      {/* Minimalist Editorial Sidebar Navigation */}
-      <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${activeTab === 'timer' ? 'timer-mode-hidden' : ''}`}>
-        <div className="brand-section">
-          <div className="brand-emblem-badge" title="CATalyze">
-            <Icons.Logo size={18} />
-          </div>
-          <div className="brand-text-wrap">
-            <span className="brand-title-bold">CATalyze</span>
-            <span className="brand-tagline-minimal">TRACKER</span>
-          </div>
+      {/* Draggable Floating Overlay Dock for Tabs (Zero Logo on Dock - Pure Tab Capsule Overlay) */}
+      <aside 
+        className={`sidebar floating-overlay-dock ${isDraggingDock ? 'is-dragging' : ''} ${activeTab === 'timer' ? 'timer-mode-hidden' : ''}`}
+        onPointerDown={handleDockPointerDown}
+        style={dockPos ? { left: `${dockPos.x}px`, top: `${dockPos.y}px`, transform: 'none' } : undefined}
+        aria-label="Main Navigation Dock"
+      >
+        {/* Subtle Grip Drag Handle (Drag to move dock anywhere, double-click to reset) */}
+        <div 
+          className="dock-drag-handle" 
+          title="Drag to move dock anywhere (Double-click to reset position)"
+          onDoubleClick={handleResetDockPos}
+        >
+          <Icons.GripVertical size={13} />
         </div>
 
         <Dock direction="vertical" magnification={1.25} distance={95} baseItemSize={44} className="dock-nav-links">
@@ -1785,24 +1973,13 @@ export default function App() {
           </DockItem>
         </Dock>
 
-        <div className="sidebar-footer">
-          <button 
-            className="sidebar-toggle-btn" 
-            onClick={toggleSidebarCollapse}
-            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            {isSidebarCollapsed ? <Icons.ChevronRight size={14} /> : <Icons.ChevronLeft size={14} />}
-            <span className="sidebar-toggle-text">{isSidebarCollapsed ? "Expand" : "Collapse"}</span>
-          </button>
-          
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            style={{ display: 'none' }} 
-            accept=".json" 
-            onChange={handleImport} 
-          />
-        </div>
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          style={{ display: 'none' }} 
+          accept=".json" 
+          onChange={handleImport} 
+        />
       </aside>
 
       {/* Main Layout Wrapper (Dynamically fills space on PC) */}
@@ -1813,13 +1990,23 @@ export default function App() {
             <div className="header-brand-title">
               <button 
                 type="button"
-                className="header-replay-intro-btn" 
+                className="brand-emblem-badge header-logo-badge" 
                 onClick={() => setShowIntro(true)} 
-                title="Replay Spylt Cinematic Intro"
+                title="CATalyze - Replay Cinematic Intro"
               >
-                <span className="brand-dot pulse-dot"></span>
+                <span className="brand-logo-emblem">
+                  <Icons.Logo size={26} />
+                </span>
+                <span className="brand-logo-text-lockup">
+                  <span className="brand-logo-title">
+                    <span className="brand-title-accent">CAT</span><span className="brand-title-light">alyze</span>
+                  </span>
+                </span>
               </button>
-              <div className="header-title-badge">
+
+              <div className="header-title-divider desktop-only" aria-hidden="true" />
+
+              <div className="header-title-badge desktop-only">
                 <span className="header-protocol-tag">// PROTOCOL</span>
                 <span className="header-page-name" key={activeTab}>
                   {activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'lounge' ? 'Study Lounge' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'achievements' ? 'Achievements' : activeTab === 'errors' ? 'Error Log' : activeTab === 'profile' ? 'Profile' : activeTab === 'settings' ? 'Settings' : 'Dashboard'}
@@ -1828,6 +2015,20 @@ export default function App() {
             </div>
 
             <div className="header-stats">
+              {/* Japanese Cat Stamp Rally Pill */}
+              <button 
+                type="button" 
+                className="stamp-rally-header-pill"
+                onClick={() => handleOpenStampRally(false)}
+                title="Inspect Japanese Cat Stamp Rally Card"
+              >
+                <svg className="stamp-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v10M9 9.5c.8-1 2.2-1 3 0s2.2 1 3 0" />
+                </svg>
+                <span>Rally ({stampRallyData.currentCardStamps?.length || 0}/6)</span>
+              </button>
+
               {/* Unique Animated Flame & Floating Embers Streak Pill */}
               <AnimatedStreakBadge streak={activeStreak} />
 
@@ -1873,7 +2074,7 @@ export default function App() {
         )}
 
         {/* Kinetic Study Desk Transition Screen (Cat Glides into Desk Position) */}
-        {isFocusTransitioning && (
+        {isFocusTransitioning && activeTab === 'timer' && (
           <FocusTransitionPortal
             subject={timerState?.subject || 'Quant'}
             activeTheme={theme}
@@ -1899,6 +2100,7 @@ export default function App() {
               currentUser={user}
               userProfile={userProfile}
               timerState={timerState}
+              onNavigateToDay={handleJumpToDay}
             />
           )}
           {activeTab === 'timeline' && (
@@ -1916,12 +2118,19 @@ export default function App() {
               setActiveMonth={setActiveMonth}
               activeWeek={activeWeek}
               setActiveWeek={setActiveWeek}
+              activeDayName={activeDayName}
+              setActiveDayName={setActiveDayName}
               updateDayMetric={updateDayMetric}
               updateDayNotes={updateDayNotes}
+              resetWeekMetrics={resetWeekMetrics}
+              resetDayMetrics={resetDayMetrics}
               syncStatus={syncStatus}
               lastSyncedTimeStr={lastSyncedTimeStr}
               hasUnsyncedCloudChanges={hasUnsyncedCloudChanges}
               onRecordDayProgress={() => handleRecordDayProgress(false)}
+              onOpenStampRally={() => handleOpenStampRally(true)}
+              onAwardDailyStamp={handleAwardStamp}
+              stampRallyData={stampRallyData}
             />
           )}
           {activeTab === 'mocks' && (
@@ -2172,6 +2381,18 @@ export default function App() {
         preselectedThemeId={redeemPreselectTheme}
         unlockedThemes={unlockedThemes}
         onThemeUnlocked={handleThemeUnlocked}
+      />
+
+      {/* Japanese Cat Washi Paper Stamp Rally Modal */}
+      <JapaneseCatStampRallyModal
+        isOpen={isStampRallyOpen}
+        onClose={() => {
+          setIsStampRallyOpen(false);
+          setTriggerStampAnimation(false);
+        }}
+        stampRallyData={stampRallyData}
+        onRedeemTheme={handleRedeemStampTheme}
+        triggerNewStamp={triggerStampAnimation}
       />
     </div>
   );

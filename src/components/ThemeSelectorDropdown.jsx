@@ -152,10 +152,37 @@ const ThemeIcons = {
       <polyline points="4 17 10 11 4 5"></polyline>
       <line x1="12" y1="19" x2="20" y2="19"></line>
     </svg>
+  ),
+  kyotoZen: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 4h16M2 7h20M6 7v13M18 7v13M9 11h6"></path>
+    </svg>
+  ),
+  manekiGold: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 7v10M9 9.5c.8-1 2.2-1 3 0s2.2 1 3 0"></path>
+    </svg>
   )
 };
 
 export const THEMES = [
+  { 
+    id: 'kyoto-zen', 
+    name: 'Kyoto Zen Sanctuary', 
+    IconComponent: ThemeIcons.kyotoZen, 
+    colors: ['#070b19', '#0d1830', '#10b981', '#f43f5e'],
+    isPremium: true,
+    badgeText: 'STAMP RALLY'
+  },
+  { 
+    id: 'maneki-gold', 
+    name: 'Maneki Fortune Gold', 
+    IconComponent: ThemeIcons.manekiGold, 
+    colors: ['#08080c', '#151520', '#f59e0b', '#fbbf24'],
+    isPremium: true,
+    badgeText: 'STAMP RALLY'
+  },
   { 
     id: 'phosphor-crt', 
     name: 'Phosphor CRT Matrix', 

@@ -15,6 +15,15 @@ let lenisInstance = null;
 export function initSmoothScroll() {
   if (typeof window === 'undefined') return null;
 
+  // On mobile or touch devices, bypass Lenis entirely to preserve native 120Hz hardware scrolling
+  const isTouch = (
+    (typeof window.innerWidth === 'number' && window.innerWidth < 768) ||
+    (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches)
+  );
+  if (isTouch) {
+    return null;
+  }
+
   // Destroy previous instance if one exists
   if (lenisInstance) {
     lenisInstance.destroy();
@@ -23,13 +32,13 @@ export function initSmoothScroll() {
 
   // Create Lenis smooth scrolling instance
   lenisInstance = new Lenis({
-    duration: 1.15,
-    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Apple-like smooth exponential decay
+    duration: 1.0,
+    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     orientation: 'vertical',
     gestureOrientation: 'vertical',
     smoothWheel: true,
-    wheelMultiplier: 1.05,
-    touchMultiplier: 1.5,
+    wheelMultiplier: 1.0,
+    touchMultiplier: 1.0,
     infinite: false,
     autoRaf: false
   });
@@ -45,7 +54,7 @@ export function initSmoothScroll() {
   };
 
   gsap.ticker.add(updateTicker);
-  gsap.ticker.lagSmoothing(0);
+  gsap.ticker.lagSmoothing(500, 33);
 
   return {
     lenis: lenisInstance,

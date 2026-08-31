@@ -11,7 +11,7 @@ import {
  * Minimal 7-day weekly contribution heatmap that directly references and shares
  * the visual language, typography, and CSS variables of the main StudyContributionHeatmap.
  */
-export default function WeekContributionHeatmap({
+function WeekContributionHeatmap({
   tracker = {},
   startDateStr = '',
   onNavigateToDay = null
@@ -137,3 +137,5 @@ export default function WeekContributionHeatmap({
     </div>
   );
 }
+
+export default React.memo(WeekContributionHeatmap);

@@ -81,6 +81,57 @@ export function playGamingAchievementSound(volume = 0.035) {
 }
 
 /**
+ * Plays a gentle, rewarding 8-bit / 16-bit victory arpeggio when all daily quotas are completed.
+ * Features a soft 4-note ascending major chime (C5 -> E5 -> G5 -> C6) with warm triangle waves,
+ * low-pass filtering at 1300Hz, and low volume attenuation to be pleasant and relaxing.
+ * @param {number} volume - Volume multiplier (default 0.035, attenuated to match soft levels)
+ */
+export function playObjectiveCompleteGameSound(volume = 0.035) {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const effectiveVolume = Math.min(volume * 0.22, 0.028);
+    const now = ctx.currentTime;
+
+    // Warm low-pass filter to prevent any harsh click or high-frequency piercing
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1350, now);
+    filter.connect(ctx.destination);
+
+    // 4-Note gentle victory chord arpeggio: C5, E5, G5, C6
+    const notes = [
+      { freq: 523.25, time: 0.00, dur: 0.12, gainMult: 0.85 },
+      { freq: 659.25, time: 0.07, dur: 0.12, gainMult: 0.90 },
+      { freq: 783.99, time: 0.14, dur: 0.15, gainMult: 0.95 },
+      { freq: 1046.50, time: 0.22, dur: 0.42, gainMult: 1.05 }
+    ];
+
+    notes.forEach((note) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(note.freq, now + note.time);
+
+      const noteGain = effectiveVolume * note.gainMult;
+      gain.gain.setValueAtTime(0, now + note.time);
+      gain.gain.linearRampToValueAtTime(noteGain, now + note.time + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + note.time + note.dur);
+
+      osc.connect(gain);
+      gain.connect(filter);
+
+      osc.start(now + note.time);
+      osc.stop(now + note.time + note.dur);
+    });
+  } catch (err) {
+    console.warn('Audio playback notice:', err);
+  }
+}
+
+/**
  * Backward-compatible alias for existing imports.
  * Replaced the old high-pitched zen chime with the gentle gaming jump sound.
  */
@@ -118,8 +169,67 @@ export function playSoftClick(volume = 0.03) {
   }
 }
 
+/**
+ * Plays an authentic tactile Japanese Hanko / ink stamp sound.
+ * Features a soft wooden seal press with warm paper thud resonance.
+ * Attenuated by ~75% to be subtle, gentle, and satisfying.
+ * @param {number} volume - Volume multiplier (default 0.035)
+ */
+export function playHankoStampSound(volume = 0.035) {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const effectiveVolume = Math.min(volume * 0.22, 0.03);
+    const now = ctx.currentTime;
+
+    // Filter for warm wooden paper thud
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(800, now);
+    filter.frequency.exponentialRampToValueAtTime(200, now + 0.12);
+    filter.connect(ctx.destination);
+
+    // 1. Wooden block thud oscillator
+    const woodOsc = ctx.createOscillator();
+    woodOsc.type = 'triangle';
+    woodOsc.frequency.setValueAtTime(140, now);
+    woodOsc.frequency.exponentialRampToValueAtTime(55, now + 0.09);
+
+    const woodGain = ctx.createGain();
+    woodGain.gain.setValueAtTime(effectiveVolume * 1.2, now);
+    woodGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+
+    woodOsc.connect(woodGain);
+    woodGain.connect(filter);
+
+    // 2. Paper ink press resonance
+    const inkOsc = ctx.createOscillator();
+    inkOsc.type = 'sine';
+    inkOsc.frequency.setValueAtTime(320, now);
+    inkOsc.frequency.exponentialRampToValueAtTime(160, now + 0.06);
+
+    const inkGain = ctx.createGain();
+    inkGain.gain.setValueAtTime(effectiveVolume * 0.6, now);
+    inkGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+
+    inkOsc.connect(inkGain);
+    inkGain.connect(filter);
+
+    woodOsc.start(now);
+    woodOsc.stop(now + 0.12);
+
+    inkOsc.start(now);
+    inkOsc.stop(now + 0.09);
+  } catch (err) {
+    // Gracefully handle audio policy
+  }
+}
+
 export const audioEngine = {
   playGamingAchievementSound,
+  playObjectiveCompleteGameSound,
   playSoftZenChime,
-  playSoftClick
+  playSoftClick,
+  playHankoStampSound
 };

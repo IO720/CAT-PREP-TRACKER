@@ -10,7 +10,7 @@ import { THEMES } from './ThemeSelectorDropdown';
  * - Zero unmounting on theme change (uses themeRef to preserve canvas & listeners)
  * - Full cross-browser support (Brave, Chrome, Firefox, Safari)
  */
-export default function ClickSpark({
+function ClickSpark({
   sparkColor,
   sparkSize = 12,
   sparkRadius = 26,
@@ -24,36 +24,30 @@ export default function ClickSpark({
   const themeRef = useRef(activeTheme);
   themeRef.current = activeTheme;
 
-  // Compute theme color for sparks dynamically
+  // Check if on mobile or low-power touch device
+  const isMobile = typeof window !== 'undefined' && (
+    (typeof window.innerWidth === 'number' && window.innerWidth < 768) ||
+    (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches)
+  );
+
+  // Compute theme color for sparks dynamically without forcing DOM reflow
   const getThemeSparkColor = () => {
     if (sparkColor) return sparkColor;
 
-    // 1. First check THEMES dictionary for high-vibrancy accent
+    // Check THEMES dictionary for high-vibrancy accent
     const currentId = themeRef.current;
     const matched = THEMES.find((t) => t.id === currentId);
     if (matched && matched.colors && matched.colors.length > 0) {
-      // Return the most vibrant accent color (last or second to last)
       const accent = matched.colors[3] || matched.colors[2];
       if (accent) return accent;
     }
-
-    // 2. Check DOM CSS variables
-    try {
-      const rootStyle = getComputedStyle(document.documentElement);
-      const cssAccent = rootStyle.getPropertyValue('--accent-color')?.trim();
-      if (cssAccent && cssAccent !== 'transparent') {
-        return cssAccent;
-      }
-      const cssText = rootStyle.getPropertyValue('--text-primary')?.trim();
-      if (cssText && cssText !== 'transparent') {
-        return cssText;
-      }
-    } catch (e) {}
 
     return '#38bdf8';
   };
 
   useEffect(() => {
+    if (isMobile) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -160,6 +154,8 @@ export default function ClickSpark({
     };
   }, [sparkColor, sparkSize, sparkRadius, sparkCount, duration]); // Note: activeTheme is NOT in dependencies, preserving canvas lifecycle!
 
+  if (isMobile) return null;
+
   return (
     <canvas
       ref={canvasRef}
@@ -176,3 +172,5 @@ export default function ClickSpark({
     />
   );
 }
+
+export default React.memo(ClickSpark);

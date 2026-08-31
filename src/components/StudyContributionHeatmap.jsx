@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Icons } from './AspirantIcons';
 
-export default function StudyContributionHeatmap({ tracker = {}, compact = false }) {
+function StudyContributionHeatmap({ tracker = {}, compact = false }) {
   const [selectedMonth, setSelectedMonth] = useState('ALL'); // 'ALL' | 'Month 1' | 'Month 2' | 'Month 3' | 'Month 4'
   const [hoveredCell, setHoveredCell] = useState(null);
 
@@ -198,3 +198,5 @@ export default function StudyContributionHeatmap({ tracker = {}, compact = false
     </div>
   );
 }
+
+export default React.memo(StudyContributionHeatmap);

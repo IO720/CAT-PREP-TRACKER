@@ -95,6 +95,16 @@ const rawIcons = {
       <line x1="10" y1="14" x2="21" y2="3" />
     </svg>
   ),
+  GripVertical: ({ size = 14, className = '', ...props }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <circle cx="9" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="9" cy="5" r="1.5" fill="currentColor" />
+      <circle cx="9" cy="19" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="5" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="19" r="1.5" fill="currentColor" />
+    </svg>
+  ),
   User: ({ size = 16, className = "" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -490,6 +500,12 @@ const rawIcons = {
       <line x1="6" y1="12" x2="2" y2="12"></line>
       <line x1="12" y1="6" x2="12" y2="2"></line>
       <line x1="12" y1="22" x2="12" y2="18"></line>
+    </svg>
+  ),
+  RotateCcw: ({ size = 16, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M1 4v6h6" />
+      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
     </svg>
   )
 };

@@ -5,7 +5,7 @@ import React from 'react';
  * Studies alongside the aspirant in real-time with rhythmic head-bobs,
  * active note-taking, floating focus particles, and cozy desk steam.
  */
-export default function StudyCompanionEntity({
+function StudyCompanionEntity({
   isRunning = false,
   isPaused = false,
   isCompleted = false,
@@ -57,11 +57,6 @@ export default function StudyCompanionEntity({
             <stop offset="0%" stopColor="#f8fafc" />
             <stop offset="100%" stopColor="#cbd5e1" />
           </linearGradient>
-
-          <filter id="glowFilter" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="4" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
         </defs>
 
         {/* Ambient Floating Sparkles / Focus Particles */}
@@ -186,7 +181,7 @@ export default function StudyCompanionEntity({
               <line x1="140" y1="154" x2="128" y2="160" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" />
               <polygon points="128,160 125,162 127,159" fill="#0f172a" />
               {/* Particle Spark at pen tip when writing */}
-              {isRunning && <circle cx="125" cy="162" r="1.5" fill="var(--accent-color, #38bdf8)" filter="url(#glowFilter)" />}
+              {isRunning && <circle cx="125" cy="162" r="1.5" fill="var(--accent-color, #38bdf8)" style={{ filter: 'drop-shadow(0 0 2px var(--accent-color, #38bdf8))' }} />}
             </g>
           </g>
 
@@ -202,3 +197,5 @@ export default function StudyCompanionEntity({
     </div>
   );
 }
+
+export default React.memo(StudyCompanionEntity);
