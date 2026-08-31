@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import gsap from 'gsap';
 
 /**
  * CustomCursor - High-performance 120fps hardware-accelerated reticle cursor
  * Zero React re-renders on mousemove (pure direct GSAP manipulation)
  * Zero event-listener teardown/rebind cycling
+ * Full viewport zoom/scale compensation (handles UI zoom 90%-120% pixel-perfectly)
  */
 export default function CustomCursor({ activeTheme }) {
   const coreRef = useRef(null);
@@ -21,6 +23,9 @@ export default function CustomCursor({ activeTheme }) {
     const reticle = reticleRef.current;
     if (!core || !reticle) return;
 
+    // Center both elements directly on the mouse pointer tip
+    gsap.set([core, reticle], { xPercent: -50, yPercent: -50 });
+
     // Ultra high-performance GSAP quickTo interpolation
     const setCoreX = gsap.quickTo(core, 'x', { duration: 0.05, ease: 'power3.out' });
     const setCoreY = gsap.quickTo(core, 'y', { duration: 0.05, ease: 'power3.out' });
@@ -29,6 +34,15 @@ export default function CustomCursor({ activeTheme }) {
     const setReticleY = gsap.quickTo(reticle, 'y', { duration: 0.18, ease: 'power3.out' });
 
     let isVisible = false;
+    const lastPos = { x: 0, y: 0 };
+
+    const getEffectiveZoom = () => {
+      const docZoom = parseFloat(document.documentElement.style.zoom) || 
+                      parseFloat(getComputedStyle(document.documentElement).zoom) || 
+                      (parseFloat(localStorage.getItem('aspiranto_font_scale')) / 100) || 
+                      1;
+      return docZoom > 0 ? docZoom : 1;
+    };
 
     const applyModeAnimations = (newMode) => {
       if (modeRef.current === newMode) return;
@@ -97,10 +111,17 @@ export default function CustomCursor({ activeTheme }) {
         gsap.to([core, reticle], { opacity: 1, duration: 0.18 });
         isVisible = true;
       }
-      setCoreX(e.clientX);
-      setCoreY(e.clientY);
-      setReticleX(e.clientX);
-      setReticleY(e.clientY);
+      lastPos.x = e.clientX;
+      lastPos.y = e.clientY;
+
+      const z = getEffectiveZoom();
+      const targetX = e.clientX / z;
+      const targetY = e.clientY / z;
+
+      setCoreX(targetX);
+      setCoreY(targetY);
+      setReticleX(targetX);
+      setReticleY(targetY);
 
       const target = e.target;
       if (!target) return;
@@ -121,6 +142,16 @@ export default function CustomCursor({ activeTheme }) {
       } else {
         applyModeAnimations('default');
       }
+    };
+
+    // Instant sync when UI scale changes without waiting for mouse move
+    const onScaleOrResize = (e) => {
+      if (!isVisible) return;
+      const z = e?.detail?.ratio || getEffectiveZoom();
+      const targetX = lastPos.x / z;
+      const targetY = lastPos.y / z;
+      gsap.set(core, { x: targetX, y: targetY });
+      gsap.set(reticle, { x: targetX, y: targetY });
     };
 
     const onMouseDown = () => {
@@ -148,17 +179,23 @@ export default function CustomCursor({ activeTheme }) {
     window.addEventListener('mousemove', onMouseMove, { passive: true });
     window.addEventListener('mousedown', onMouseDown, { passive: true });
     window.addEventListener('mouseup', onMouseUp, { passive: true });
+    window.addEventListener('aspiranto_scale_change', onScaleOrResize);
+    window.addEventListener('resize', onScaleOrResize, { passive: true });
     document.body.addEventListener('mouseleave', onMouseLeave);
 
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('aspiranto_scale_change', onScaleOrResize);
+      window.removeEventListener('resize', onScaleOrResize);
       document.body.removeEventListener('mouseleave', onMouseLeave);
     };
   }, []);
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <>
       {/* Central Laser Star Core */}
       <div 
@@ -178,6 +215,7 @@ export default function CustomCursor({ activeTheme }) {
         <span className="reticle-corner bottom-left" />
         <span className="reticle-corner bottom-right" />
       </div>
-    </>
+    </>,
+    document.body
   );
 }

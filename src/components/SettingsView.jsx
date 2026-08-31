@@ -95,11 +95,11 @@ export default function SettingsView({
 
     setTimeout(() => {
       setRippleEffect(null);
-    }, 700);
+    }, 550);
 
     setTimeout(() => {
       setJustSelectedId(null);
-    }, 1200);
+    }, 450);
   };
 
   const handleCardMouseMove = (e) => {
@@ -203,6 +203,7 @@ export default function SettingsView({
     document.documentElement.style.zoom = ratio;
     document.documentElement.style.setProperty('--ui-font-scale', ratio);
     document.documentElement.style.fontSize = `${14 * ratio}px`;
+    window.dispatchEvent(new CustomEvent('aspiranto_scale_change', { detail: { ratio } }));
   };
 
   const handleBoldBoostToggle = (e) => {

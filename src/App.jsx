@@ -273,6 +273,7 @@ export default function App() {
     document.documentElement.style.zoom = ratio;
     document.documentElement.style.setProperty('--ui-font-scale', ratio);
     document.documentElement.style.fontSize = `${14 * ratio}px`;
+    window.dispatchEvent(new CustomEvent('aspiranto_scale_change', { detail: { ratio } }));
 
     const savedFont = localStorage.getItem('aspiranto_font_choice');
     if (savedFont) {
