@@ -56,6 +56,7 @@ import ClickSpark from './components/ClickSpark';
 import AnimatedStreakBadge from './components/AnimatedStreakBadge';
 import ComicPeekingCatBuddy from './components/ComicPeekingCatBuddy';
 import FocusTransitionPortal from './components/FocusTransitionPortal';
+import { Dock, DockItem } from './components/animations/Dock';
 import { initSmoothScroll, scrollToTop } from './utils/smoothScroll';
 import { animatePageEntrance, makeMagnetic, triggerThemeWave } from './utils/gsapAnimations';
 
@@ -558,7 +559,7 @@ export default function App() {
           const dateStr = now.toDateString();
           
           if (lastSent !== dateStr) {
-            if (Notification.permission === 'granted') {
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
               new Notification("Aspirant Tracker Reminder", {
                 body: "You haven't completed your daily exam prep checklist for today! Keep the momentum up.",
                 icon: "/favicon.svg"
@@ -1120,7 +1121,7 @@ export default function App() {
               const prevHours = day.studyHours || 0;
               const addedHours = (cleanSession.durationMinutes || 0) / 60;
 
-              // Subject drill synchronization
+              // Subject drill synchronization based on verified session output
               let newQuantCompleted = day.quantCompleted;
               let newQuantCount = day.quantCount;
               let newLrdiCompleted = day.lrdiCompleted;
@@ -1128,15 +1129,49 @@ export default function App() {
               let newVarcCompleted = day.varcCompleted;
               let newVarcCount = day.varcCount;
 
+              const parseTargetNum = (str, def) => {
+                if (!str || typeof str !== 'string') return def;
+                const m = str.match(/\d+/);
+                return m ? parseInt(m[0], 10) : def;
+              };
+
+              const userAddedQty = typeof cleanSession.questionsSolved === 'number'
+                ? Math.max(0, cleanSession.questionsSolved)
+                : null;
+              const userMarkCompleted = typeof cleanSession.markCompleted === 'boolean'
+                ? cleanSession.markCompleted
+                : null;
+
               if (subjKey === 'quant') {
-                newQuantCompleted = true;
-                if (!newQuantCount || newQuantCount === 0) newQuantCount = 18;
+                const target = parseTargetNum(day.quantTarget, 18);
+                if (userAddedQty !== null) {
+                  newQuantCount = (day.quantCount || 0) + userAddedQty;
+                }
+                if (userMarkCompleted !== null) {
+                  newQuantCompleted = userMarkCompleted;
+                } else if (userAddedQty !== null) {
+                  newQuantCompleted = newQuantCount >= target;
+                }
               } else if (subjKey === 'lrdi') {
-                newLrdiCompleted = true;
-                if (!newLrdiCount || newLrdiCount === 0) newLrdiCount = 4;
+                const target = parseTargetNum(day.lrdiTarget, 4);
+                if (userAddedQty !== null) {
+                  newLrdiCount = (day.lrdiCount || 0) + userAddedQty;
+                }
+                if (userMarkCompleted !== null) {
+                  newLrdiCompleted = userMarkCompleted;
+                } else if (userAddedQty !== null) {
+                  newLrdiCompleted = newLrdiCount >= target;
+                }
               } else if (subjKey === 'varc') {
-                newVarcCompleted = true;
-                if (!newVarcCount || newVarcCount === 0) newVarcCount = 4;
+                const target = parseTargetNum(day.varcTarget, 4);
+                if (userAddedQty !== null) {
+                  newVarcCount = (day.varcCount || 0) + userAddedQty;
+                }
+                if (userMarkCompleted !== null) {
+                  newVarcCompleted = userMarkCompleted;
+                } else if (userAddedQty !== null) {
+                  newVarcCompleted = newVarcCount >= target;
+                }
               }
 
               // Append session note to day.notes without emojis
@@ -1187,6 +1222,57 @@ export default function App() {
               const removedMins = targetSess ? targetSess.durationMinutes : 0;
               const newSessions = (day.sessions || []).filter(s => s.id !== sessionId);
               const newHours = Math.max(0, (day.studyHours || 0) - (removedMins / 60));
+              return {
+                ...day,
+                studyHours: Math.round(newHours * 10) / 10,
+                sessions: newSessions
+              };
+            }
+            return day;
+          });
+          return { ...week, days: updatedDays };
+        }
+        return week;
+      });
+
+      return { ...prev, tracker: updatedTracker, lastUpdated: Date.now() };
+    });
+  };
+
+  // Update a recorded session (e.g. adjust minutes, subject, notes)
+  const handleUpdateSession = (sessionId, updatedFields) => {
+    setState(prev => {
+      const todayPosition = getTodayTrackerPosition(prev.settings?.startDate);
+      const updatedTracker = { ...prev.tracker };
+      const monthWeeks = updatedTracker[todayPosition.activeMonth] || [];
+
+      updatedTracker[todayPosition.activeMonth] = monthWeeks.map(week => {
+        if (week.week === todayPosition.activeWeek) {
+          const updatedDays = week.days.map(day => {
+            if (day.day === todayPosition.dayName) {
+              const targetSess = (day.sessions || []).find(s => s.id === sessionId);
+              if (!targetSess) return day;
+
+              const oldMins = Number(targetSess.durationMinutes) || 0;
+              const newMins = updatedFields.durationMinutes !== undefined 
+                ? Math.max(1, Number(updatedFields.durationMinutes) || 1)
+                : oldMins;
+              const deltaHours = (newMins - oldMins) / 60;
+
+              const newSessions = (day.sessions || []).map(s => {
+                if (s.id === sessionId) {
+                  return {
+                    ...s,
+                    ...updatedFields,
+                    durationMinutes: newMins,
+                    subject: stripEmojis(updatedFields.subject || s.subject || 'General'),
+                    notes: stripEmojis(updatedFields.notes !== undefined ? updatedFields.notes : (s.notes || ''))
+                  };
+                }
+                return s;
+              });
+
+              const newHours = Math.max(0, (day.studyHours || 0) + deltaHours);
               return {
                 ...day,
                 studyHours: Math.round(newHours * 10) / 10,
@@ -1266,10 +1352,18 @@ export default function App() {
     setTimerState(prev => ({ ...prev, sessionNotes: notes }));
   };
 
-  const handleFinishTimer = (overrideNotes) => {
-    const finalNotes = typeof overrideNotes === 'string'
-      ? overrideNotes
-      : (timerState.sessionNotes || '');
+  const handleFinishTimer = (overrideOptions) => {
+    let finalNotes = timerState.sessionNotes || '';
+    let questionsSolved = undefined;
+    let markCompleted = undefined;
+
+    if (typeof overrideOptions === 'string') {
+      finalNotes = overrideOptions;
+    } else if (overrideOptions && typeof overrideOptions === 'object') {
+      if (typeof overrideOptions.notes === 'string') finalNotes = overrideOptions.notes;
+      if (typeof overrideOptions.questionsSolved === 'number') questionsSolved = overrideOptions.questionsSolved;
+      if (typeof overrideOptions.markCompleted === 'boolean') markCompleted = overrideOptions.markCompleted;
+    }
 
     const now = new Date();
     const endTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1299,16 +1393,23 @@ export default function App() {
       mode: timerState.mode,
       visualTheme: timerState.visualTheme,
       notes: finalNotes,
+      questionsSolved,
+      markCompleted,
       timestamp: Date.now()
     };
 
     addStudySession(sessionObj);
 
     // Notify the user visually that their study session was logged to daily drills
+    const subjTitle = timerState.subject || 'Study';
+    const questionsMsg = typeof questionsSolved === 'number' && questionsSolved > 0
+      ? ` (${questionsSolved} ${subjTitle.toLowerCase() === 'lrdi' ? 'sets' : subjTitle.toLowerCase() === 'varc' ? 'RCs' : 'questions'} logged)`
+      : '';
+
     setActivityNotification({
       type: 'timer_logged',
       title: 'Session Logged to Daily Drills!',
-      message: `+${elapsedMins}m ${timerState.subject || 'Study'} session added to today's drills with checklist & notes updated.`,
+      message: `+${elapsedMins}m ${subjTitle} session added to today's drills${questionsMsg} with checklist & notes updated.`,
       actionLabel: 'View Daily Drills',
       onAction: () => {
         const todayP = getTodayTrackerPosition(state.settings?.startDate);
@@ -1579,141 +1680,110 @@ export default function App() {
           </div>
         </div>
 
-        <nav className="nav-links dock-nav-links">
-          <button 
-            className={`dock-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
-            aria-label="Dashboard"
+        <Dock direction="vertical" magnification={1.25} distance={95} baseItemSize={44} className="dock-nav-links">
+          <DockItem 
+            active={activeTab === 'dashboard'} 
+            onClick={() => setActiveTab('dashboard')} 
+            ariaLabel="Dashboard"
+            tooltipTitle="Dashboard"
+            tooltipTag="SYS.OVERVIEW"
           >
-            <span className="dock-active-indicator"></span>
-            <span className="dock-icon"><Icons.Home /></span>
-            <div className="dock-floating-tooltip">
-              <span className="tooltip-title">Dashboard</span>
-              <span className="tooltip-tag">SYS.OVERVIEW</span>
-            </div>
-          </button>
+            <Icons.Home />
+          </DockItem>
 
-          <button 
-            className={`dock-nav-item ${activeTab === 'timeline' ? 'active' : ''}`}
-            onClick={() => setActiveTab('timeline')}
-            aria-label="Study Plan"
+          <DockItem 
+            active={activeTab === 'timeline'} 
+            onClick={() => setActiveTab('timeline')} 
+            ariaLabel="Study Plan"
+            tooltipTitle="Study Plan"
+            tooltipTag="16-WK CURRICULUM"
           >
-            <span className="dock-active-indicator"></span>
-            <span className="dock-icon"><Icons.Plan /></span>
-            <div className="dock-floating-tooltip">
-              <span className="tooltip-title">Study Plan</span>
-              <span className="tooltip-tag">16-WK CURRICULUM</span>
-            </div>
-          </button>
+            <Icons.Plan />
+          </DockItem>
 
-          <button 
-            className={`dock-nav-item ${activeTab === 'timer' ? 'active' : ''}`}
-            onClick={() => setActiveTab('timer')}
-            aria-label="Focus & Study Timer"
+          <DockItem 
+            active={activeTab === 'timer'} 
+            onClick={() => setActiveTab('timer')} 
+            ariaLabel="Focus & Study Timer"
+            tooltipTitle="Study Timer"
+            tooltipTag="FOCUS SUITE"
           >
-            <span className="dock-active-indicator"></span>
-            <span className="dock-icon"><Icons.Timer /></span>
-            <div className="dock-floating-tooltip">
-              <span className="tooltip-title">Study Timer</span>
-              <span className="tooltip-tag">FOCUS SUITE</span>
-            </div>
-          </button>
+            <Icons.Timer />
+          </DockItem>
 
-          <button 
-            className={`dock-nav-item ${activeTab === 'lounge' ? 'active' : ''}`}
-            onClick={() => setActiveTab('lounge')}
-            aria-label="Live Study Lounge"
+          <DockItem 
+            active={activeTab === 'lounge'} 
+            onClick={() => setActiveTab('lounge')} 
+            ariaLabel="Live Study Lounge"
+            tooltipTitle="Study Lounge"
+            tooltipTag="LIVE ROOM"
           >
-            <span className="dock-active-indicator"></span>
-            <span className="dock-icon"><Icons.Chat /></span>
-            <div className="dock-floating-tooltip">
-              <span className="tooltip-title">Study Lounge</span>
-              <span className="tooltip-tag">LIVE ROOM</span>
-            </div>
-          </button>
+            <Icons.Chat />
+          </DockItem>
 
-          <button 
-            className={`dock-nav-item ${activeTab === 'daily' ? 'active' : ''}`}
-            onClick={() => setActiveTab('daily')}
-            aria-label="Daily Drills"
+          <DockItem 
+            active={activeTab === 'daily'} 
+            onClick={() => setActiveTab('daily')} 
+            ariaLabel="Daily Drills"
+            tooltipTitle="Daily Drills"
+            tooltipTag="QUOTA SOLVER"
           >
-            <span className="dock-active-indicator"></span>
-            <span className="dock-icon"><Icons.Drills /></span>
-            <div className="dock-floating-tooltip">
-              <span className="tooltip-title">Daily Drills</span>
-              <span className="tooltip-tag">QUOTA SOLVER</span>
-            </div>
-          </button>
+            <Icons.Drills />
+          </DockItem>
 
-          <button 
-            className={`dock-nav-item ${activeTab === 'mocks' ? 'active' : ''}`}
-            onClick={() => setActiveTab('mocks')}
-            aria-label="Mock Tests"
+          <DockItem 
+            active={activeTab === 'mocks'} 
+            onClick={() => setActiveTab('mocks')} 
+            ariaLabel="Mock Tests"
+            tooltipTitle="Mock Tests"
+            tooltipTag="BENCHMARKS"
           >
-            <span className="dock-active-indicator"></span>
-            <span className="dock-icon"><Icons.Mocks /></span>
-            <div className="dock-floating-tooltip">
-              <span className="tooltip-title">Mock Tests</span>
-              <span className="tooltip-tag">BENCHMARKS</span>
-            </div>
-          </button>
+            <Icons.Mocks />
+          </DockItem>
 
-          <button 
-            className={`dock-nav-item ${activeTab === 'achievements' ? 'active' : ''}`}
-            onClick={() => setActiveTab('achievements')}
-            aria-label="Prestige Achievement Badges"
+          <DockItem 
+            active={activeTab === 'achievements'} 
+            onClick={() => setActiveTab('achievements')} 
+            ariaLabel="Prestige Achievement Badges"
+            tooltipTitle="Achievements"
+            tooltipTag="PRESTIGE BADGES"
           >
-            <span className="dock-active-indicator"></span>
-            <span className="dock-icon"><Icons.Award /></span>
-            <div className="dock-floating-tooltip">
-              <span className="tooltip-title">Achievements</span>
-              <span className="tooltip-tag">PRESTIGE BADGES</span>
-            </div>
-          </button>
+            <Icons.Award />
+          </DockItem>
 
-          <button 
-            className={`dock-nav-item ${activeTab === 'errors' ? 'active' : ''}`}
-            onClick={() => setActiveTab('errors')}
-            aria-label="Error Log"
+          <DockItem 
+            active={activeTab === 'errors'} 
+            onClick={() => setActiveTab('errors')} 
+            ariaLabel="Error Log"
+            tooltipTitle="Error Log"
+            tooltipTag="AUDIT MISTAKES"
           >
-            <span className="dock-active-indicator"></span>
-            <span className="dock-icon"><Icons.Errors /></span>
-            <div className="dock-floating-tooltip">
-              <span className="tooltip-title">Error Log</span>
-              <span className="tooltip-tag">AUDIT MISTAKES</span>
-            </div>
-          </button>
+            <Icons.Errors />
+          </DockItem>
 
-          <button 
-            className={`dock-nav-item ${activeTab === 'profile' ? 'active' : ''}`}
-            onClick={() => setActiveTab('profile')}
-            aria-label="Profile & Study Buddies"
-            style={{ position: 'relative' }}
+          <DockItem 
+            active={activeTab === 'profile'} 
+            onClick={() => setActiveTab('profile')} 
+            ariaLabel="Profile & Study Buddies"
+            tooltipTitle="Profile & Buddies"
+            tooltipTag="COMMUNITY"
           >
-            <span className="dock-active-indicator"></span>
-            <span className="dock-icon"><Icons.Cloud /></span>
+            <Icons.Cloud />
             {pendingRequestsCount > 0 && (
               <span className="dock-badge-dot" title={`${pendingRequestsCount} new friend request(s)`}></span>
             )}
-            <div className="dock-floating-tooltip">
-              <span className="tooltip-title">Profile & Buddies</span>
-              <span className="tooltip-tag">COMMUNITY</span>
-            </div>
-          </button>
+          </DockItem>
 
-          <button 
-            className={`dock-nav-item ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
-            aria-label="Application Settings"
+          <DockItem 
+            active={activeTab === 'settings'} 
+            onClick={() => setActiveTab('settings')} 
+            ariaLabel="Application Settings"
+            tooltipTitle="Settings"
+            tooltipTag="PREFERENCES"
           >
-            <span className="dock-active-indicator"></span>
-            <span className="dock-icon"><Icons.Settings /></span>
-            <div className="dock-floating-tooltip">
-              <span className="tooltip-title">Settings</span>
-              <span className="tooltip-tag">PREFERENCES</span>
-            </div>
-          </button>
-        </nav>
+            <Icons.Settings />
+          </DockItem>
+        </Dock>
 
         <div className="sidebar-footer">
           <button 
@@ -1878,6 +1948,7 @@ export default function App() {
               todaySessions={todaySessions}
               todayTotalHours={todayTotalHours}
               onDeleteSession={handleDeleteSession}
+              onEditSession={handleUpdateSession}
               theme={theme}
               onSetTheme={handleSelectTheme}
               friends={friends}
@@ -1886,6 +1957,9 @@ export default function App() {
               activeStreak={activeStreak}
               onLeaveTimer={() => setActiveTab('dashboard')}
               isFocusTransitioning={isFocusTransitioning}
+              todayDay={todayDayObj}
+              activeWeekDays={todayWeekObj?.days || []}
+              activeWeekName={todayPositionNow.activeWeek}
             />
           )}
           {activeTab === 'lounge' && (
@@ -1963,46 +2037,73 @@ export default function App() {
         </main>
       </div>
 
-      {/* Streamlined Native Mobile Bottom Navigation */}
+      {/* Streamlined Native Mobile Bottom Navigation / ReactBits Dock */}
       <nav 
         className={`mobile-bottom-nav ${activeTab === 'timer' ? 'timer-mode-hidden' : ''}`}
-        style={{
-          paddingBottom: 'max(14px, env(safe-area-inset-bottom, 14px))',
-          paddingTop: '8px',
-          height: 'calc(66px + max(14px, env(safe-area-inset-bottom, 14px)))',
-          boxSizing: 'border-box'
-        }}
+        aria-label="Mobile Navigation"
       >
-        <button className={`mobile-nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-          <span className="mobile-nav-icon"><Icons.Home size={22} /></span>
-          <span>Home</span>
-        </button>
-        <button className={`mobile-nav-btn ${activeTab === 'daily' ? 'active' : ''}`} onClick={() => setActiveTab('daily')}>
-          <span className="mobile-nav-icon"><Icons.Drills size={22} /></span>
-          <span>Drills</span>
-        </button>
-        <button className={`mobile-nav-btn ${activeTab === 'lounge' ? 'active' : ''}`} onClick={() => setActiveTab('lounge')}>
-          <span className="mobile-nav-icon"><Icons.Chat size={22} /></span>
-          <span>Lounge</span>
-        </button>
-        <button 
-          className={`mobile-nav-btn ${(timerState?.isRunning || timerState?.isPaused) ? 'timer-is-active' : ''} ${activeTab === 'timer' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('timer')}
-        >
-          <span className="mobile-nav-icon">
+        <Dock direction="horizontal" magnification={1.25} distance={80} baseItemSize={44} className="mobile-dock-wrap">
+          <DockItem 
+            active={activeTab === 'dashboard'} 
+            onClick={() => setActiveTab('dashboard')} 
+            ariaLabel="Dashboard"
+            tooltipTitle="Home"
+            className="mobile-dock-btn"
+          >
+            <Icons.Home size={22} />
+          </DockItem>
+
+          <DockItem 
+            active={activeTab === 'daily'} 
+            onClick={() => setActiveTab('daily')} 
+            ariaLabel="Daily Drills"
+            tooltipTitle="Drills"
+            className="mobile-dock-btn"
+          >
+            <Icons.Drills size={22} />
+          </DockItem>
+
+          <DockItem 
+            active={activeTab === 'lounge'} 
+            onClick={() => setActiveTab('lounge')} 
+            ariaLabel="Study Lounge"
+            tooltipTitle="Lounge"
+            className="mobile-dock-btn"
+          >
+            <Icons.Chat size={22} />
+          </DockItem>
+
+          <DockItem 
+            active={activeTab === 'timer'} 
+            onClick={() => setActiveTab('timer')} 
+            ariaLabel="Focus Timer"
+            tooltipTitle="Timer"
+            className={`mobile-dock-btn ${(timerState?.isRunning || timerState?.isPaused) ? 'timer-is-active' : ''}`}
+          >
             <Icons.Timer size={22} />
             {(timerState?.isRunning || timerState?.isPaused) && <span className="nav-timer-live-pip"></span>}
-          </span>
-          <span>Timer</span>
-        </button>
-        <button className={`mobile-nav-btn ${activeTab === 'mocks' ? 'active' : ''}`} onClick={() => setActiveTab('mocks')}>
-          <span className="mobile-nav-icon"><Icons.Mocks size={22} /></span>
-          <span>Mocks</span>
-        </button>
-        <button className={`mobile-nav-btn ${activeTab === 'profile' || activeTab === 'timeline' || activeTab === 'errors' || activeTab === 'achievements' || activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
-          <span className="mobile-nav-icon"><Icons.Menu size={22} /></span>
-          <span>More</span>
-        </button>
+          </DockItem>
+
+          <DockItem 
+            active={activeTab === 'mocks'} 
+            onClick={() => setActiveTab('mocks')} 
+            ariaLabel="Mock Tests"
+            tooltipTitle="Mocks"
+            className="mobile-dock-btn"
+          >
+            <Icons.Mocks size={22} />
+          </DockItem>
+
+          <DockItem 
+            active={activeTab === 'profile' || activeTab === 'timeline' || activeTab === 'errors' || activeTab === 'achievements' || activeTab === 'settings'} 
+            onClick={() => setActiveTab('profile')} 
+            ariaLabel="More Menu"
+            tooltipTitle="Menu"
+            className="mobile-dock-btn"
+          >
+            <Icons.Menu size={22} />
+          </DockItem>
+        </Dock>
       </nav>
 
       {/* Floating Timer Mini Widget */}

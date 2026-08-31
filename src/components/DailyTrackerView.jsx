@@ -14,6 +14,7 @@ import {
   getTodayTrackerPosition 
 } from '../utils/dateUtils';
 import { stripEmojis } from '../utils/textUtils';
+import DailyQuotaCelebrationModal from './DailyQuotaCelebrationModal';
 
 export default function DailyTrackerView({ 
   state, 
@@ -124,16 +125,28 @@ export default function DailyTrackerView({
     updateDayMetric(month, weekName, dayName, subject, targetCompleted, defaultQty);
   };
 
+  const getSubjectTarget = (subj, dayObj) => {
+    const targetStr = dayObj?.[`${subj}Target`];
+    const match = targetStr ? targetStr.match(/\d+/) : null;
+    if (match) return parseInt(match[0], 10);
+    if (subj === 'quant') return 18;
+    if (subj === 'lrdi') return 4;
+    if (subj === 'varc') return 4;
+    return 1;
+  };
+
   const handleStepQty = (month, weekName, dayName, subject, currentVal, delta) => {
     const current = parseInt(currentVal) || 0;
     const nextVal = Math.max(0, current + delta);
-    const isCompleted = nextVal > 0;
+    const target = getSubjectTarget(subject, selectedDay);
+    const isCompleted = nextVal >= target;
     updateDayMetric(month, weekName, dayName, subject, isCompleted, nextVal);
   };
 
   const handleDirectQtyChange = (month, weekName, dayName, subject, val) => {
     const qty = Math.max(0, parseInt(val) || 0);
-    const isCompleted = qty > 0;
+    const target = getSubjectTarget(subject, selectedDay);
+    const isCompleted = qty >= target;
     updateDayMetric(month, weekName, dayName, subject, isCompleted, qty);
   };
 
@@ -150,6 +163,20 @@ export default function DailyTrackerView({
     (selectedDay.quantCompleted ? 1 : 0) + 
     (selectedDay.lrdiCompleted ? 1 : 0) + 
     (selectedDay.varcCompleted ? 1 : 0);
+
+  const [showCelebrationModal, setShowCelebrationModal] = useState(false);
+  const prevCompletedCountRef = useRef(null);
+
+  useEffect(() => {
+    if (
+      prevCompletedCountRef.current !== null &&
+      prevCompletedCountRef.current < 3 &&
+      selectedCompletedCount === 3
+    ) {
+      setShowCelebrationModal(true);
+    }
+    prevCompletedCountRef.current = selectedCompletedCount;
+  }, [selectedCompletedCount]);
 
   // Subject timer sessions
   const quantSessions = (selectedDay.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'quant');
@@ -322,11 +349,17 @@ export default function DailyTrackerView({
               </span>
             </div>
 
-            <div className="day-quota-tally">
+            <div 
+              className={`day-quota-tally ${selectedCompletedCount === 3 ? 'all-done clickable-celebrate' : ''}`}
+              onClick={() => {
+                if (selectedCompletedCount === 3) setShowCelebrationModal(true);
+              }}
+              title={selectedCompletedCount === 3 ? "Click to view celebration & Cat Mascot!" : undefined}
+            >
               <span className={`tally-score ${selectedCompletedCount === 3 ? 'all-done' : ''}`}>
                 {selectedCompletedCount} / 3
               </span>
-              <span className="tally-label">Quotas Cleared</span>
+              <span className="tally-label">{selectedCompletedCount === 3 ? 'Conquered!' : 'Quotas Cleared'}</span>
             </div>
           </div>
 
@@ -612,6 +645,19 @@ export default function DailyTrackerView({
         </div>
 
       </div>
+
+      {/* 3/3 Daily Quotas Conquered Cat Mascot Celebration Modal */}
+      <DailyQuotaCelebrationModal
+        isOpen={showCelebrationModal}
+        onClose={() => setShowCelebrationModal(false)}
+        dayName={`${selectedDay.day || 'Today'}`}
+        activeStreak={state.streak || 1}
+        totalSolvedToday={
+          (Number(selectedDay.quantCount) || 0) + 
+          (Number(selectedDay.lrdiCount) || 0) + 
+          (Number(selectedDay.varcCount) || 0)
+        }
+      />
 
       {/* Floating Sparkle Particles */}
       {particles.map(p => (

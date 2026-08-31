@@ -1,8 +1,10 @@
 import React from 'react';
 import { getTodayTrackerPosition } from '../utils/dateUtils';
 import StudyContributionHeatmap from './StudyContributionHeatmap';
+import WeekContributionHeatmap from './WeekContributionHeatmap';
 import AvatarRenderer from './AvatarRenderer';
 import { Icons } from './AspirantIcons';
+import Counter from './animations/Counter';
 
 export default function DashboardView({ 
   state, 
@@ -85,7 +87,7 @@ export default function DashboardView({
       {/* Minimalist Editorial Hero Header */}
       <div className="minimal-hero-section">
         <div className="minimal-hero-tag">
-          <span>// PREPARATION PROTOCOL • {todayPos.activeMonth?.toUpperCase()} (WEEK {todayPos.activeWeek})</span>
+          <span>// PREPARATION PROTOCOL • {todayPos.activeMonth?.toUpperCase()} ({todayPos.activeWeek?.toUpperCase()})</span>
         </div>
 
         <div className="minimal-hero-main">
@@ -127,13 +129,13 @@ export default function DashboardView({
           <div className="horizon-divider"></div>
           <div className="horizon-stat-item">
             <span className="horizon-stat-lbl">Daily Drills</span>
-            <span className="horizon-stat-val">{todayDoneTasks} <span className="horizon-unit">/ 3 Done</span></span>
+            <span className="horizon-stat-val"><Counter value={todayDoneTasks} /> <span className="horizon-unit">/ 3 Done</span></span>
           </div>
           <div className="horizon-divider"></div>
           <div className="horizon-stat-item">
             <span className="horizon-stat-lbl">Active Streak</span>
             <span className="horizon-stat-val" style={{ color: activeStreak > 0 ? '#ff3344' : 'inherit' }}>
-              {activeStreak} <span className="horizon-unit">{activeStreak === 1 ? 'Day' : 'Days'}</span>
+              <Counter value={activeStreak} /> <span className="horizon-unit">{activeStreak === 1 ? 'Day' : 'Days'}</span>
             </span>
           </div>
         </div>
@@ -148,7 +150,7 @@ export default function DashboardView({
             <span className="minimal-metric-badge">{quantPercent}%</span>
           </div>
           <div className="minimal-metric-number">
-            {totalQuantSolved.toLocaleString()} <span className="minimal-target">/ {grandTargets.quant}</span>
+            <Counter value={totalQuantSolved} /> <span className="minimal-target">/ {grandTargets.quant}</span>
           </div>
           <div className="minimal-progress-track">
             <div className="minimal-progress-fill quant-fill" style={{ width: `${quantPercent}%` }}></div>
@@ -162,7 +164,7 @@ export default function DashboardView({
             <span className="minimal-metric-badge">{lrdiPercent}%</span>
           </div>
           <div className="minimal-metric-number">
-            {totalLrdidSolved.toLocaleString()} <span className="minimal-target">/ {grandTargets.lrdi}</span>
+            <Counter value={totalLrdidSolved} /> <span className="minimal-target">/ {grandTargets.lrdi}</span>
           </div>
           <div className="minimal-progress-track">
             <div className="minimal-progress-fill lrdi-fill" style={{ width: `${lrdiPercent}%` }}></div>
@@ -176,7 +178,7 @@ export default function DashboardView({
             <span className="minimal-metric-badge">{varcPercent}%</span>
           </div>
           <div className="minimal-metric-number">
-            {totalVarcSolved.toLocaleString()} <span className="minimal-target">/ {grandTargets.varc}</span>
+            <Counter value={totalVarcSolved} /> <span className="minimal-target">/ {grandTargets.varc}</span>
           </div>
           <div className="minimal-progress-track">
             <div className="minimal-progress-fill varc-fill" style={{ width: `${varcPercent}%` }}></div>
@@ -190,7 +192,7 @@ export default function DashboardView({
             <span className="minimal-metric-badge">{mockPercent}%</span>
           </div>
           <div className="minimal-metric-number">
-            {mocksTaken} <span className="minimal-target">/ {grandTargets.mocks}</span>
+            <Counter value={mocksTaken} /> <span className="minimal-target">/ {grandTargets.mocks}</span>
           </div>
           <div className="minimal-progress-track">
             <div className="minimal-progress-fill mock-fill" style={{ width: `${mockPercent}%` }}></div>
@@ -209,6 +211,13 @@ export default function DashboardView({
           </div>
         </div>
 
+        {/* 7-Day Current Week Momentum Heatmap */}
+        <WeekContributionHeatmap 
+          tracker={tracker}
+          startDateStr={settings?.startDate}
+          onNavigateToDay={() => setActiveTab('daily')}
+        />
+
         <div className="dashboard-heatmap-dual-row">
           <div className="heatmap-matrix-left-col">
             <StudyContributionHeatmap tracker={tracker} compact={false} />
@@ -221,7 +230,7 @@ export default function DashboardView({
                 <span>ACTIVE STREAK</span>
               </div>
               <div className="streak-box-value">
-                {activeStreak} <span className="streak-box-unit">{activeStreak === 1 ? 'Day' : 'Days'}</span>
+                <Counter value={activeStreak} /> <span className="streak-box-unit">{activeStreak === 1 ? 'Day' : 'Days'}</span>
               </div>
               <div className="streak-box-desc">
                 {activeStreak > 0 ? "Momentum active! Keep the streak alive." : "Complete today's drill to start your streak."}
@@ -234,7 +243,7 @@ export default function DashboardView({
                 <span>CONSISTENCY RECORD</span>
               </div>
               <div className="streak-box-value">
-                {allDaysChronological.filter(d => d.isDone).length} <span className="streak-box-unit">/ 112 Days</span>
+                <Counter value={allDaysChronological.filter(d => d.isDone).length} /> <span className="streak-box-unit">/ 112 Days</span>
               </div>
               <div className="streak-box-desc">
                 Total active practice days logged across 4 curriculum months.

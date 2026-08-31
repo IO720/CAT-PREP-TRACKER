@@ -5,6 +5,10 @@ import StudyCompanionEntity from './StudyCompanionEntity';
 import AsciiMascot from './AsciiMascot';
 import { playSoftZenChime, playSoftClick } from '../utils/audioUtils';
 import SadCatGuiltTripModal from './SadCatGuiltTripModal';
+import SessionCompletionModal from './SessionCompletionModal';
+import EditSessionModal from './EditSessionModal';
+import SkiperAnimatedTimer from './animations/SkiperAnimatedTimer';
+import ChronoTimerHUD from './animations/ChronoTimerHUD';
 
 export default function StudyTimerView({
   timerState,
@@ -17,6 +21,7 @@ export default function StudyTimerView({
   todaySessions = [],
   todayTotalHours = 0,
   onDeleteSession,
+  onEditSession,
   theme,
   onSetTheme,
   friends = [],
@@ -24,9 +29,13 @@ export default function StudyTimerView({
   currentUser = null,
   activeStreak = 0,
   onLeaveTimer,
-  isFocusTransitioning = false
+  isFocusTransitioning = false,
+  todayDay = null,
+  activeWeekDays = [],
+  activeWeekName = 'This Week'
 }) {
   const [showGuiltTrip, setShowGuiltTrip] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
   const companionRef = useRef(null);
   const {
     secondsLeft,
@@ -46,6 +55,7 @@ export default function StudyTimerView({
   const [notes, setNotes] = useState(stripEmojis(sessionNotes || ''));
   const [isZenFullscreen, setIsZenFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [editingSession, setEditingSession] = useState(null);
   const prevSecondsLeftRef = useRef(secondsLeft);
 
   useEffect(() => {
@@ -55,7 +65,7 @@ export default function StudyTimerView({
     }
   }, [mode, subject, isRunning, isPaused]);
 
-  // Trigger soft zen chime when countdown naturally reaches 0
+  // Trigger soft zen chime and completion modal when countdown naturally reaches 0
   useEffect(() => {
     if (
       prevSecondsLeftRef.current > 0 &&
@@ -67,6 +77,7 @@ export default function StudyTimerView({
       if (!isMuted) {
         playSoftZenChime(0.32);
       }
+      setShowCompletionModal(true);
     }
     prevSecondsLeftRef.current = secondsLeft;
   }, [secondsLeft, isRunning, isPaused, timerMode, isMuted]);
@@ -170,10 +181,23 @@ export default function StudyTimerView({
   };
 
   const handleFinish = () => {
+    if (isRunning) {
+      playSoftClick();
+      onPauseTimer();
+    }
     if (!isMuted) {
       playSoftZenChime(0.3);
     }
-    onFinishTimer(notes);
+    setShowCompletionModal(true);
+  };
+
+  const handleConfirmCompletion = ({ notes: finalNotes, questionsSolved, markCompleted }) => {
+    setShowCompletionModal(false);
+    onFinishTimer({
+      notes: finalNotes,
+      questionsSolved,
+      markCompleted
+    });
     if (isZenFullscreen) {
       setIsZenFullscreen(false);
       if (document.fullscreenElement) {
@@ -181,6 +205,39 @@ export default function StudyTimerView({
       }
     }
   };
+
+  const handleCloseCompletion = () => {
+    setShowCompletionModal(false);
+  };
+
+  const pendingSessionData = React.useMemo(() => {
+    const now = new Date();
+    const endTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const startMs = timerState.startTimeMs || (now.getTime() - (totalSeconds - secondsLeft) * 1000);
+    const startObj = new Date(startMs);
+    const calculatedStartTimeStr = timerState.startTimeStr || startObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let elapsedMins;
+    if (timerMode === 'stopwatch') {
+      elapsedMins = Math.max(1, Math.round(secondsLeft / 60));
+    } else {
+      const activeSecondsElapsed = Math.max(0, totalSeconds - secondsLeft);
+      const countdownMins = Math.round(activeSecondsElapsed / 60);
+      const wallClockMins = Math.max(1, Math.round((now.getTime() - startMs) / 60000));
+      elapsedMins = countdownMins > 0 ? countdownMins : wallClockMins;
+      if (secondsLeft <= 0) {
+        elapsedMins = Math.max(1, Math.round(totalSeconds / 60));
+      }
+    }
+
+    return {
+      subject: currentSubject,
+      durationMinutes: elapsedMins,
+      startTimeStr: calculatedStartTimeStr,
+      endTimeStr,
+      initialNotes: notes
+    };
+  }, [timerState, totalSeconds, secondsLeft, timerMode, currentSubject, notes]);
 
   return (
     <div className={`study-timer-minimal-container ${isZenFullscreen ? 'zen-fullscreen-mode' : ''}`}>
@@ -312,58 +369,31 @@ export default function StudyTimerView({
           )}
         </div>
 
-        {/* Center Stage: Dynamic Circular SVG Progress Ring (Enlarged) */}
+        {/* Center Stage: Futuristic Chronograph HUD Telemetry Bezel */}
         <div className="dynamic-timer-ring-container enlarged-ring">
-          <svg className="timer-svg-ring" viewBox="0 0 320 320">
-            <defs>
-              <linearGradient id="timerRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="var(--accent-color, #38bdf8)" />
-                <stop offset="50%" stopColor="var(--accent-secondary, #ec4899)" />
-                <stop offset="100%" stopColor="var(--accent-color, #38bdf8)" />
-              </linearGradient>
-              <filter id="ringGlowFilter" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="7" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-            </defs>
-
-            {/* Background Track Circle */}
-            <circle
-              cx="160"
-              cy="160"
-              r="140"
-              className="timer-track-circle"
-            />
-
-            {/* Dynamic Animated Progress Circle */}
-            <circle
-              cx="160"
-              cy="160"
-              r="140"
-              className={`timer-progress-circle ${isRunning ? 'active-glow' : ''}`}
-              style={{
-                strokeDasharray: 2 * Math.PI * 140,
-                strokeDashoffset: totalSeconds > 0 
-                  ? 2 * Math.PI * 140 * (1 - Math.max(0, Math.min(1, secondsLeft / totalSeconds)))
-                  : 0
-              }}
-            />
-          </svg>
-
-          {/* Time Readout in Center */}
-          <div className="minimal-timer-center-info">
-            <span className="minimal-time-readout font-display">{formatTime(secondsLeft)}</span>
-            <div className="minimal-sub-readout">
-              <span className="subject-focus-badge">{currentSubject} FOCUS</span>
-              {timerMode === 'stopwatch' && <span className="stopwatch-tag">• STOPWATCH</span>}
-            </div>
-            {isRunning && (
-              <span className="live-sprint-indicator">
-                <span className="pulse-sprint-dot"></span>
-                <span>DEEP FOCUS ACTIVE</span>
+          <ChronoTimerHUD
+            timerMode={timerMode}
+            secondsLeft={secondsLeft}
+            totalSeconds={totalSeconds}
+            isRunning={isRunning}
+          >
+            {/* Time Readout in Center */}
+            <div className="minimal-timer-center-info">
+              <span className="minimal-time-readout font-display">
+                <SkiperAnimatedTimer seconds={secondsLeft} />
               </span>
-            )}
-          </div>
+              <div className="minimal-sub-readout">
+                <span className="subject-focus-badge">{currentSubject} FOCUS</span>
+                {timerMode === 'stopwatch' && <span className="stopwatch-tag">• STOPWATCH</span>}
+              </div>
+              {isRunning && (
+                <span className="live-sprint-indicator">
+                  <span className="pulse-sprint-dot"></span>
+                  <span>DEEP FOCUS ACTIVE</span>
+                </span>
+              )}
+            </div>
+          </ChronoTimerHUD>
         </div>
 
         {/* Primary Controls Bar */}
@@ -565,15 +595,32 @@ export default function StudyTimerView({
                   {s.notes && <div className="session-notes-text">"{s.notes}"</div>}
                   <div className="session-card-footer">
                     <span className="session-mode-badge">{s.mode || 'Pomodoro'}</span>
-                    {onDeleteSession && (
-                      <button
-                        className="delete-session-btn"
-                        onClick={() => onDeleteSession(s.id)}
-                        title="Remove session log"
-                      >
-                        Delete
-                      </button>
-                    )}
+                    <div className="session-card-actions">
+                      {onEditSession && (
+                        <button
+                          type="button"
+                          className="edit-session-btn"
+                          onClick={() => setEditingSession(s)}
+                          title="Edit session duration or notes"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                          <span>Edit</span>
+                        </button>
+                      )}
+                      {onDeleteSession && (
+                        <button
+                          type="button"
+                          className="delete-session-btn"
+                          onClick={() => onDeleteSession(s.id)}
+                          title="Remove session log"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -582,7 +629,18 @@ export default function StudyTimerView({
         </div>
       )}
 
-      {/* Emotional Guilt-Trip Sad Cat Modal when attempting to leave focus sanctuary */}
+      {/* Session Completion & Quota Verification Modal */}
+      <SessionCompletionModal
+        isOpen={showCompletionModal}
+        onClose={handleCloseCompletion}
+        onConfirm={handleConfirmCompletion}
+        sessionData={pendingSessionData}
+        todayDay={todayDay || {}}
+        activeWeekDays={activeWeekDays || []}
+        activeWeekName={activeWeekName}
+      />
+
+      {/* Emotional Guilt-Trip Sad Cat / Happy Cat Modal when attempting to leave focus sanctuary */}
       <SadCatGuiltTripModal
         isOpen={showGuiltTrip}
         onStay={() => setShowGuiltTrip(false)}
@@ -594,6 +652,19 @@ export default function StudyTimerView({
         subject={currentSubject}
         secondsLeft={secondsLeft}
         isRunning={isRunning}
+        isQuotaCompleted={Boolean(todayDay?.quantCompleted && todayDay?.lrdiCompleted && todayDay?.varcCompleted)}
+      />
+
+      {/* Edit Session Modal for Time Corrections */}
+      <EditSessionModal
+        isOpen={Boolean(editingSession)}
+        session={editingSession}
+        onClose={() => setEditingSession(null)}
+        onSave={(sessionId, updatedFields) => {
+          if (onEditSession) {
+            onEditSession(sessionId, updatedFields);
+          }
+        }}
       />
 
     </div>
