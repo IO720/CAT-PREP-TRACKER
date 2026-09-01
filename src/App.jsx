@@ -51,6 +51,7 @@ import { calculateUserBadges } from './utils/badgeUtils';
 import AuthScreen from './components/AuthScreen';
 import CookieConsentBanner from './components/CookieConsentBanner';
 import TermsAndPrivacyModal from './components/TermsAndPrivacyModal';
+import OnboardingWelcomeModal from './components/OnboardingWelcomeModal';
 import CustomCursor from './components/CustomCursor';
 import DitherBackground from './components/DitherBackground';
 import LiquidIntroLoader from './components/LiquidIntroLoader';
@@ -263,6 +264,66 @@ export default function App() {
   const [triggerStampAnimation, setTriggerStampAnimation] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
 
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(() => {
+    try {
+      return (localStorage.getItem('catalyze_onboarding_completed') || localStorage.getItem('aspiranto_onboarding_completed')) !== 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [shouldPromptCatTimer, setShouldPromptCatTimer] = useState(false);
+
+  useEffect(() => {
+    window.__openOnboarding = () => setIsOnboardingOpen(true);
+    return () => {
+      delete window.__openOnboarding;
+    };
+  }, []);
+
+  const handleCompleteOnboarding = useCallback((data) => {
+    setIsOnboardingOpen(false);
+    if (!timerState?.isRunning) {
+      setTimeout(() => {
+        setShouldPromptCatTimer(true);
+      }, 500);
+    }
+    if (data?.targetExam) {
+      setState(prev => {
+        const nextSettings = {
+          ...(prev.settings || {}),
+          targetExam: data.targetExam,
+          targetYear: data.targetYear,
+          dailyHoursGoal: data.dailyHoursGoal,
+          dailyQuotas: data.dailyQuotas
+        };
+        const updated = {
+          ...prev,
+          settings: nextSettings
+        };
+        saveState(updated);
+        return updated;
+      });
+    }
+  }, []);
+
+  const handleSelectTargetExam = useCallback((examId) => {
+    try {
+      localStorage.setItem('catalyze_target_exam', examId);
+    } catch (e) {}
+    setState(prev => {
+      const updated = {
+        ...prev,
+        settings: {
+          ...(prev.settings || {}),
+          targetExam: examId
+        }
+      };
+      saveState(updated);
+      return updated;
+    });
+  }, []);
+
   const handleOpenStampRally = (shouldAnimate = false) => {
     setTriggerStampAnimation(shouldAnimate);
     setIsStampRallyOpen(true);
@@ -358,7 +419,7 @@ export default function App() {
   }, []);
   const [user, setUser] = useState(null);
   const [isGuestMode, setIsGuestMode] = useState(() => {
-    return localStorage.getItem('aspiranto_guest_mode') === 'true';
+    return (localStorage.getItem('catalyze_guest_mode') || localStorage.getItem('aspiranto_guest_mode')) === 'true';
   });
   const [friends, setFriends] = useState([]);
   const [peers, setPeers] = useState([]);
@@ -377,20 +438,21 @@ export default function App() {
 
   // Restore UI Font Scale and Font on Initial Mount
   useEffect(() => {
-    const savedScale = localStorage.getItem('aspiranto_font_scale') || '100';
+    const savedScale = localStorage.getItem('catalyze_font_scale') || localStorage.getItem('aspiranto_font_scale') || '100';
     const ratio = Number(savedScale) / 100;
     document.documentElement.style.setProperty('--ui-scale', ratio);
     document.documentElement.style.zoom = ratio;
     document.documentElement.style.setProperty('--ui-font-scale', ratio);
     document.documentElement.style.fontSize = `${14 * ratio}px`;
+    window.dispatchEvent(new CustomEvent('catalyze_scale_change', { detail: { ratio } }));
     window.dispatchEvent(new CustomEvent('aspiranto_scale_change', { detail: { ratio } }));
 
-    const savedFont = localStorage.getItem('aspiranto_font_choice');
+    const savedFont = localStorage.getItem('catalyze_font_choice') || localStorage.getItem('aspiranto_font_choice');
     if (savedFont) {
       document.documentElement.style.setProperty('--font-sans', `'${savedFont}', -apple-system, BlinkMacSystemFont, sans-serif`);
     }
 
-    const boldBoost = localStorage.getItem('aspiranto_bold_boost') === 'true';
+    const boldBoost = (localStorage.getItem('catalyze_bold_boost') || localStorage.getItem('aspiranto_bold_boost')) === 'true';
     if (boldBoost) {
       document.documentElement.classList.add('ui-bold-boost');
     }
@@ -683,7 +745,7 @@ export default function App() {
           
           if (lastSent !== dateStr) {
             if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-              new Notification("Aspirant Tracker Reminder", {
+              new Notification("CATalyze Prep Reminder", {
                 body: "You haven't completed your daily exam prep checklist for today! Keep the momentum up.",
                 icon: "/favicon.svg"
               });
@@ -703,7 +765,7 @@ export default function App() {
   const [userProfile, setUserProfile] = useState(null);
   const [syncStatus, setSyncStatus] = useState('saved'); // 'saved' | 'syncing' | 'synced' | 'error'
   const [lastSyncedTimeStr, setLastSyncedTimeStr] = useState(() => {
-    return localStorage.getItem('aspiranto_last_synced_time') || '';
+    return localStorage.getItem('catalyze_last_synced_time') || localStorage.getItem('aspiranto_last_synced_time') || '';
   });
   const [activityNotification, setActivityNotification] = useState(null);
   const [hasUnsyncedCloudChanges, setHasUnsyncedCloudChanges] = useState(false);
@@ -805,7 +867,7 @@ export default function App() {
         setHasUnsyncedCloudChanges(false);
       }
 
-      localStorage.setItem('aspiranto_last_synced_time', fullLabel);
+      localStorage.setItem('catalyze_last_synced_time', fullLabel);
       setLastSyncedTimeStr(fullLabel);
       setSyncStatus('synced');
       setTimeout(() => setSyncStatus('saved'), 3500);
@@ -1821,11 +1883,12 @@ export default function App() {
         onAuthSuccess={(u) => {
           setUser(u);
           setIsGuestMode(false);
+          localStorage.removeItem('catalyze_guest_mode');
           localStorage.removeItem('aspiranto_guest_mode');
         }}
         onContinueAsGuest={() => {
           setIsGuestMode(true);
-          localStorage.setItem('aspiranto_guest_mode', 'true');
+          localStorage.setItem('catalyze_guest_mode', 'true');
         }}
       />
     );
@@ -1902,11 +1965,11 @@ export default function App() {
           <DockItem 
             active={activeTab === 'lounge'} 
             onClick={() => setActiveTab('lounge')} 
-            ariaLabel="Live Study Lounge"
-            tooltipTitle="Study Lounge"
-            tooltipTag="LIVE ROOM"
+            ariaLabel="Study Arena & Leaderboard"
+            tooltipTitle="Leaderboard"
+            tooltipTag="STUDY ARENA"
           >
-            <Icons.Chat />
+            <Icons.Trophy />
           </DockItem>
 
           <DockItem 
@@ -1986,16 +2049,16 @@ export default function App() {
       <div className="app-main-wrapper">
         {/* Clean Global Header (Hidden when inside Focus Timer) */}
         {activeTab !== 'timer' && (
-          <header className="global-header">
+          <header className="global-header cyber-bento-bar">
             <div className="header-brand-title">
               <button 
-                type="button"
-                className="brand-emblem-badge header-logo-badge" 
+                type="button" 
+                className="brand-emblem-badge header-logo-badge cyber-logo-pill" 
                 onClick={() => setShowIntro(true)} 
                 title="CATalyze - Replay Cinematic Intro"
               >
                 <span className="brand-logo-emblem">
-                  <Icons.Logo size={26} />
+                  <Icons.Logo size={20} />
                 </span>
                 <span className="brand-logo-text-lockup">
                   <span className="brand-logo-title">
@@ -2004,17 +2067,18 @@ export default function App() {
                 </span>
               </button>
 
-              <div className="header-title-divider desktop-only" aria-hidden="true" />
+              <div className="cyber-header-divider desktop-only" aria-hidden="true" />
 
-              <div className="header-title-badge desktop-only">
-                <span className="header-protocol-tag">// PROTOCOL</span>
-                <span className="header-page-name" key={activeTab}>
-                  {activeTab === 'dashboard' ? 'Dashboard' : activeTab === 'lounge' ? 'Study Lounge' : activeTab === 'timeline' ? 'Study Plan' : activeTab === 'daily' ? 'Daily Drills' : activeTab === 'mocks' ? 'Mock Tests' : activeTab === 'achievements' ? 'Achievements' : activeTab === 'errors' ? 'Error Log' : activeTab === 'profile' ? 'Profile' : activeTab === 'settings' ? 'Settings' : 'Dashboard'}
+              <div className="cyber-protocol-badge desktop-only">
+                <span className="cyber-pulse-dot" />
+                <span className="cyber-protocol-tag">// SYS /</span>
+                <span className="cyber-page-name" key={activeTab}>
+                  {activeTab === 'dashboard' ? 'DASHBOARD' : activeTab === 'lounge' ? 'STUDY LOUNGE' : activeTab === 'timeline' ? 'STUDY PLAN' : activeTab === 'daily' ? 'DAILY DRILLS' : activeTab === 'mocks' ? 'MOCK TESTS' : activeTab === 'achievements' ? 'ACHIEVEMENTS' : activeTab === 'errors' ? 'ERROR LOG' : activeTab === 'profile' ? 'PROFILE' : activeTab === 'settings' ? 'SETTINGS' : 'DASHBOARD'}
                 </span>
               </div>
             </div>
 
-            <div className="header-stats">
+            <div className="header-stats cyber-bento-cluster">
               {/* Japanese Cat Stamp Rally Pill */}
               <button 
                 type="button" 
@@ -2022,11 +2086,11 @@ export default function App() {
                 onClick={() => handleOpenStampRally(false)}
                 title="Inspect Japanese Cat Stamp Rally Card"
               >
-                <svg className="stamp-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="stamp-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <circle cx="12" cy="12" r="9" />
                   <path d="M12 7v10M9 9.5c.8-1 2.2-1 3 0s2.2 1 3 0" />
                 </svg>
-                <span>Rally ({stampRallyData.currentCardStamps?.length || 0}/6)</span>
+                <span className="stamp-pill-text"><span className="stamp-pill-word">Rally </span>({stampRallyData.currentCardStamps?.length || 0}/6)</span>
               </button>
 
               {/* Unique Animated Flame & Floating Embers Streak Pill */}
@@ -2058,6 +2122,9 @@ export default function App() {
                 timerState={timerState}
               />
             </div>
+
+            {/* Kinetic Bottom Edge Border Beam */}
+            <div className="cyber-header-border-beam" aria-hidden="true" />
           </header>
         )}
 
@@ -2067,9 +2134,12 @@ export default function App() {
             onOpenTimer={() => {
               setActiveTab('timer');
               setIsFocusTransitioning(true);
+              setShouldPromptCatTimer(false);
             }}
             timerState={timerState}
             activeTheme={theme}
+            autoPromptTimer={shouldPromptCatTimer}
+            onDismissPrompt={() => setShouldPromptCatTimer(false)}
           />
         )}
 
@@ -2241,6 +2311,9 @@ export default function App() {
               unlockedThemes={unlockedThemes}
               onOpenRedeemModal={handleOpenRedeemModal}
               onThemeUnlocked={handleThemeUnlocked}
+              targetExam={state.settings?.targetExam || 'cat'}
+              onSelectTargetExam={handleSelectTargetExam}
+              onOpenOnboarding={() => setIsOnboardingOpen(true)}
             />
           )}
         </main>
@@ -2275,11 +2348,11 @@ export default function App() {
           <DockItem 
             active={activeTab === 'lounge'} 
             onClick={() => setActiveTab('lounge')} 
-            ariaLabel="Study Lounge"
-            tooltipTitle="Lounge"
+            ariaLabel="Leaderboard"
+            tooltipTitle="Leaderboard"
             className="mobile-dock-btn"
           >
-            <Icons.Chat size={22} />
+            <Icons.Trophy size={22} />
           </DockItem>
 
           <DockItem 
@@ -2393,6 +2466,15 @@ export default function App() {
         stampRallyData={stampRallyData}
         onRedeemTheme={handleRedeemStampTheme}
         triggerNewStamp={triggerStampAnimation}
+      />
+
+      {/* User Exam Onboarding & Tutorial Cockpit Modal */}
+      <OnboardingWelcomeModal
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        onComplete={handleCompleteOnboarding}
+        initialExamId={state.settings?.targetExam || 'cat'}
+        activeTheme={theme}
       />
     </div>
   );

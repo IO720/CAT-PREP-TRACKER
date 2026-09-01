@@ -61,15 +61,16 @@ export default function HeaderProfileDropdown({
         />
       )}
 
-      {/* Trigger Button */}
+      {/* Sleek Minimal Trigger Button (No text clutter, pure glowing avatar) */}
       <button
         type="button"
-        className={`header-profile-trigger-btn ${isOpen ? 'active' : ''}`}
+        className={`header-profile-trigger-btn minimal-trigger ${isOpen ? 'active' : ''}`}
         onClick={(e) => {
           e.stopPropagation();
           setIsOpen(prev => !prev);
         }}
-        title="Account & Profile Menu"
+        title={`Account: ${displayName}`}
+        aria-label={`Account menu for ${displayName}`}
         aria-expanded={isOpen}
       >
         <div className="trigger-avatar-wrap">
@@ -81,8 +82,6 @@ export default function HeaderProfileDropdown({
             status={isStudying ? 'studying' : user ? 'online' : 'offline'}
           />
         </div>
-        <span className="trigger-user-name desktop-inline">{displayName.split(' ')[0]}</span>
-        <Icons.ChevronDown size={13} className={`trigger-chevron ${isOpen ? 'open' : ''}`} />
       </button>
 
       {/* Glassmorphic Dropdown Panel */}

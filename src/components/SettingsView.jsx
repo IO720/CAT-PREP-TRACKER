@@ -17,6 +17,13 @@ import {
   AnimatedFlameIcon 
 } from './AnimatedUiIcons';
 import { playSoftZenChime } from '../utils/audioUtils';
+import { 
+  getAllExams, 
+  getActiveExamConfig, 
+  TIMELINE_HORIZONS, 
+  getTimelineHorizon, 
+  getAdjustedDailyQuotas 
+} from '../config/examConfig';
 
 export default function SettingsView({
   user,
@@ -33,9 +40,12 @@ export default function SettingsView({
   onSelectTheme = () => {},
   unlockedThemes = [],
   onOpenRedeemModal = () => {},
-  onThemeUnlocked = () => {}
+  onThemeUnlocked = () => {},
+  targetExam = 'cat',
+  onSelectTargetExam = () => {},
+  onOpenOnboarding = () => {}
 }) {
-  // Navigation Category Tab ('themes' | 'typography' | 'schedule' | 'cloud')
+  // Navigation Category Tab ('themes' | 'typography' | 'schedule' | 'cloud' | 'exam')
   const [activeTab, setActiveTab] = useState('themes');
 
   // Auth Form State
@@ -57,18 +67,33 @@ export default function SettingsView({
 
   // Font Selection State
   const [selectedFont, setSelectedFont] = useState(() => {
-    return localStorage.getItem('aspiranto_font_choice') || 'Plus Jakarta Sans';
+    return localStorage.getItem('catalyze_font_choice') || localStorage.getItem('aspiranto_font_choice') || 'Plus Jakarta Sans';
   });
 
   // Font Size Scaling State (90%, 100%, 110%, 120%)
   const [fontScale, setFontScale] = useState(() => {
-    return localStorage.getItem('aspiranto_font_scale') || '100';
+    return localStorage.getItem('catalyze_font_scale') || localStorage.getItem('aspiranto_font_scale') || '100';
   });
 
   // Font Boldness Boost State
   const [boldBoost, setBoldBoost] = useState(() => {
-    return localStorage.getItem('aspiranto_bold_boost') === 'true';
+    return (localStorage.getItem('catalyze_bold_boost') || localStorage.getItem('aspiranto_bold_boost')) === 'true';
   });
+
+  // Timeline Horizon State (3 Months, 16 Weeks, 6 Months, 1 Year)
+  const [timelineHorizon, setTimelineHorizon] = useState(() => {
+    return (typeof window !== 'undefined' && localStorage.getItem('catalyze_timeline_horizon')) || '16_weeks';
+  });
+
+  const handleSelectTimeline = (hId) => {
+    setTimelineHorizon(hId);
+    try {
+      localStorage.setItem('catalyze_timeline_horizon', hId);
+      const quotas = getAdjustedDailyQuotas(targetExam, hId);
+      localStorage.setItem('catalyze_daily_hours_goal', String(quotas.dailyHours));
+      playSoftZenChime(0.15);
+    } catch (e) {}
+  };
 
   // Dynamic theme switch animation states (Skiper UI / React Bits style)
   const [rippleEffect, setRippleEffect] = useState(null);
@@ -191,25 +216,25 @@ export default function SettingsView({
 
   const handleFontChange = (fontFamily) => {
     setSelectedFont(fontFamily);
-    localStorage.setItem('aspiranto_font_choice', fontFamily);
+    localStorage.setItem('catalyze_font_choice', fontFamily);
     document.documentElement.style.setProperty('--font-sans', `'${fontFamily}', -apple-system, BlinkMacSystemFont, sans-serif`);
   };
 
   const handleScaleChange = (scaleVal) => {
     setFontScale(scaleVal);
-    localStorage.setItem('aspiranto_font_scale', scaleVal);
+    localStorage.setItem('catalyze_font_scale', scaleVal);
     const ratio = Number(scaleVal) / 100;
     document.documentElement.style.setProperty('--ui-scale', ratio);
     document.documentElement.style.zoom = ratio;
     document.documentElement.style.setProperty('--ui-font-scale', ratio);
     document.documentElement.style.fontSize = `${14 * ratio}px`;
-    window.dispatchEvent(new CustomEvent('aspiranto_scale_change', { detail: { ratio } }));
+    window.dispatchEvent(new CustomEvent('catalyze_scale_change', { detail: { ratio } }));
   };
 
   const handleBoldBoostToggle = (e) => {
     const isChecked = e.target.checked;
     setBoldBoost(isChecked);
-    localStorage.setItem('aspiranto_bold_boost', isChecked ? 'true' : 'false');
+    localStorage.setItem('catalyze_bold_boost', isChecked ? 'true' : 'false');
     document.documentElement.classList.toggle('ui-bold-boost', isChecked);
   };
 
@@ -379,6 +404,16 @@ export default function SettingsView({
           <Icons.Calendar size={14} />
           <span className="nav-btn-desktop">Schedule & Sounds</span>
           <span className="nav-btn-mobile">Schedule</span>
+        </button>
+
+        <button
+          type="button"
+          className={`category-nav-btn ${activeTab === 'exam' ? 'active' : ''}`}
+          onClick={() => setActiveTab('exam')}
+        >
+          <Icons.Target size={14} />
+          <span className="nav-btn-desktop">Target Exam & Blueprint</span>
+          <span className="nav-btn-mobile">Exam</span>
         </button>
 
         <button
@@ -997,6 +1032,247 @@ export default function SettingsView({
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* ========================================================
+          CATEGORY 5: TARGET EXAM & BLUEPRINT
+         ======================================================== */}
+      {activeTab === 'exam' && (
+        <div className="settings-pane-content fade-in">
+          {/* Active Exam Spotlight Card */}
+          {(() => {
+            const activeExam = getActiveExamConfig(targetExam);
+            const allExamsList = getAllExams();
+            return (
+              <>
+                <div 
+                  className="theme-spotlight-card" 
+                  style={{ 
+                    borderColor: activeExam.color,
+                    background: `linear-gradient(135deg, rgba(13, 19, 34, 0.95) 0%, rgba(20, 29, 52, 0.95) 100%)`
+                  }}
+                >
+                  <div className="spotlight-left">
+                    <div className="spotlight-title-row">
+                      <span className="spotlight-icon" style={{ color: activeExam.color }}>
+                        <Icons.Target size={20} />
+                      </span>
+                      <span className="spotlight-name" style={{ color: activeExam.color }}>
+                        {activeExam.name}
+                      </span>
+                      <span className="spotlight-active-badge">
+                        <Icons.Check size={11} />
+                        <span>Active Preparation Target</span>
+                      </span>
+                    </div>
+                    <p className="spotlight-desc">
+                      {activeExam.targetAudience} • Default target year: {activeExam.defaultYear}
+                    </p>
+                  </div>
+
+                  <div className="spotlight-right">
+                    <button
+                      type="button"
+                      className="vip-gallery-link-btn"
+                      onClick={() => onOpenOnboarding()}
+                      style={{ background: 'rgba(56, 189, 248, 0.12)', borderColor: 'var(--accent-color, #38bdf8)' }}
+                    >
+                      <Icons.Sparkles size={14} />
+                      <span>Open Setup Dialog</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Exam Switcher Gallery */}
+                <div className="settings-sub-panel">
+                  <div className="sub-panel-header">
+                    <div>
+                      <h3 className="sub-panel-title">Switch Target Examination</h3>
+                      <p className="sub-panel-subtitle">Select an exam below to dynamically calibrate your daily drill slots, badges, and curriculum headers.</p>
+                    </div>
+                  </div>
+
+                  <div className="exam-cards-grid" style={{ marginTop: '12px' }}>
+                    {allExamsList.map((exam) => {
+                      const isSelected = (targetExam || 'cat').toLowerCase() === exam.id;
+                      return (
+                        <div
+                          key={exam.id}
+                          className={`exam-choice-card ${isSelected ? 'selected' : ''}`}
+                          onClick={() => {
+                            onSelectTargetExam(exam.id);
+                            try { playSoftZenChime(0.15); } catch (e) {}
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          style={{
+                            cursor: 'pointer',
+                            padding: '14px',
+                            background: isSelected ? 'rgba(56, 189, 248, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+                            border: `1px solid ${isSelected ? exam.color : 'rgba(255, 255, 255, 0.08)'}`,
+                            borderRadius: '12px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', color: exam.color, background: `${exam.color}18` }}>
+                              {exam.badge}
+                            </span>
+                            {isSelected && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '18px', height: '18px', borderRadius: '50%', background: exam.color }}>
+                                <Icons.Check size={11} color="#ffffff" />
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary, #ffffff)', marginBottom: '4px' }}>
+                            {exam.name}
+                          </div>
+                          <p style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', margin: '0 0 10px 0', lineHeight: 1.4 }}>
+                            {exam.targetAudience}
+                          </p>
+
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            {exam.sections.map((sec, idx) => (
+                              <span key={idx} style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                                <strong style={{ color: sec.color }}>{sec.shortName}</strong> {sec.name.split(' ')[0]}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Preparation Horizon & Pacing Selector */}
+                <div className="settings-sub-panel" style={{ marginTop: '20px' }}>
+                  <div className="sub-panel-header">
+                    <div>
+                      <h3 className="sub-panel-title">Preparation Timeline & Pacing</h3>
+                      <p className="sub-panel-subtitle">Calibrate how much time you have before exam day to automatically scale daily drill quotas.</p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginTop: '12px' }}>
+                    {TIMELINE_HORIZONS.map((h) => {
+                      const isSel = timelineHorizon === h.id;
+                      return (
+                        <div
+                          key={h.id}
+                          onClick={() => handleSelectTimeline(h.id)}
+                          role="button"
+                          tabIndex={0}
+                          style={{
+                            cursor: 'pointer',
+                            padding: '12px 14px',
+                            background: isSel ? 'rgba(56, 189, 248, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+                            border: `1px solid ${isSel ? 'var(--accent-color, #38bdf8)' : 'rgba(255, 255, 255, 0.08)'}`,
+                            borderRadius: '10px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary, #ffffff)' }}>
+                              {h.name}
+                            </span>
+                            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '9px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', color: isSel ? 'var(--accent-color, #38bdf8)' : 'var(--text-tertiary, #64748b)', background: 'rgba(255, 255, 255, 0.05)' }}>
+                              {h.badge}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)' }}>
+                            {h.dailyHours} hrs / day • {h.durationWeeks} Weeks
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-tertiary, #64748b)', marginTop: '2px', lineHeight: 1.3 }}>
+                            {h.description}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Active Exam Section & Detailed Topics Blueprint */}
+                <div className="settings-sub-panel" style={{ marginTop: '20px' }}>
+                  <div className="sub-panel-header">
+                    <div>
+                      <h3 className="sub-panel-title">{activeExam.name} • Syllabus Modules & Targets</h3>
+                      <p className="sub-panel-subtitle">Structured preparation syllabus mapped from the Master Tracker framework.</p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginTop: '12px' }}>
+                    {activeExam.sections.map((sec) => {
+                      const adjQuotas = getAdjustedDailyQuotas(activeExam.id, timelineHorizon);
+                      const currentQuota = adjQuotas[sec.slotKey] || sec.defaultDailyQuota;
+
+                      return (
+                        <div 
+                          key={sec.slotKey} 
+                          style={{ 
+                            background: 'rgba(255, 255, 255, 0.02)', 
+                            border: '1px solid rgba(255, 255, 255, 0.08)', 
+                            borderRadius: '12px', 
+                            padding: '16px' 
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', color: sec.color, background: `${sec.color}18` }}>
+                                {sec.shortName}
+                              </span>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary, #ffffff)' }}>
+                                {sec.name}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', marginBottom: '12px', padding: '6px 10px', borderRadius: '6px', background: 'rgba(0, 0, 0, 0.25)', border: '1px dashed rgba(255, 255, 255, 0.08)' }}>
+                            Active Daily Target: <strong style={{ color: 'var(--accent-color, #38bdf8)' }}>{currentQuota} {sec.unit}</strong>
+                          </div>
+
+                          {/* Specific Modules & Targets from Master Tracker */}
+                          {sec.modules && sec.modules.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-tertiary, #64748b)', fontFamily: 'JetBrains Mono, monospace' }}>
+                                // MASTER MODULE TARGETS
+                              </div>
+                              {sec.modules.map((m, mIdx) => (
+                                <div key={mIdx} style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', background: 'rgba(255, 255, 255, 0.02)', padding: '6px 8px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                                  <div style={{ fontWeight: 600, color: 'var(--text-primary, #ffffff)', marginBottom: '2px' }}>
+                                    {m.name}
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '10px', color: 'var(--text-tertiary, #64748b)' }}>
+                                    {m.targetScore && <span>Target Score: <strong style={{ color: sec.color }}>{m.targetScore}</strong></span>}
+                                    {m.mainPyqs && <span>JEE Main PYQs: <strong style={{ color: '#38bdf8' }}>{m.mainPyqs}</strong></span>}
+                                    {m.advPyqs && <span>Adv PYQs: <strong style={{ color: '#a855f7' }}>{m.advPyqs}</strong></span>}
+                                    {m.mcqsTarget && <span>Question Bank: <strong style={{ color: '#10b981' }}>{m.mcqsTarget} MCQs</strong></span>}
+                                    {m.standardSource && <span>Source: <strong style={{ color: '#e879f9' }}>{m.standardSource}</strong></span>}
+                                    {m.targetAccuracy && <span>Target Accuracy: <strong style={{ color: '#34d399' }}>{m.targetAccuracy}%</strong></span>}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                              {sec.topics.map((top, tIdx) => (
+                                <div key={tIdx} style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                                  <span style={{ color: sec.color, marginTop: '2px' }}>•</span>
+                                  <span>{top}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 

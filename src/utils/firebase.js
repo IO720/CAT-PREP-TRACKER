@@ -72,10 +72,10 @@ export const generateUniqueAspirantId = (seed = '') => {
 
 export const getLocalAspirantId = () => {
   if (typeof window === 'undefined') return 'ASP-100001';
-  let id = localStorage.getItem('aspiranto_unique_aspirant_id');
+  let id = localStorage.getItem('catalyze_unique_aspirant_id') || localStorage.getItem('aspiranto_unique_aspirant_id');
   if (!id) {
     id = generateUniqueAspirantId();
-    localStorage.setItem('aspiranto_unique_aspirant_id', id);
+    localStorage.setItem('catalyze_unique_aspirant_id', id);
   }
   return id;
 };

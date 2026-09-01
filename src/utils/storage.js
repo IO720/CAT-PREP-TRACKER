@@ -56,7 +56,8 @@ export const getInitialState = () => {
     mocks,
     settings: {
       theme: "dark", // default to dark mode for premium minimal feel
-      startDate: defaultStartDate
+      startDate: defaultStartDate,
+      targetExam: "cat"
     }
   };
 };
@@ -73,6 +74,9 @@ export const loadState = () => {
     }
     if (!parsed.settings.startDate) {
       parsed.settings.startDate = formatDateISO(getMondayOfWeek(new Date()));
+    }
+    if (!parsed.settings.targetExam) {
+      parsed.settings.targetExam = (typeof window !== 'undefined' && (localStorage.getItem('catalyze_target_exam') || localStorage.getItem('aspiranto_target_exam'))) || 'cat';
     }
     if (!parsed.lastUpdated) {
       parsed.lastUpdated = Date.now();

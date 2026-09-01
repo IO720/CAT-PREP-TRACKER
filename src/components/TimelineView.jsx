@@ -18,7 +18,7 @@ export default function TimelineView({
 
   // View Mode: 'cards' | 'roadmap' | 'table'
   const [viewMode, setViewMode] = useState(() => {
-    return localStorage.getItem('aspiranto_study_plan_view') || 'cards';
+    return localStorage.getItem('catalyze_study_plan_view') || localStorage.getItem('aspiranto_study_plan_view') || 'cards';
   });
 
   // Active filters
@@ -31,7 +31,7 @@ export default function TimelineView({
   // Save view preference
   useEffect(() => {
     try {
-      localStorage.setItem('aspiranto_study_plan_view', viewMode);
+      localStorage.setItem('catalyze_study_plan_view', viewMode);
     } catch (e) {}
   }, [viewMode]);
 

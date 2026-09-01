@@ -360,30 +360,19 @@ export default function ThemeSelectorDropdown({
 
   return (
     <div className="custom-theme-dropdown-container" ref={dropdownRef}>
-      {/* Sleek Floating Capsule Trigger */}
+      {/* Sleek Minimal Trigger (No text clutter, pure color swatch indicator) */}
       <button 
         type="button"
-        className={`theme-dropdown-trigger ${isOpen ? 'active' : ''}`}
+        className={`theme-dropdown-trigger minimal-trigger ${isOpen ? 'active' : ''}`}
         onClick={() => setIsOpen(prev => !prev)}
-        title="Change Visual Theme"
+        title={`Theme: ${activeThemeObj.name} (Click to change)`}
+        aria-label={`Change theme, currently ${activeThemeObj.name}`}
         aria-expanded={isOpen}
       >
         <span 
           className="theme-trigger-swatch"
           style={{ backgroundColor: activeThemeObj.colors?.[3] || activeThemeObj.colors?.[2] || '#38bdf8' }}
         />
-        <span className="theme-trigger-name">{activeThemeObj.name}</span>
-        <svg 
-          width="12" 
-          height="12" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2.5"
-          className={`theme-chevron ${isOpen ? 'open' : ''}`}
-        >
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
       </button>
 
       {/* Luxury Skiper UI / ReactBits Popover Grid */}

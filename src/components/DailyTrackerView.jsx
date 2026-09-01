@@ -15,6 +15,7 @@ import {
 } from '../utils/dateUtils';
 import { stripEmojis } from '../utils/textUtils';
 import DailyQuotaCelebrationModal from './DailyQuotaCelebrationModal';
+import { getActiveExamConfig } from '../config/examConfig';
 
 function DailyTrackerView({ 
   state, 
@@ -38,6 +39,11 @@ function DailyTrackerView({
 }) {
   const { tracker, settings } = state;
   const startDateStr = settings?.startDate;
+
+  const examConfig = useMemo(() => getActiveExamConfig(settings?.targetExam || 'cat'), [settings?.targetExam]);
+  const secQuant = examConfig.sections[0] || { shortName: 'QUANT', name: 'Quantitative Aptitude', unit: 'Qs' };
+  const secLrdi = examConfig.sections[1] || { shortName: 'DILR', name: 'Data Interpretation & LR', unit: 'Sets' };
+  const secVarc = examConfig.sections[2] || { shortName: 'VARC', name: 'Verbal Ability & Reading', unit: 'RCs' };
   
   // Sorted month keys
   const months = useMemo(() => {
@@ -461,10 +467,10 @@ function DailyTrackerView({
             <div className={`drill-item-card quant ${selectedDay.quantCompleted ? 'done' : ''}`}>
               <div className="drill-card-top-row">
                 <button 
-                  type="button"
+                  type="button" 
                   role="checkbox"
                   aria-checked={Boolean(selectedDay.quantCompleted)}
-                  aria-label="Quant completed"
+                  aria-label={`${secQuant.shortName} completed`}
                   className={`drill-check-bubble ${selectedDay.quantCompleted ? 'checked' : ''}`}
                   onClick={(e) => handleToggleDrill(activeMonth, activeWeek, selectedDay.day, 'quant', selectedDay.quantCompleted, e)}
                   title={selectedDay.quantCompleted ? 'Completed' : 'Mark complete'}
@@ -473,8 +479,8 @@ function DailyTrackerView({
                 </button>
 
                 <div className="drill-subject-heading-row">
-                  <span className="drill-subject-badge quant">QUANT</span>
-                  <span className="drill-subject-title">Quantitative Aptitude</span>
+                  <span className="drill-subject-badge quant">{secQuant.shortName}</span>
+                  <span className="drill-subject-title">{secQuant.name}</span>
                   {quantMins > 0 && (
                     <span className="drill-timer-pill">
                       <Icons.Clock size={10} />
@@ -504,12 +510,12 @@ function DailyTrackerView({
                     </span>
                   )}
                   <span className="drill-target-text" title={selectedDay.quantTarget}>
-                    {selectedDay.quantTarget || 'Arithmetic & Algebra Practice Drill'}
+                    {selectedDay.quantTarget || `${secQuant.name} Practice Drill`}
                   </span>
                 </div>
 
                 <div className="drill-stepper-compact">
-                  <span className="stepper-subtext">Solved Qs:</span>
+                  <span className="stepper-subtext">Solved {secQuant.unit}:</span>
                   <div className="stepper-buttons-wrap">
                     <button 
                       type="button"
@@ -544,7 +550,7 @@ function DailyTrackerView({
                   type="button"
                   role="checkbox"
                   aria-checked={Boolean(selectedDay.lrdiCompleted)}
-                  aria-label="DILR completed"
+                  aria-label={`${secLrdi.shortName} completed`}
                   className={`drill-check-bubble ${selectedDay.lrdiCompleted ? 'checked' : ''}`}
                   onClick={(e) => handleToggleDrill(activeMonth, activeWeek, selectedDay.day, 'lrdi', selectedDay.lrdiCompleted, e)}
                   title={selectedDay.lrdiCompleted ? 'Completed' : 'Mark complete'}
@@ -553,8 +559,8 @@ function DailyTrackerView({
                 </button>
 
                 <div className="drill-subject-heading-row">
-                  <span className="drill-subject-badge lrdi">DILR</span>
-                  <span className="drill-subject-title">Data Interpretation & LR</span>
+                  <span className="drill-subject-badge lrdi">{secLrdi.shortName}</span>
+                  <span className="drill-subject-title">{secLrdi.name}</span>
                   {lrdiMins > 0 && (
                     <span className="drill-timer-pill">
                       <Icons.Clock size={10} />
@@ -584,12 +590,12 @@ function DailyTrackerView({
                     </span>
                   )}
                   <span className="drill-target-text" title={selectedDay.lrdiTarget}>
-                    {selectedDay.lrdiTarget || '4 Matrix & Reasoning Sets'}
+                    {selectedDay.lrdiTarget || `${secLrdi.name} Practice Sets`}
                   </span>
                 </div>
 
                 <div className="drill-stepper-compact">
-                  <span className="stepper-subtext">Solved Sets:</span>
+                  <span className="stepper-subtext">Solved {secLrdi.unit}:</span>
                   <div className="stepper-buttons-wrap">
                     <button 
                       type="button"
@@ -624,7 +630,7 @@ function DailyTrackerView({
                   type="button"
                   role="checkbox"
                   aria-checked={Boolean(selectedDay.varcCompleted)}
-                  aria-label="VARC completed"
+                  aria-label={`${secVarc.shortName} completed`}
                   className={`drill-check-bubble ${selectedDay.varcCompleted ? 'checked' : ''}`}
                   onClick={(e) => handleToggleDrill(activeMonth, activeWeek, selectedDay.day, 'varc', selectedDay.varcCompleted, e)}
                   title={selectedDay.varcCompleted ? 'Completed' : 'Mark complete'}
@@ -633,8 +639,8 @@ function DailyTrackerView({
                 </button>
 
                 <div className="drill-subject-heading-row">
-                  <span className="drill-subject-badge varc">VARC</span>
-                  <span className="drill-subject-title">Verbal Ability & Reading</span>
+                  <span className="drill-subject-badge varc">{secVarc.shortName}</span>
+                  <span className="drill-subject-title">{secVarc.name}</span>
                   {varcMins > 0 && (
                     <span className="drill-timer-pill">
                       <Icons.Clock size={10} />
@@ -654,7 +660,7 @@ function DailyTrackerView({
                       fontSize: '11px',
                       fontWeight: 600,
                       color: '#10b981',
-                      background: 'rgba(16, 185, 129, 0.08)',
+                      background: 'rgba(168, 85, 247, 0.08)',
                       padding: '2px 8px',
                       borderRadius: '4px',
                       width: 'fit-content'
@@ -664,12 +670,12 @@ function DailyTrackerView({
                     </span>
                   )}
                   <span className="drill-target-text" title={selectedDay.varcTarget}>
-                    {selectedDay.varcTarget || '4 Aeon Articles & RC Passages'}
+                    {selectedDay.varcTarget || `${secVarc.name} Exercises`}
                   </span>
                 </div>
 
                 <div className="drill-stepper-compact">
-                  <span className="stepper-subtext">Solved RCs:</span>
+                  <span className="stepper-subtext">Solved {secVarc.unit}:</span>
                   <div className="stepper-buttons-wrap">
                     <button 
                       type="button"

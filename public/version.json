@@ -1,6 +1,6 @@
 {
-  "version": "1.0.82",
-  "versionCode": 10082,
-  "buildTime": "2026-08-31T19:41:53.986Z",
-  "releaseNotes": "Live web app update release v1.0.82"
+  "version": "1.0.83",
+  "versionCode": 10083,
+  "buildTime": "2026-09-01T12:03:00.000Z",
+  "releaseNotes": "Live update: Skiper TOS mobile responsive fixes, Leaderboard dock icon, locked uncalibrated exams and horizons, minimal top bar"
 }

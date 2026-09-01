@@ -28,7 +28,7 @@ describe('App Root Render Test', () => {
   });
 
   it('renders logo in top bar and dock as a floating overlay without logo', () => {
-    localStorage.setItem('aspiranto_guest_mode', 'true');
+    localStorage.setItem('catalyze_guest_mode', 'true');
     const { container } = render(<App />);
     
     // Logo is in the top bar header

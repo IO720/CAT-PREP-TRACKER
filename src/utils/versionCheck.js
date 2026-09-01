@@ -12,7 +12,7 @@ export async function checkForAppUpdate() {
     });
     if (!res.ok) return null;
     const data = await res.json();
-    const currentVersion = localStorage.getItem('aspiranto_installed_version') || APP_VERSION;
+    const currentVersion = localStorage.getItem('catalyze_installed_version') || localStorage.getItem('aspiranto_installed_version') || APP_VERSION;
     if (data.version && data.version !== currentVersion) {
       return data;
     }
@@ -25,7 +25,7 @@ export async function checkForAppUpdate() {
 
 export function applyInstantUpdate(newVersion) {
   if (newVersion) {
-    localStorage.setItem('aspiranto_installed_version', newVersion);
+    localStorage.setItem('catalyze_installed_version', newVersion);
   }
   // Clear cache if supported and reload
   if ('caches' in window) {

@@ -5,6 +5,7 @@ import WeekContributionHeatmap from './WeekContributionHeatmap';
 import AvatarRenderer from './AvatarRenderer';
 import { Icons } from './AspirantIcons';
 import Counter from './animations/Counter';
+import { getActiveExamConfig } from '../config/examConfig';
 
 function DashboardView({ 
   state, 
@@ -20,6 +21,11 @@ function DashboardView({
 }) {
   const { tracker, studyPlan, mocks, settings } = state;
   const todayPos = getTodayTrackerPosition(settings?.startDate);
+
+  const examConfig = React.useMemo(() => getActiveExamConfig(settings?.targetExam || 'cat'), [settings?.targetExam]);
+  const secQuant = examConfig.sections[0] || { shortName: 'Quant', unit: 'Questions' };
+  const secLrdi = examConfig.sections[1] || { shortName: 'LRDI', unit: 'Sets' };
+  const secVarc = examConfig.sections[2] || { shortName: 'VARC', unit: 'RCs' };
 
   // Memoize heavy aggregations across tracker data
   const metrics = React.useMemo(() => {
@@ -159,10 +165,10 @@ function DashboardView({
 
       {/* 4 Core Subject Metrics Grid */}
       <div className="minimal-metrics-grid">
-        {/* Quant */}
+        {/* Slot 1: Quant / Physics / Core */}
         <div className="minimal-metric-card">
           <div className="minimal-metric-header">
-            <span className="minimal-metric-title">Quant Questions</span>
+            <span className="minimal-metric-title">{secQuant.cardTitle || `${secQuant.shortName} ${secQuant.unit}`}</span>
             <span className="minimal-metric-badge">{quantPercent}%</span>
           </div>
           <div className="minimal-metric-number">
@@ -173,10 +179,10 @@ function DashboardView({
           </div>
         </div>
 
-        {/* LRDI */}
+        {/* Slot 2: LRDI / Chemistry / Math */}
         <div className="minimal-metric-card">
           <div className="minimal-metric-header">
-            <span className="minimal-metric-title">LRDI Sets</span>
+            <span className="minimal-metric-title">{secLrdi.cardTitle || `${secLrdi.shortName} ${secLrdi.unit}`}</span>
             <span className="minimal-metric-badge">{lrdiPercent}%</span>
           </div>
           <div className="minimal-metric-number">
@@ -187,10 +193,10 @@ function DashboardView({
           </div>
         </div>
 
-        {/* VARC */}
+        {/* Slot 3: VARC / Math / Biology */}
         <div className="minimal-metric-card">
           <div className="minimal-metric-header">
-            <span className="minimal-metric-title">VARC RCs</span>
+            <span className="minimal-metric-title">{secVarc.cardTitle || `${secVarc.shortName} ${secVarc.unit}`}</span>
             <span className="minimal-metric-badge">{varcPercent}%</span>
           </div>
           <div className="minimal-metric-number">

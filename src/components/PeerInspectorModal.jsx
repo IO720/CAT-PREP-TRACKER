@@ -113,7 +113,7 @@ export default function PeerInspectorModal({
           }}
         >
           {/* CATalyze Verified Badge */}
-          <div className="aspiranto-verified-pill">
+          <div className="catalyze-verified-pill">
             <Icons.Shield size={12} />
             <span>CATalyze Verified</span>
           </div>

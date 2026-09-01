@@ -98,21 +98,16 @@ function StudyCompanionEntity({
 
           {/* Bobbing Head Group */}
           <g className="scholar-head-group">
-            {/* Cat / Sprite Ears */}
-            <polygon points="82,65 94,30 112,58" fill="var(--accent-color, #38bdf8)" />
-            <polygon points="88,62 96,38 108,58" fill="url(#earInnerGrad)" opacity="0.8" />
-            <polygon points="158,65 146,30 128,58" fill="var(--accent-secondary, #c084fc)" />
-            <polygon points="152,62 144,38 132,58" fill="url(#earInnerGrad)" opacity="0.8" />
+            {/* Seamless Organic Cat Head & Ears Silhouette */}
+            <path 
+              d="M 120,116 C 82,116 82,78 88,56 L 92,28 L 108,44 Q 120,40 132,44 L 148,28 L 152,56 C 158,78 158,116 120,116 Z" 
+              fill="url(#bodyGrad)" 
+            />
 
-            {/* Head Silhouette */}
-            <circle cx="120" cy="78" r="38" fill="url(#bodyGrad)" />
+            {/* Inner Ear Gradient Flaps */}
+            <polygon points="94,48 93,34 104,44" fill="url(#earInnerGrad)" opacity="0.85" />
+            <polygon points="146,48 147,34 136,44" fill="url(#earInnerGrad)" opacity="0.85" />
 
-            {/* Glowing Focus Headphones */}
-            <path d="M82 78 C82 52, 158 52, 158 78" stroke="#f1f5f9" strokeWidth="4" strokeLinecap="round" fill="none" />
-            {/* Left Ear Cup */}
-            <rect x="76" y="68" width="12" height="22" rx="6" fill="#0f172a" stroke="var(--accent-color, #38bdf8)" strokeWidth="2" />
-            {/* Right Ear Cup */}
-            <rect x="152" y="68" width="12" height="22" rx="6" fill="#0f172a" stroke="var(--accent-secondary, #c084fc)" strokeWidth="2" />
 
             {/* Cute Scholar Glasses */}
             <g className="scholar-glasses">

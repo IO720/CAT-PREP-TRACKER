@@ -76,30 +76,27 @@ export default function SadCatGuiltTripModal({
             {/* Head Group */}
             <g className="cat-head-group">
               {isQuotaCompleted ? (
-                /* Happy Upright Ears */
+                /* Happy Upright Seamless Cat Head */
                 <>
-                  <polygon points="46,62 32,38 62,48" fill="var(--accent-color, #10b981)" />
-                  <polygon points="48,58 38,42 58,50" fill="#fbcfe8" opacity="0.8" />
-                  <polygon points="124,62 138,38 108,48" fill="var(--accent-secondary, #38bdf8)" />
-                  <polygon points="122,58 132,42 112,50" fill="#fbcfe8" opacity="0.8" />
+                  <path 
+                    d="M 85,114 C 49,114 49,78 54,56 L 58,30 L 74,44 Q 85,41 96,44 L 112,30 L 116,56 C 121,78 121,114 85,114 Z" 
+                    fill="url(#catExitBodyGrad)" 
+                  />
+                  <polygon points="60,48 60,36 70,44" fill="#fbcfe8" opacity="0.85" />
+                  <polygon points="110,48 110,36 100,44" fill="#fbcfe8" opacity="0.85" />
                 </>
               ) : (
-                /* Droopy Ears */
+                /* Sad Gentle Folded Ears Seamless Cat Head */
                 <>
-                  <polygon points="46,74 32,54 62,56" fill="var(--accent-color, #38bdf8)" />
-                  <polygon points="50,70 38,56 60,58" fill="#f472b6" opacity="0.8" />
-                  <polygon points="124,74 138,54 108,56" fill="var(--accent-secondary, #c084fc)" />
-                  <polygon points="120,70 132,56 110,58" fill="#f472b6" opacity="0.8" />
+                  <path 
+                    d="M 85,114 C 49,114 49,78 52,58 L 48,42 L 68,48 Q 85,45 102,48 L 122,42 L 118,58 C 121,78 121,114 85,114 Z" 
+                    fill="url(#catExitBodyGrad)" 
+                  />
+                  <polygon points="54,52 50,44 64,48" fill="#f472b6" opacity="0.85" />
+                  <polygon points="116,52 120,44 106,48" fill="#f472b6" opacity="0.85" />
                 </>
               )}
 
-              {/* Head Silhouette */}
-              <circle cx="85" cy="78" r="36" fill="url(#catExitBodyGrad)" />
-
-              {/* Focus Headphones */}
-              <path d="M52 82 C52 50, 118 50, 118 82" stroke="#f1f5f9" strokeWidth="3.5" strokeLinecap="round" fill="none" />
-              <rect x="46" y="74" width="11" height="20" rx="5" fill="#0f172a" stroke="var(--accent-color, #38bdf8)" strokeWidth="1.8" />
-              <rect x="113" y="74" width="11" height="20" rx="5" fill="#0f172a" stroke="var(--accent-secondary, #c084fc)" strokeWidth="1.8" />
 
               {/* Scholar Glasses */}
               <g transform="rotate(0 85 78)">

@@ -6,6 +6,8 @@ import { Dock, DockItem } from '../animations/Dock';
 import SkiperAnimatedTimer from '../animations/SkiperAnimatedTimer';
 import ChronoTimerHUD from '../animations/ChronoTimerHUD';
 import WordHoverEffect from '../animations/WordHoverEffect';
+import Stepper from '../animations/Stepper';
+import SpotlightCard from '../animations/SpotlightCard';
 import TermsAndPrivacyModal from '../TermsAndPrivacyModal';
 
 describe('ReactBits & Skiper Animations', () => {
@@ -97,4 +99,56 @@ describe('ReactBits & Skiper Animations', () => {
     fireEvent.click(homeItem);
     expect(onClick).toHaveBeenCalled();
   });
+
+  it('renders Stepper with active, completed, and selectable nodes', () => {
+    const onStepChange = vi.fn();
+    const steps = [
+      { id: '1', title: 'Start', subtitle: 'Step 1' },
+      { id: '2', title: 'Configure', subtitle: 'Step 2' },
+      { id: '3', title: 'Complete', subtitle: 'Step 3' }
+    ];
+
+    const { container, rerender } = render(
+      <Stepper steps={steps} currentStep={2} onStepChange={onStepChange} />
+    );
+
+    expect(container.querySelector('.rb-stepper-root')).toBeDefined();
+    // Step 1 should be completed and have check icon
+    expect(container.querySelector('.rb-stepper-node.completed')).toBeDefined();
+    expect(container.querySelector('.rb-stepper-check-icon')).toBeDefined();
+    // Step 2 should be active
+    expect(container.querySelector('.rb-stepper-node.active')).toBeDefined();
+
+    // Click step 3
+    const step3Btn = screen.getByRole('button', { name: /Step 3: Complete/i });
+    fireEvent.click(step3Btn);
+    expect(onStepChange).toHaveBeenCalledWith(3);
+
+    // Re-render at step 3
+    rerender(<Stepper steps={steps} currentStep={3} onStepChange={onStepChange} />);
+    expect(container.querySelector('.rb-stepper-line-fill').style.width).toBe('100%');
+  });
+
+  it('renders SpotlightCard with cursor spotlight and border beam on select', () => {
+    const { container, rerender } = render(
+      <SpotlightCard isSelected={false}>
+        <span>Card Content</span>
+      </SpotlightCard>
+    );
+
+    expect(container.querySelector('.spotlight-card-root')).toBeDefined();
+    expect(container.querySelector('.spotlight-layer')).toBeDefined();
+    expect(container.querySelector('.border-beam-layer')).toBeNull();
+
+    // Re-render as selected
+    rerender(
+      <SpotlightCard isSelected={true}>
+        <span>Card Content</span>
+      </SpotlightCard>
+    );
+    expect(container.querySelector('.spotlight-card-root.selected')).toBeDefined();
+    expect(container.querySelector('.border-beam-layer')).toBeDefined();
+  });
 });
+
+
