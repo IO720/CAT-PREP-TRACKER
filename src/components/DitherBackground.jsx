@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 /**
  * DitherBackground - High-Performance WebGL Retro Bayer Matrix Dither Wave Shader
@@ -6,7 +6,8 @@ import React, { useEffect, useRef } from 'react';
  * - 4x4 Ordered Bayer Matrix Dithering
  * - Zero WebGL recompilation on theme switches (interpolated uniform color transitions)
  * - Rock-solid 120fps GPU performance with 0 frame drops
- * - Smooth Simplex/Perlin Wave Harmonics with interactive pointer displacement
+ * - Smooth Simplex/Perlin Wave Harmonics with interactive pointer & touch displacement
+ * - Fully responsive across mobile & desktop displays
  */
 
 const THEME_PALETTES = {
@@ -51,6 +52,7 @@ function DitherBackground({
   disabled = false
 }) {
   const canvasRef = useRef(null);
+  const [webglFailed, setWebglFailed] = useState(false);
 
   // Check if on mobile or low-power device
   const isMobile = typeof window !== 'undefined' && (
@@ -58,9 +60,29 @@ function DitherBackground({
     (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches)
   );
 
+  // Enhance contrast slightly on mobile screens for radiant retro visibility
+  const effectiveOpacity = isMobile ? Math.max(opacity, 0.22) : opacity;
+  const effectiveDitherSize = isMobile ? Math.max(ditherSize, 2.0) : ditherSize;
+
   // Mutable parameters kept in refs so changes never trigger WebGL re-compilation
-  const propsRef = useRef({ ditherSize, waveSpeed, waveFrequency, interactive, opacity, disabled, isMobile });
-  propsRef.current = { ditherSize, waveSpeed, waveFrequency, interactive, opacity, disabled, isMobile };
+  const propsRef = useRef({ 
+    ditherSize: effectiveDitherSize, 
+    waveSpeed, 
+    waveFrequency, 
+    interactive, 
+    opacity: effectiveOpacity, 
+    disabled, 
+    isMobile 
+  });
+  propsRef.current = { 
+    ditherSize: effectiveDitherSize, 
+    waveSpeed, 
+    waveFrequency, 
+    interactive, 
+    opacity: effectiveOpacity, 
+    disabled, 
+    isMobile 
+  };
 
   const initialPalette = getThemePalette(activeTheme);
   const targetColorBg = useRef([...initialPalette.bg]);
@@ -74,18 +96,27 @@ function DitherBackground({
   }, [activeTheme]);
 
   useEffect(() => {
-    // If mobile or disabled, skip WebGL entirely to guarantee 0% GPU load and zero lag
-    if (isMobile) return;
+    // If disabled, skip WebGL
+    if (propsRef.current.disabled) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const isMobileDevice = propsRef.current.isMobile;
     const gl = canvas.getContext('webgl', { 
       alpha: true, 
       antialias: false, 
-      powerPreference: 'high-performance' 
+      powerPreference: isMobileDevice ? 'low-power' : 'high-performance' 
+    }) || canvas.getContext('experimental-webgl', {
+      alpha: true,
+      antialias: false,
+      powerPreference: isMobileDevice ? 'low-power' : 'high-performance'
     });
-    if (!gl) return;
+
+    if (!gl) {
+      setWebglFailed(true);
+      return;
+    }
 
     // Vertex shader
     const vsSource = `
@@ -99,7 +130,11 @@ function DitherBackground({
 
     // Fragment shader with 4x4 Bayer Dither Matrix & Harmonic Wave Field
     const fsSource = `
+      #ifdef GL_FRAGMENT_PRECISION_HIGH
       precision highp float;
+      #else
+      precision mediump float;
+      #endif
       varying vec2 v_uv;
       uniform vec2 u_resolution;
       uniform float u_time;
@@ -250,14 +285,29 @@ function DitherBackground({
     let targetMouseX = 0.5;
     let targetMouseY = 0.5;
 
-    const handleMouseMove = (e) => {
+    const updatePointer = (clientX, clientY) => {
       if (!propsRef.current.interactive) return;
       const rect = canvas.getBoundingClientRect();
-      targetMouseX = (e.clientX - rect.left) / rect.width;
-      targetMouseY = 1.0 - (e.clientY - rect.top) / rect.height;
+      targetMouseX = (clientX - rect.left) / rect.width;
+      targetMouseY = 1.0 - (clientY - rect.top) / rect.height;
+    };
+
+    const handleMouseMove = (e) => updatePointer(e.clientX, e.clientY);
+    const handleTouchMove = (e) => {
+      if (e.touches && e.touches[0]) {
+        updatePointer(e.touches[0].clientX, e.touches[0].clientY);
+      }
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('pointermove', handleMouseMove, { passive: true });
+
+    const handleContextLost = (e) => {
+      e.preventDefault();
+      cancelAnimationFrame(animationFrameId);
+    };
+    canvas.addEventListener('webglcontextlost', handleContextLost, false);
 
     let animationFrameId;
     let lastNow = performance.now();
@@ -268,11 +318,12 @@ function DitherBackground({
     const resize = () => {
       const displayWidth = window.innerWidth;
       const displayHeight = window.innerHeight;
-      // Downscale internal resolution to 0.5x for authentic retro pixel density & 75% GPU reduction
-      const scale = 0.5;
+      // Downscale internal resolution for authentic retro pixel density & 75% GPU reduction
+      // On mobile screens, 0.4x provides authentic pixelated grain while rendering <50k total pixels
+      const scale = propsRef.current.isMobile ? 0.4 : 0.5;
 
-      const targetWidth = Math.max(320, Math.round(displayWidth * scale));
-      const targetHeight = Math.max(240, Math.round(displayHeight * scale));
+      const targetWidth = Math.max(240, Math.round(displayWidth * scale));
+      const targetHeight = Math.max(180, Math.round(displayHeight * scale));
 
       if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
         canvas.width = targetWidth;
@@ -345,7 +396,10 @@ function DitherBackground({
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('pointermove', handleMouseMove);
       window.removeEventListener('resize', resize);
+      canvas.removeEventListener('webglcontextlost', handleContextLost);
       if (gl) {
         gl.deleteProgram(program);
         gl.deleteShader(vs);
@@ -355,7 +409,24 @@ function DitherBackground({
     };
   }, []); // Run ONCE on mount, NEVER teardown on theme switch!
 
-  if (isMobile) return null;
+  if (webglFailed) {
+    return (
+      <div 
+        className="dither-background-fallback"
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          pointerEvents: 'none',
+          zIndex: 0,
+          background: 'radial-gradient(ellipse at 50% 30%, rgba(56, 189, 248, 0.08) 0%, transparent 70%)'
+        }}
+      />
+    );
+  }
 
   return (
     <canvas

@@ -9,6 +9,7 @@ import WordHoverEffect from '../animations/WordHoverEffect';
 import Stepper from '../animations/Stepper';
 import SpotlightCard from '../animations/SpotlightCard';
 import TermsAndPrivacyModal from '../TermsAndPrivacyModal';
+import DitherBackground from '../DitherBackground';
 
 describe('ReactBits & Skiper Animations', () => {
   it('renders SkiperAnimatedTimer with rolling digits', () => {
@@ -60,7 +61,7 @@ describe('ReactBits & Skiper Animations', () => {
     expect(screen.getByText(/I own this site/i)).toBeDefined();
 
     // Check sidebar navigation items
-    const licenseNavBtn = screen.getByRole('button', { name: /3\. Basic Free License/i });
+    const licenseNavBtn = screen.getByRole('button', { name: /Basic Free License/i });
     expect(licenseNavBtn).toBeDefined();
     fireEvent.click(licenseNavBtn);
 
@@ -148,6 +149,23 @@ describe('ReactBits & Skiper Animations', () => {
     );
     expect(container.querySelector('.spotlight-card-root.selected')).toBeDefined();
     expect(container.querySelector('.border-beam-layer')).toBeDefined();
+  });
+
+  it('renders DitherBackground canvas on mobile screen dimensions without returning null', () => {
+    // Simulate mobile viewport width
+    const originalInnerWidth = window.innerWidth;
+    window.innerWidth = 390;
+
+    const { container } = render(
+      <DitherBackground activeTheme="dark" opacity={0.16} ditherSize={2.2} />
+    );
+
+    // Canvas must render in DOM (not null/blank)
+    const canvas = container.querySelector('.dither-background-canvas');
+    expect(canvas).toBeDefined();
+
+    // Restore
+    window.innerWidth = originalInnerWidth;
   });
 });
 
