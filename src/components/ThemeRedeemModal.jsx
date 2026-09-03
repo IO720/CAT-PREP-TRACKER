@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { THEMES } from './ThemeSelectorDropdown';
 import { PREMIUM_THEME_IDS, redeemThemeCode, isThemeUnlocked } from '../utils/themeRedemption';
+import SmoothCaretInput from './animations/SmoothCaretInput';
 
 export default function ThemeRedeemModal({
   isOpen,
@@ -146,7 +147,7 @@ export default function ThemeRedeemModal({
                     <path d="m21 2-2 2m-1.5 1.5L16 7l-1.5-1.5M19 5l-2.5 2.5m-5 5L3 21l3-3 3 3 1.5-1.5-1.5-1.5 3-3-1.5-1.5 3-3"></path>
                     <circle cx="16" cy="8" r="5"></circle>
                   </svg>
-                  <input
+                  <SmoothCaretInput
                     type="text"
                     className="redeem-code-input"
                     placeholder="e.g. SUNSET-MAGENTA or PREMIUM-ALL"

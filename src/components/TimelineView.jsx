@@ -7,6 +7,7 @@ import {
   WEEKLY_SYLLABUS_DETAILS 
 } from '../data/catSyllabusRoadmap';
 import { playGamingAchievementSound } from '../utils/audioUtils';
+import SmoothCaretInput from './animations/SmoothCaretInput';
 
 export default function TimelineView({ 
   state, 
@@ -223,7 +224,7 @@ export default function TimelineView({
         <div className="expedition-tools-right">
           <div className="expedition-search-box">
             <Icons.Search size={13} className="expedition-search-icon" />
-            <input
+            <SmoothCaretInput
               type="text"
               placeholder="Search concepts or topics..."
               value={searchQuery}

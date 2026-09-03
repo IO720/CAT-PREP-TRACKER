@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import SmoothCaretInput from './animations/SmoothCaretInput';
 
 export default function ErrorLogView({ state, onDayClick }) {
   const { tracker } = state;
@@ -60,7 +61,7 @@ export default function ErrorLogView({ state, onDayClick }) {
       <div className="filter-row">
         <div className="filter-group">
           <label className="filter-label">Search Notes</label>
-          <input
+          <SmoothCaretInput
             type="text"
             className="filter-input"
             placeholder="Search keywords..."

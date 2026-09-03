@@ -263,6 +263,7 @@ export default function App() {
   const [isStampRallyOpen, setIsStampRallyOpen] = useState(false);
   const [triggerStampAnimation, setTriggerStampAnimation] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
+  const [isInitialEntrance, setIsInitialEntrance] = useState(false);
 
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(() => {
     try {
@@ -557,6 +558,24 @@ export default function App() {
       sessionNotes: ''
     };
   });
+
+  // Live Browser Tab Title Synchronization (Only logo and timer on tab)
+  useEffect(() => {
+    if (timerState?.isRunning) {
+      const totalSecs = timerState.secondsLeft || 0;
+      const mins = Math.floor(totalSecs / 60);
+      const secs = totalSecs % 60;
+      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      document.title = `${timeStr} • CATalyze`;
+    } else if (timerState?.isPaused && (timerState?.secondsLeft || 0) > 0) {
+      const mins = Math.floor((timerState.secondsLeft || 0) / 60);
+      const secs = (timerState.secondsLeft || 0) % 60;
+      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      document.title = `${timeStr} (Paused) • CATalyze`;
+    } else {
+      document.title = 'CATalyze';
+    }
+  }, [timerState?.isRunning, timerState?.isPaused, timerState?.secondsLeft]);
 
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [showIntro, setShowIntro] = useState(() => !sessionStorage.getItem('catalyze_intro_viewed'));
@@ -1883,11 +1902,13 @@ export default function App() {
         onAuthSuccess={(u) => {
           setUser(u);
           setIsGuestMode(false);
+          setShowIntro(true);
           localStorage.removeItem('catalyze_guest_mode');
           localStorage.removeItem('aspiranto_guest_mode');
         }}
         onContinueAsGuest={() => {
           setIsGuestMode(true);
+          setShowIntro(true);
           localStorage.setItem('catalyze_guest_mode', 'true');
         }}
       />
@@ -1956,10 +1977,19 @@ export default function App() {
             active={activeTab === 'timer'} 
             onClick={() => setActiveTab('timer')} 
             ariaLabel="Focus & Study Timer"
-            tooltipTitle="Study Timer"
-            tooltipTag="FOCUS SUITE"
+            tooltipTitle={timerState?.isRunning ? `Timer Active (${Math.floor((timerState.secondsLeft || 0) / 60)}m)` : "Study Timer"}
+            tooltipTag={timerState?.isRunning ? `${timerState.subject || 'FOCUS'} RUNNING` : "FOCUS SUITE"}
+            className={timerState?.isRunning ? 'dock-timer-running' : ''}
           >
-            <Icons.Timer />
+            <div className="dock-timer-icon-wrap">
+              <Icons.Timer />
+              {timerState?.isRunning && (
+                <span className="dock-timer-active-badge" title="Focus session running" aria-hidden="true">
+                  <span className="dock-timer-ping" />
+                  <span className="dock-timer-dot" />
+                </span>
+              )}
+            </div>
           </DockItem>
 
           <DockItem 

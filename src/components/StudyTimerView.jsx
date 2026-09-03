@@ -9,6 +9,7 @@ import SessionCompletionModal from './SessionCompletionModal';
 import EditSessionModal from './EditSessionModal';
 import SkiperAnimatedTimer from './animations/SkiperAnimatedTimer';
 import ChronoTimerHUD from './animations/ChronoTimerHUD';
+import SmoothCaretInput from './animations/SmoothCaretInput';
 
 export default function StudyTimerView({
   timerState,
@@ -549,7 +550,7 @@ export default function StudyTimerView({
           {/* Session Notes */}
           <div className="minimal-box wide-box">
             <span className="minimal-box-label">Session Focus Notes</span>
-            <input
+            <SmoothCaretInput
               type="text"
               className="day-textarea minimal-notes-input"
               placeholder="e.g. Practicing Time & Work Level-2 sets..."

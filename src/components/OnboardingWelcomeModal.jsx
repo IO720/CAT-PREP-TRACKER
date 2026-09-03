@@ -419,7 +419,7 @@ export default function OnboardingWelcomeModal({
           border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
           border-radius: 16px;
           width: 100%;
-          max-width: 660px;
+          max-width: 720px;
           max-height: 90vh;
           display: flex;
           flex-direction: column;
@@ -578,11 +578,17 @@ export default function OnboardingWelcomeModal({
           overflow-y: auto;
         }
 
-        /* Step 1: Exam Grid - Always 2 columns for optimal vertical rhythm */
+        /* Step 1: Exam Grid - 2 columns on desktop, 1 column on narrow screens */
         .onb-grid {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 10px;
+        }
+
+        @media (max-width: 620px) {
+          .onb-grid {
+            grid-template-columns: 1fr;
+          }
         }
 
         .onb-exam-spotlight-card {
@@ -607,17 +613,20 @@ export default function OnboardingWelcomeModal({
         .onb-lock-pill {
           display: inline-flex;
           align-items: center;
-          gap: 5px;
+          gap: 4px;
           padding: 2px 7px;
           border-radius: 6px;
           background: rgba(255, 255, 255, 0.04);
           border: 1px solid rgba(255, 255, 255, 0.08);
           font-family: 'JetBrains Mono', monospace;
-          font-size: 9px;
+          font-size: 8.5px;
           font-weight: 700;
           letter-spacing: 0.04em;
           color: var(--text-tertiary, #94a3b8);
           transition: all 0.2s ease;
+          flex-shrink: 0;
+          white-space: nowrap;
+          margin-left: auto;
         }
 
         .onb-lock-status-default {
@@ -666,12 +675,18 @@ export default function OnboardingWelcomeModal({
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 8px;
+          min-width: 0;
+          width: 100%;
         }
 
         .onb-card-meta {
           display: flex;
           align-items: center;
-          gap: 7px;
+          gap: 6px;
+          min-width: 0;
+          flex: 1 1 auto;
+          overflow: hidden;
         }
 
         .onb-exam-code {
@@ -679,17 +694,22 @@ export default function OnboardingWelcomeModal({
           font-weight: 700;
           color: var(--text-primary, #ffffff);
           letter-spacing: 0.02em;
+          flex-shrink: 0;
         }
 
         .onb-exam-badge {
-          font-size: 8.5px;
+          font-size: 8px;
           font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.04em;
           padding: 2px 5px;
           border-radius: 4px;
           background: rgba(255, 255, 255, 0.06);
           color: var(--text-tertiary, #64748b);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 105px;
         }
 
         .spotlight-card-root.selected .onb-exam-badge {
