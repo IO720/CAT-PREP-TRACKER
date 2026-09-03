@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { loadState, saveState, exportStateAsFile, getInitialState, mergeTrackerStates } from './utils/storage';
 import { 
   auth, 
@@ -23,36 +23,40 @@ import {
   formatDateShort 
 } from './utils/dateUtils';
 import { stripEmojis } from './utils/textUtils';
-import PeerInspectorModal from './components/PeerInspectorModal';
 import HeaderProfileDropdown from './components/HeaderProfileDropdown';
 
 import DashboardView from './components/DashboardView';
-import TimelineView from './components/TimelineView';
-import DailyTrackerView from './components/DailyTrackerView';
-import MockTrackerView from './components/MockTrackerView';
-import ErrorLogView from './components/ErrorLogView';
-import ProfileView from './components/ProfileView';
-import StudyTimerView from './components/StudyTimerView';
-import StudyLounge from './components/StudyLounge';
 import FloatingTimerWidget from './components/FloatingTimerWidget';
 import ThemeSelectorDropdown from './components/ThemeSelectorDropdown';
 import ThemeSwitchToast from './components/ThemeSwitchToast';
-import ThemeRedeemModal from './components/ThemeRedeemModal';
 import { getUnlockedThemes } from './utils/themeRedemption';
-import JapaneseCatStampRallyModal from './components/JapaneseCatStampRallyModal';
 import { getStampRallyData, saveStampRallyData, awardDailyQuotaStamp, redeemStampReward } from './utils/stampRallyStorage';
 import UpdateNotificationToast from './components/UpdateNotificationToast';
 import ActivityNotificationToast from './components/ActivityNotificationToast';
 import { checkForAppUpdate } from './utils/versionCheck';
 import { audioEngine } from './utils/audioUtils';
-import SettingsView from './components/SettingsView';
-import AchievementsView from './components/AchievementsView';
 import { calculateUserBadges } from './utils/badgeUtils';
 import AuthScreen from './components/AuthScreen';
 import CookieConsentBanner from './components/CookieConsentBanner';
-import TermsAndPrivacyModal from './components/TermsAndPrivacyModal';
-import OnboardingWelcomeModal from './components/OnboardingWelcomeModal';
 import CustomCursor from './components/CustomCursor';
+
+// Code-split lazy views for high-performance initial bundle
+const TimelineView = lazy(() => import('./components/TimelineView'));
+const DailyTrackerView = lazy(() => import('./components/DailyTrackerView'));
+const MockTrackerView = lazy(() => import('./components/MockTrackerView'));
+const ErrorLogView = lazy(() => import('./components/ErrorLogView'));
+const ProfileView = lazy(() => import('./components/ProfileView'));
+const StudyTimerView = lazy(() => import('./components/StudyTimerView'));
+const StudyLounge = lazy(() => import('./components/StudyLounge'));
+const SettingsView = lazy(() => import('./components/SettingsView'));
+const AchievementsView = lazy(() => import('./components/AchievementsView'));
+
+// Code-split lazy modals
+const ThemeRedeemModal = lazy(() => import('./components/ThemeRedeemModal'));
+const JapaneseCatStampRallyModal = lazy(() => import('./components/JapaneseCatStampRallyModal'));
+const TermsAndPrivacyModal = lazy(() => import('./components/TermsAndPrivacyModal'));
+const OnboardingWelcomeModal = lazy(() => import('./components/OnboardingWelcomeModal'));
+const PeerInspectorModal = lazy(() => import('./components/PeerInspectorModal'));
 import DitherBackground from './components/DitherBackground';
 import LiquidIntroLoader from './components/LiquidIntroLoader';
 import ClickSpark from './components/ClickSpark';
@@ -250,6 +254,15 @@ const Icons = {
     </svg>
   )
 };
+
+function ViewLoadingFallback() {
+  return (
+    <div className="view-loading-skeleton" aria-busy="true" aria-label="Loading module">
+      <div className="skeleton-spinner" />
+      <span className="skeleton-text font-mono">INITIALIZING MODULE...</span>
+    </div>
+  );
+}
 
 export default function App() {
   const [state, setState] = useState(() => loadState());
@@ -487,9 +500,6 @@ export default function App() {
     });
   };
 
-  // Live OS / Web Date state
-  const [currentDate, setCurrentDate] = useState(() => new Date());
-
   // Compute today's position based on start date
   const todayPos = getTodayTrackerPosition(state.settings?.startDate);
 
@@ -601,23 +611,7 @@ export default function App() {
   const todaySessions = todayDayObj?.sessions || [];
   const todayTotalHours = todayDayObj?.studyHours || (todaySessions.reduce((acc, s) => acc + (s.durationMinutes || 0) / 60, 0));
 
-  // Sync web network date on mount and set live clock tick
-  useEffect(() => {
-    let mounted = true;
-    fetchWebOrOsDate().then(date => {
-      if (mounted) setCurrentDate(date);
-    });
-
-    const clockInterval = setInterval(() => {
-      setCurrentDate(new Date());
-    }, 1000);
-
-    return () => {
-      mounted = false;
-      clearInterval(clockInterval);
-    };
-  }, []);
-
+  // Initial mount application hydration
   useEffect(() => {
     const timer = setTimeout(() => {
       setAppLoading(false);
@@ -2203,7 +2197,8 @@ export default function App() {
               onNavigateToDay={handleJumpToDay}
             />
           )}
-          {activeTab === 'timeline' && (
+          <Suspense fallback={<ViewLoadingFallback />}>
+            {activeTab === 'timeline' && (
             <TimelineView 
               state={state} 
               updateWeekStatus={updateWeekStatus} 
@@ -2346,6 +2341,7 @@ export default function App() {
               onOpenOnboarding={() => setIsOnboardingOpen(true)}
             />
           )}
+          </Suspense>
         </main>
       </div>
 
@@ -2438,19 +2434,23 @@ export default function App() {
       )}
 
       {/* Peer Progress Modal Overlay */}
-      <PeerInspectorModal
-        friend={selectedFriend}
-        trackerData={selectedFriendTracker}
-        loading={loadingFriendTracker}
-        onClose={() => setSelectedFriend(null)}
-        onEditProfile={() => {
-          setSelectedFriend(null);
-          setIsEditProfileDirectOpen(true);
-          setActiveTab('profile');
-        }}
-        onMessagePeer={handleOpenDirectMessage}
-        currentUser={user}
-      />
+      {selectedFriend && (
+        <Suspense fallback={null}>
+          <PeerInspectorModal
+            friend={selectedFriend}
+            trackerData={selectedFriendTracker}
+            loading={loadingFriendTracker}
+            onClose={() => setSelectedFriend(null)}
+            onEditProfile={() => {
+              setSelectedFriend(null);
+              setIsEditProfileDirectOpen(true);
+              setActiveTab('profile');
+            }}
+            onMessagePeer={handleOpenDirectMessage}
+            currentUser={user}
+          />
+        </Suspense>
+      )}
 
       {/* Live Over-The-Air Update Toast */}
       {availableUpdate && (
@@ -2472,40 +2472,56 @@ export default function App() {
       <CookieConsentBanner onOpenTerms={() => setIsTermsModalOpen(true)} />
 
       {/* Terms of Service & Privacy Policy Modal */}
-      <TermsAndPrivacyModal 
-        isOpen={isTermsModalOpen} 
-        onClose={() => setIsTermsModalOpen(false)} 
-      />
+      {isTermsModalOpen && (
+        <Suspense fallback={null}>
+          <TermsAndPrivacyModal 
+            isOpen={isTermsModalOpen} 
+            onClose={() => setIsTermsModalOpen(false)} 
+          />
+        </Suspense>
+      )}
 
       {/* Premium Theme VIP Code Redemption Modal */}
-      <ThemeRedeemModal
-        isOpen={isRedeemModalOpen}
-        onClose={() => setIsRedeemModalOpen(false)}
-        preselectedThemeId={redeemPreselectTheme}
-        unlockedThemes={unlockedThemes}
-        onThemeUnlocked={handleThemeUnlocked}
-      />
+      {isRedeemModalOpen && (
+        <Suspense fallback={null}>
+          <ThemeRedeemModal
+            isOpen={isRedeemModalOpen}
+            onClose={() => setIsRedeemModalOpen(false)}
+            preselectedThemeId={redeemPreselectTheme}
+            unlockedThemes={unlockedThemes}
+            onThemeUnlocked={handleThemeUnlocked}
+          />
+        </Suspense>
+      )}
 
       {/* Japanese Cat Washi Paper Stamp Rally Modal */}
-      <JapaneseCatStampRallyModal
-        isOpen={isStampRallyOpen}
-        onClose={() => {
-          setIsStampRallyOpen(false);
-          setTriggerStampAnimation(false);
-        }}
-        stampRallyData={stampRallyData}
-        onRedeemTheme={handleRedeemStampTheme}
-        triggerNewStamp={triggerStampAnimation}
-      />
+      {isStampRallyOpen && (
+        <Suspense fallback={null}>
+          <JapaneseCatStampRallyModal
+            isOpen={isStampRallyOpen}
+            onClose={() => {
+              setIsStampRallyOpen(false);
+              setTriggerStampAnimation(false);
+            }}
+            stampRallyData={stampRallyData}
+            onRedeemTheme={handleRedeemStampTheme}
+            triggerNewStamp={triggerStampAnimation}
+          />
+        </Suspense>
+      )}
 
       {/* User Exam Onboarding & Tutorial Cockpit Modal */}
-      <OnboardingWelcomeModal
-        isOpen={isOnboardingOpen}
-        onClose={() => setIsOnboardingOpen(false)}
-        onComplete={handleCompleteOnboarding}
-        initialExamId={state.settings?.targetExam || 'cat'}
-        activeTheme={theme}
-      />
+      {isOnboardingOpen && (
+        <Suspense fallback={null}>
+          <OnboardingWelcomeModal
+            isOpen={isOnboardingOpen}
+            onClose={() => setIsOnboardingOpen(false)}
+            onComplete={handleCompleteOnboarding}
+            initialExamId={state.settings?.targetExam || 'cat'}
+            activeTheme={theme}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

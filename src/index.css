@@ -29992,3 +29992,62 @@ button:hover svg, .nav-link:hover svg, .sidebar-toggle-btn:hover svg {
     text-align: center;
   }
 }
+
+/* ========================================================
+   ASYNC VIEW LOADING SKELETON & HARDWARE ACCELERATION
+   ======================================================== */
+.view-loading-skeleton {
+  min-height: 55vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  box-sizing: border-box;
+  animation: fadeIn 0.3s ease both;
+}
+
+.view-loading-skeleton .skeleton-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2.5px solid rgba(56, 189, 248, 0.12);
+  border-top-color: #38bdf8;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.25);
+}
+
+.view-loading-skeleton .skeleton-text {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Hardware Compositing & Paint Isolation for Smooth 60/120fps */
+.mobile-bottom-nav,
+.floating-timer-widget,
+.cat-peeking-fixed-wrapper,
+.unique-theme-popover,
+.animated-select-menu {
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Reduced Motion Performance Mode for Battery & Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

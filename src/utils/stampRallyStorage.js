@@ -1,4 +1,4 @@
-import { STAMP_DEFINITIONS } from '../components/JapaneseCatStampRallyModal';
+import { STAMP_DEFINITIONS } from '../data/stampDefinitions';
 import { unlockThemeDirectly } from './themeRedemption';
 
 const STAMP_STORAGE_KEY = 'cat_stamp_rally_data';

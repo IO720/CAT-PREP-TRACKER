@@ -20,6 +20,9 @@ export default defineConfig({
             if (id.includes('react') || id.includes('scheduler')) {
               return 'react-vendor';
             }
+            if (id.includes('gsap') || id.includes('lenis') || id.includes('@number-flow')) {
+              return 'motion-vendor';
+            }
             return 'vendor';
           }
         }

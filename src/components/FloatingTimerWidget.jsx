@@ -1,7 +1,7 @@
 import React from 'react';
 import { Icons } from './AspirantIcons';
 
-export default function FloatingTimerWidget({ timerState, onPause, onResume, onFinish, onOpenTimer }) {
+function FloatingTimerWidget({ timerState, onPause, onResume, onFinish, onOpenTimer }) {
   const { secondsLeft, isRunning, isPaused, visualTheme, subject } = timerState;
 
   if (!isRunning && !isPaused) return null;
@@ -48,3 +48,5 @@ export default function FloatingTimerWidget({ timerState, onPause, onResume, onF
     </div>
   );
 }
+
+export default React.memo(FloatingTimerWidget);

@@ -523,9 +523,30 @@ export const updateUserProfile = async (userId, profileData) => {
   }
 };
 
-// 14. Broadcast user's live presence & timer state to Firestore
-export const updateUserPresence = async (user, timerState = null, streak = 0, solvedQs = 0, profileData = null) => {
+let lastPresenceUpdateMs = 0;
+let presenceTimeout = null;
+
+// 14. Broadcast user's live presence & timer state to Firestore (Throttled & Offline-Resilient)
+export const updateUserPresence = async (user, timerState = null, streak = 0, solvedQs = 0, profileData = null, immediate = false) => {
   if (!isFirebaseConfigured || !user || !user.uid) return;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+
+  const now = Date.now();
+  const timeSinceLast = now - lastPresenceUpdateMs;
+
+  if (!immediate && timeSinceLast < 3500) {
+    if (presenceTimeout) clearTimeout(presenceTimeout);
+    presenceTimeout = setTimeout(() => {
+      updateUserPresence(user, timerState, streak, solvedQs, profileData, true);
+    }, 3500 - timeSinceLast);
+    return;
+  }
+
+  if (presenceTimeout) {
+    clearTimeout(presenceTimeout);
+    presenceTimeout = null;
+  }
+  lastPresenceUpdateMs = now;
 
   const uid = user.uid;
   const name = profileData?.displayName || user.displayName || user.email?.split('@')[0] || 'CAT Aspirant';
