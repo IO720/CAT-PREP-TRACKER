@@ -3,6 +3,7 @@ import { logInUser, signUpUser, signInWithGoogle } from '../utils/firebase';
 import { Icons } from './AspirantIcons';
 import DitherBackground from './DitherBackground';
 import SmoothCaretInput from './animations/SmoothCaretInput';
+import AnimatedSelect from './animations/AnimatedSelect';
 
 // Official CATalyze Vector Logo
 function BrandLogo({ size = 32 }) {
@@ -558,18 +559,18 @@ export default function AuthScreen({ onAuthSuccess, onContinueAsGuest }) {
             {isSignUp && (
               <div className="skiper-input-group">
                 <label className="skiper-label">Target Examination</label>
-                <select
-                  className="skiper-select"
+                <AnimatedSelect
                   value={targetExam}
                   onChange={(e) => setTargetExam(e.target.value)}
                   disabled={loading || googleLoading}
-                >
-                  <option value="CAT 2025">CAT 2025</option>
-                  <option value="CAT 2026">CAT 2026</option>
-                  <option value="XAT 2026">XAT 2026</option>
-                  <option value="SNAP / NMAT 2025">SNAP / NMAT 2025</option>
-                  <option value="All MBA Entrances">All MBA Entrances</option>
-                </select>
+                  options={[
+                    { value: 'CAT 2025', label: 'CAT 2025', badge: 'Primary' },
+                    { value: 'CAT 2026', label: 'CAT 2026', badge: 'Long Term' },
+                    { value: 'XAT 2026', label: 'XAT 2026', badge: 'OMET' },
+                    { value: 'SNAP / NMAT 2025', label: 'SNAP / NMAT 2025', badge: 'Speed' },
+                    { value: 'All MBA Entrances', label: 'All MBA Entrances', badge: 'Complete' }
+                  ]}
+                />
               </div>
             )}
 

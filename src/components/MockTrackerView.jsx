@@ -9,6 +9,7 @@ import {
 } from './AnimatedUiIcons';
 import { playGamingAchievementSound } from '../utils/audioUtils';
 import { stripEmojis } from '../utils/textUtils';
+import AnimatedSelect from './animations/AnimatedSelect';
 
 // CAT Percentile Estimator based on scaled composite scores
 const estimateCatPercentile = (score) => {
@@ -662,14 +663,16 @@ export default function MockTrackerView({ state, updateMockRow }) {
 
                 <div className="form-field">
                   <label>Status</label>
-                  <select
+                  <AnimatedSelect
+                    size="small"
                     value={modalForm.status}
                     onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))}
-                  >
-                    <option value="Taken">Taken (Completed)</option>
-                    <option value="Scheduled">Scheduled</option>
-                    <option value="Not Started">Not Started</option>
-                  </select>
+                    options={[
+                      { value: 'Taken', label: 'Taken (Completed)' },
+                      { value: 'Scheduled', label: 'Scheduled' },
+                      { value: 'Not Started', label: 'Not Started' }
+                    ]}
+                  />
                 </div>
               </div>
 

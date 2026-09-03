@@ -2972,6 +2972,12 @@ button, input, select, textarea {
   background: rgba(0, 0, 0, 0.3);
   color: #cbd5e1;
   cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.blueprint-table-status:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .blueprint-table-status.completed {
@@ -6138,11 +6144,20 @@ button, input, select, textarea {
   color: #ffffff;
   font-size: 13px;
   min-width: 120px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.filter-select:hover:not(:disabled) {
+  border-color: rgba(56, 189, 248, 0.4);
+  background-color: rgba(30, 41, 59, 0.85);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
 }
 
 .filter-select:focus {
   outline: none;
   border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
 }
 
 .filter-input {
@@ -20631,7 +20646,9 @@ html, body {
    ======================================================== */
 .skiper-auth-root {
   min-height: 100vh;
-  width: 100vw;
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -20671,8 +20688,9 @@ html, body {
   z-index: 10;
   width: 100%;
   max-width: 980px;
+  min-width: 0;
   display: grid;
-  grid-template-columns: 1fr 1.15fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
   gap: 32px;
   align-items: stretch;
   background: rgba(12, 17, 29, 0.88);
@@ -20783,10 +20801,73 @@ html, body {
 
 @media (max-width: 900px) {
   .skiper-split-card {
-    grid-template-columns: 1fr;
-    max-width: 480px;
-    gap: 28px;
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 440px;
+    gap: 0;
     padding: 24px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* User requirement: for mobile view just the sign up part is alright, no need to add the features section */
+  .skiper-feature-column {
+    display: none !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .skiper-auth-root {
+    padding: 16px 12px;
+  }
+  .skiper-split-card {
+    padding: 20px 14px;
+    border-radius: 18px;
+    gap: 20px;
+    max-width: 100%;
+  }
+  .skiper-form-column {
+    padding: 4px 0;
+  }
+  .skiper-feature-column {
+    padding: 16px 14px;
+    border-radius: 16px;
+    gap: 14px;
+  }
+  .skiper103-item {
+    padding: 10px 12px;
+  }
+  .auth-kinetic-heading .spylt-word.word-bold,
+  .auth-kinetic-heading .spylt-word.word-italic {
+    font-size: clamp(22px, 5.5vw, 28px) !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .skiper-auth-root {
+    padding: 12px 8px;
+  }
+  .skiper-split-card {
+    padding: 14px 10px;
+    border-radius: 14px;
+    gap: 14px;
+  }
+  .skiper-feature-column {
+    padding: 12px 10px;
+    border-radius: 12px;
+    gap: 10px;
+  }
+  .skiper103-trigger {
+    gap: 8px;
+  }
+  .skiper103-icon-box {
+    width: 28px;
+    height: 28px;
+  }
+  .skiper103-title {
+    font-size: 12px;
+  }
+  .skiper103-summary {
+    font-size: 10px;
   }
 }
 
@@ -20799,6 +20880,9 @@ html, body {
   justify-content: center;
   padding: 16px 8px;
   box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Brand Header */
@@ -20899,12 +20983,18 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .skiper-input-group {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .skiper-label {
@@ -20917,12 +21007,17 @@ html, body {
 .skiper106-input-wrapper {
   position: relative;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
+  box-sizing: border-box;
 }
 
 .skiper106-input-field {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 10.5px 14px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -20983,6 +21078,9 @@ html, body {
 .skiper-pwd-container {
   position: relative;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .skiper-pwd-container .skiper106-input-field {
@@ -20992,6 +21090,8 @@ html, body {
 /* Site-wide Skiper106 Smooth Caret Integrations */
 .minimal-box.wide-box .skiper106-input-wrapper {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 .minimal-box.wide-box .skiper106-input-field {
   padding: 10px 14px;
@@ -21001,15 +21101,20 @@ html, body {
 }
 .expedition-search-box .skiper106-input-wrapper {
   flex: 1;
+  min-width: 0;
 }
 .expedition-search-box .skiper106-input-field {
-  padding: 8px 12px 8px 30px;
+  padding: 6px 8px;
   background: transparent;
   border: none;
   font-size: 12.5px;
 }
 .expedition-search-box .skiper106-smooth-caret {
-  margin-left: 18px;
+  margin-left: 8px;
+}
+.filter-group .skiper106-input-wrapper {
+  width: 100%;
+  min-width: 0;
 }
 .filter-group .skiper106-input-field {
   padding: 8.5px 12px;
@@ -21018,6 +21123,7 @@ html, body {
 }
 .redeem-input-wrapper .skiper106-input-wrapper {
   flex: 1;
+  min-width: 0;
 }
 .redeem-input-wrapper .skiper106-input-field {
   padding: 10px 12px 10px 34px;
@@ -21105,6 +21211,8 @@ html, body {
 .skiper-input,
 .skiper-select {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 10.5px 14px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -21144,12 +21252,268 @@ html, body {
   color: #ffffff;
 }
 
+/* ========================================================
+   ANIMATED SELECT DROPDOWN COMPONENT (Mobile & PC)
+   ======================================================== */
+.animated-select-container {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.animated-select-trigger {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 10.5px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-family: var(--font-sans, 'Plus Jakarta Sans', sans-serif);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  outline: none;
+  box-sizing: border-box;
+  text-align: left;
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+              background 0.2s ease, 
+              box-shadow 0.2s ease,
+              transform 0.1s ease;
+}
+
+.animated-select-trigger:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.animated-select-container.is-open .animated-select-trigger {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.05);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.22), 0 4px 16px rgba(56, 189, 248, 0.1);
+}
+
+.animated-select-trigger.small {
+  padding: 7.5px 12px;
+  font-size: 12.5px;
+  border-radius: 7px;
+}
+
+.animated-select-trigger.large {
+  padding: 12px 16px;
+  font-size: 14.5px;
+  border-radius: 11px;
+}
+
+.animated-select-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.trigger-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.trigger-label {
+  font-weight: 500;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trigger-icon {
+  display: flex;
+  align-items: center;
+  color: #38bdf8;
+  flex-shrink: 0;
+}
+
+.trigger-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  flex-shrink: 0;
+}
+
+.trigger-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  flex-shrink: 0;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+}
+
+.animated-select-trigger:hover .trigger-chevron {
+  color: #94a3b8;
+}
+
+.animated-select-container.is-open .trigger-chevron {
+  transform: rotate(180deg);
+  color: #38bdf8;
+}
+
+/* Dropdown Menu Panel */
+.animated-select-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(13, 18, 30, 0.97);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 
+    0 20px 48px -6px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(56, 189, 248, 0.18),
+    0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 6px;
+  box-sizing: border-box;
+  animation: selectMenuSpringIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top center;
+}
+
+@keyframes selectMenuSpringIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.menu-scroll-container {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.menu-scroll-container::-webkit-scrollbar {
+  width: 4px;
+}
+.menu-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+/* Option Items */
+.animated-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9.5px 12px;
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s cubic-bezier(0.16, 1, 0.3, 1), 
+              color 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.animated-select-option:hover {
+  background: rgba(56, 189, 248, 0.1);
+  color: #ffffff;
+  transform: translateX(3px);
+}
+
+.animated-select-option.is-selected {
+  background: rgba(56, 189, 248, 0.14);
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.animated-select-option.is-selected:hover {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+}
+
+.option-label-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.option-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.option-icon {
+  display: flex;
+  align-items: center;
+  color: #38bdf8;
+  flex-shrink: 0;
+}
+
+.option-badge {
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.option-check-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38bdf8;
+  flex-shrink: 0;
+  animation: checkPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes checkPopIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .skiper-pwd-container .skiper-input {
   padding-right: 40px;
 }
 
 .skiper-pwd-btn {
   position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   right: 10px;
   background: transparent;
   border: none;
@@ -21160,6 +21524,7 @@ html, body {
   align-items: center;
   justify-content: center;
   transition: color 0.15s ease;
+  z-index: 5;
 }
 
 .skiper-pwd-btn:hover {
@@ -21172,6 +21537,8 @@ html, body {
   overflow: hidden;
   margin-top: 4px;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 11.5px 18px;
   border-radius: 9px;
   background: #151a24;
@@ -21236,10 +21603,14 @@ html, body {
 /* Social Login */
 .skiper-social-wrap {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .skiper-google-btn {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21344,6 +21715,10 @@ html, body {
   justify-content: space-between;
   gap: 18px;
   box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow: 
@@ -21358,6 +21733,9 @@ html, body {
   gap: 14px;
   padding-bottom: 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .auth-zen-mascot-badge {
@@ -21564,6 +21942,8 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .mascot-title-row {
@@ -21590,6 +21970,7 @@ html, body {
   color: #94a3b8;
   margin: 0;
   line-height: 1.4;
+  word-break: break-word;
 }
 
 /* Accordion Container */
@@ -21597,6 +21978,9 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .accordion-section-header {
@@ -21604,6 +21988,10 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 0 4px;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .accordion-label {
@@ -21612,11 +22000,18 @@ html, body {
   font-weight: 700;
   color: #f1f5f9;
   letter-spacing: 0.02em;
+  min-width: 0;
+  flex-shrink: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .accordion-sub {
   font-size: 10.5px;
   color: #64748b;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* Skiper103 Items */
@@ -21624,6 +22019,9 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .skiper103-item {
@@ -21633,6 +22031,9 @@ html, body {
   padding: 11px 14px;
   cursor: pointer;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .skiper103-item:hover {
@@ -21663,6 +22064,9 @@ html, body {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .skiper103-icon-box {
@@ -21685,10 +22089,11 @@ html, body {
 }
 
 .skiper103-title-box {
-  flex: 1;
+  flex: 1 1 0%;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
 }
 
 .skiper103-title {
@@ -21696,6 +22101,7 @@ html, body {
   font-weight: 600;
   color: #f1f5f9;
   letter-spacing: -0.01em;
+  word-break: break-word;
 }
 
 .skiper103-summary {
@@ -21704,6 +22110,8 @@ html, body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
 }
 
 .skiper103-chevron {
@@ -21711,6 +22119,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .skiper103-item.is-expanded .skiper103-chevron {
@@ -21809,6 +22218,9 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .skiper-footer-badge {
@@ -21819,6 +22231,10 @@ html, body {
   font-weight: 500;
   color: #64748b;
   letter-spacing: 0.02em;
+  max-width: 100%;
+  text-align: center;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* ========================================================
@@ -22625,11 +23041,27 @@ html, body {
 
 .showcase-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   max-height: 240px;
   overflow-y: auto;
   padding-right: 4px;
+}
+
+@media (max-width: 520px) {
+  .redeem-modal-body {
+    padding: 16px;
+  }
+  .showcase-grid {
+    grid-template-columns: 1fr;
+  }
+  .redeem-input-container {
+    flex-direction: column;
+  }
+  .redeem-submit-btn {
+    width: 100%;
+    padding: 10px 16px;
+  }
 }
 
 .showcase-tile {

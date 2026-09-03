@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import SmoothCaretInput from './animations/SmoothCaretInput';
+import AnimatedSelect from './animations/AnimatedSelect';
 
 export default function ErrorLogView({ state, onDayClick }) {
   const { tracker } = state;
@@ -72,34 +73,34 @@ export default function ErrorLogView({ state, onDayClick }) {
 
         <div className="filter-group">
           <label className="filter-label">Month</label>
-          <select
-            className="filter-select"
+          <AnimatedSelect
+            size="small"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-          >
-            <option value="All">All Months</option>
-            {Object.keys(tracker).sort((a, b) => {
-              const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
-              const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
-              return numA - numB;
-            }).map(m => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+            options={[
+              { value: 'All', label: 'All Months' },
+              ...Object.keys(tracker).sort((a, b) => {
+                const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+                const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+                return numA - numB;
+              }).map(m => ({ value: m, label: m }))
+            ]}
+          />
         </div>
 
         <div className="filter-group">
           <label className="filter-label">Subject Inference</label>
-          <select
-            className="filter-select"
+          <AnimatedSelect
+            size="small"
             value={selectedSubject}
             onChange={(e) => setSelectedSubject(e.target.value)}
-          >
-            <option value="All">All Subjects</option>
-            <option value="Quant">Quantitative (Quant)</option>
-            <option value="LRDI">Logical Reasoning (LRDI)</option>
-            <option value="VARC">Verbal / Reading (VARC)</option>
-          </select>
+            options={[
+              { value: 'All', label: 'All Subjects' },
+              { value: 'Quant', label: 'Quantitative (Quant)' },
+              { value: 'LRDI', label: 'Logical Reasoning (LRDI)' },
+              { value: 'VARC', label: 'Verbal / Reading (VARC)' }
+            ]}
+          />
         </div>
       </div>
 

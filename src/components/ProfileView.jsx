@@ -25,6 +25,7 @@ import {
   AnimatedRadarBeaconIcon
 } from './AnimatedUiIcons';
 import { stripEmojis } from '../utils/textUtils';
+import AnimatedSelect from './animations/AnimatedSelect';
 
 const BG_COLORS = [
   '#38bdf8', '#818cf8', '#c084fc', '#f472b6', '#fb7185',
@@ -1362,14 +1363,11 @@ export default function ProfileView({
                   <div className="form-row two-cols">
                     <div className="form-field">
                       <label>Target Examination & Goal</label>
-                      <select
+                      <AnimatedSelect
                         value={profTarget}
                         onChange={(e) => setProfTarget(e.target.value)}
-                      >
-                        {TARGET_PRESETS.map(t => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </select>
+                        options={TARGET_PRESETS.map(t => ({ value: t, label: t }))}
+                      />
                     </div>
                     <div className="form-field">
                       <label>Location / City (Optional)</label>

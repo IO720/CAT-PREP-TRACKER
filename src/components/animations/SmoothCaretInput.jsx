@@ -61,7 +61,12 @@ export default function SmoothCaretInput({
     // Scroll offset adjustment
     const scrollLeft = input.scrollLeft || 0;
 
-    setCaretLeft(paddingLeft + textWidth - scrollLeft);
+    // Clamp caret position within visible input bounds so it never spills over on mobile
+    const inputWidth = input.clientWidth || 300;
+    const maxCaretLeft = Math.max(paddingLeft, inputWidth - 12);
+    const calculatedLeft = paddingLeft + textWidth - scrollLeft;
+
+    setCaretLeft(Math.min(maxCaretLeft, Math.max(paddingLeft, calculatedLeft)));
   };
 
   useLayoutEffect(() => {
