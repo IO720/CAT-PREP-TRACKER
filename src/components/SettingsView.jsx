@@ -602,7 +602,7 @@ export default function SettingsView({
             </div>
             <div className="sandbox-content" style={{ fontFamily: selectedFont }}>
               <h2 className="sandbox-headline">
-                99.50%ile in CAT 2025: Precision, Consistency & Asymmetric Outcomes.
+                99.50%ile in CAT: Precision, Consistency & Asymmetric Outcomes.
               </h2>
               <p className="sandbox-body">
                 "We do not rise to the level of our goals. We fall to the level of our systems." — Every daily drill logged compound into speed, accuracy, and percentile dominance.
@@ -751,7 +751,7 @@ export default function SettingsView({
                   )}
                   <div className="sched-pill highlight">
                     <Icons.Target size={14} />
-                    <span>CAT 2025 Target Window</span>
+                    <span>CAT Target Window</span>
                   </div>
                 </div>
               </div>

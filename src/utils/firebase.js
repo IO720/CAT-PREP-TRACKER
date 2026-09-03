@@ -95,7 +95,7 @@ export const hashStringToColor = (str = '') => {
 };
 
 // 1. Sign Up User (Creates Auth user and a matching profile document with Unique Aspirant ID)
-export const signUpUser = async (email, password, displayName, targetExam = 'CAT 2025') => {
+export const signUpUser = async (email, password, displayName, targetExam = 'CAT') => {
   if (!isFirebaseConfigured) throw new Error("Firebase is not configured. Please follow the setup guide.");
 
   const normalizedEmail = (email || '').trim().toLowerCase();
@@ -118,7 +118,7 @@ export const signUpUser = async (email, password, displayName, targetExam = 'CAT
     avatarBg: hashStringToColor(displayName || user.uid),
     bannerBg: '#1e1f22',
     bio: '',
-    target: targetExam || 'CAT 2025 (99.5+%ile • IIM-A Focus)',
+    target: targetExam || 'CAT (99.5+%ile • IIM-A Focus)',
     location: '',
     lastActive: new Date().toISOString()
   };
@@ -163,7 +163,7 @@ export const signInWithGoogle = async () => {
       avatarBg: hashStringToColor(displayName || user.uid),
       bannerBg: '#1e1f22',
       bio: '',
-      target: 'CAT 2025 (99.5+%ile • IIM-A Focus)',
+      target: 'CAT (99.5+%ile • IIM-A Focus)',
       location: '',
       lastActive: new Date().toISOString()
     };
@@ -346,7 +346,7 @@ export const sendFriendRequest = async (currentUser, targetIdentifier, currentUs
   const senderAvatar = currentUserProfile?.avatar || 'rocket';
   const senderAvatarBg = currentUserProfile?.avatarBg || '#5865f2';
   const senderAspirantId = currentUserProfile?.aspirantId || currentProfile?.aspirantId || generateUniqueAspirantId(currentUser.uid);
-  const senderTarget = currentUserProfile?.target || 'CAT 2025 Focus';
+  const senderTarget = currentUserProfile?.target || 'CAT Focus';
 
   const requestDoc = {
     fromUid: currentUser.uid,
@@ -492,7 +492,7 @@ export const updateUserProfile = async (userId, profileData) => {
       avatarBg: profileData.avatarBg || hashStringToColor(profileData.displayName || userId),
       bannerBg: profileData.bannerBg || '#1e1f22',
       bio: profileData.bio || '',
-      target: profileData.target || 'CAT 2025 (99.5+%ile)',
+      target: profileData.target || 'CAT (99.5+%ile)',
       location: profileData.location || '',
       aspirantId: profileData.aspirantId || generateUniqueAspirantId(userId),
       updatedAt: new Date().toISOString()
@@ -556,7 +556,7 @@ export const updateUserPresence = async (user, timerState = null, streak = 0, so
   const avatar = profileData?.avatar || user.avatar || name.charAt(0).toUpperCase();
   const avatarBg = profileData?.avatarBg || user.avatarBg || hashStringToColor(name);
   const bio = profileData?.bio || user.bio || '';
-  const target = profileData?.target || user.target || 'CAT 2025 Aspirant';
+  const target = profileData?.target || user.target || 'CAT Aspirant';
   const location = profileData?.location || user.location || '';
 
   const presenceData = {
@@ -657,7 +657,7 @@ export const subscribeToStudyLounge = (currentUserId, onPeersUpdate) => {
           bannerBg: data.bannerBg || '#1e1f22',
           bannerUrl: data.bannerUrl || '',
           bio: data.bio || '',
-          target: data.target || 'CAT 2025 Aspirant',
+          target: data.target || 'CAT Aspirant',
           location: data.location || '',
           status: status,
           streak: data.streak || 0,
@@ -924,7 +924,7 @@ export const sendChatMessage = async (
     const avatar = userProfile?.avatar || user.avatar || 'rocket';
     const avatarBg = userProfile?.avatarBg || user.avatarBg || '#5865f2';
     const location = userProfile?.location || user.location || '';
-    const target = userProfile?.target || user.target || 'CAT 2025';
+    const target = userProfile?.target || user.target || 'CAT';
     const aspirantId = userProfile?.aspirantId || user.aspirantId || '';
     const friendsList = Array.isArray(userProfile?.friends) ? userProfile.friends : [];
 

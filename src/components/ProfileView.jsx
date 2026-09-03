@@ -44,11 +44,12 @@ const BANNER_THEMES = [
 ];
 
 const TARGET_PRESETS = [
-  'CAT 2025 (99.5+%ile • IIM-A Focus)',
-  'CAT 2025 (99.0+%ile • IIM-B/C Focus)',
-  'CAT 2025 (98.0+%ile • Top IIMs & FMS)',
-  'CAT 2026 Foundation & Early Prep',
+  'CAT (99.5+%ile • IIM-A Focus)',
+  'CAT (99.0+%ile • IIM-B/C Focus)',
+  'CAT (98.0+%ile • Top IIMs & FMS)',
+  'CAT Foundation & Prep',
   'XAT + CAT Dual Target (XLRI Focus)',
+  'All MBA Entrances Target',
   'Custom Target Goal'
 ];
 
@@ -111,7 +112,7 @@ export default function ProfileView({
   const [profBannerBg, setProfBannerBg] = useState(userProfile?.bannerBg || '#0b1120');
   const [profBannerUrl, setProfBannerUrl] = useState(userProfile?.bannerUrl || '');
   const [profBio, setProfBio] = useState(userProfile?.bio || '');
-  const [profTarget, setProfTarget] = useState(userProfile?.target || 'CAT 2025 (99.5+%ile • IIM-A Focus)');
+  const [profTarget, setProfTarget] = useState(userProfile?.target || 'CAT (99.5+%ile • IIM-A Focus)');
   const [profLocation, setProfLocation] = useState(userProfile?.location || '');
   const [editModalTab, setEditModalTab] = useState('appearance');
   const [profileSaving, setProfileSaving] = useState(false);

@@ -83,6 +83,7 @@ export default function AnimatedSelect({
     <div 
       className={`animated-select-container ${isOpen ? 'is-open' : ''} ${disabled ? 'is-disabled' : ''} ${wrapperClassName}`}
       ref={containerRef}
+      style={{ position: 'relative', zIndex: isOpen ? 10000 : 'auto' }}
     >
       {/* Hidden input for standard form submission */}
       {name && <input type="hidden" name={name} value={value || ''} />}

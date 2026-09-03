@@ -291,7 +291,7 @@ export default function AuthScreen({ onAuthSuccess, onContinueAsGuest }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [displayName, setDisplayName] = useState('');
-  const [targetExam, setTargetExam] = useState('CAT 2025');
+  const [targetExam, setTargetExam] = useState('CAT');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [authError, setAuthError] = useState('');
@@ -557,17 +557,16 @@ export default function AuthScreen({ onAuthSuccess, onContinueAsGuest }) {
             </div>
 
             {isSignUp && (
-              <div className="skiper-input-group">
+              <div className="skiper-input-group" style={{ position: 'relative', zIndex: 100 }}>
                 <label className="skiper-label">Target Examination</label>
                 <AnimatedSelect
                   value={targetExam}
                   onChange={(e) => setTargetExam(e.target.value)}
                   disabled={loading || googleLoading}
                   options={[
-                    { value: 'CAT 2025', label: 'CAT 2025', badge: 'Primary' },
-                    { value: 'CAT 2026', label: 'CAT 2026', badge: 'Long Term' },
-                    { value: 'XAT 2026', label: 'XAT 2026', badge: 'OMET' },
-                    { value: 'SNAP / NMAT 2025', label: 'SNAP / NMAT 2025', badge: 'Speed' },
+                    { value: 'CAT', label: 'CAT', badge: 'Primary' },
+                    { value: 'XAT', label: 'XAT', badge: 'Decision' },
+                    { value: 'SNAP / NMAT', label: 'SNAP / NMAT', badge: 'Speed' },
                     { value: 'All MBA Entrances', label: 'All MBA Entrances', badge: 'Complete' }
                   ]}
                 />

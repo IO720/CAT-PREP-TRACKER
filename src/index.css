@@ -21263,6 +21263,19 @@ html, body {
   box-sizing: border-box;
 }
 
+.animated-select-container.is-open {
+  z-index: 10000 !important;
+}
+
+/* Ensure any parent input group or form field rises above sibling buttons/inputs */
+.skiper-input-group:has(.animated-select-container.is-open),
+.form-field:has(.animated-select-container.is-open),
+.form-row:has(.animated-select-container.is-open),
+.filter-group:has(.animated-select-container.is-open) {
+  z-index: 10000 !important;
+  position: relative !important;
+}
+
 .animated-select-trigger {
   width: 100%;
   max-width: 100%;
@@ -21284,8 +21297,7 @@ html, body {
   text-align: left;
   transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
               background 0.2s ease, 
-              box-shadow 0.2s ease,
-              transform 0.1s ease;
+              box-shadow 0.2s ease;
 }
 
 .animated-select-trigger:hover:not(:disabled) {
@@ -21370,26 +21382,27 @@ html, body {
   color: #38bdf8;
 }
 
-/* Dropdown Menu Panel */
+/* Dropdown Menu Panel - Solid High-Contrast Canvas */
 .animated-select-menu {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  right: 0;
-  z-index: 100;
-  background: rgba(13, 18, 30, 0.97);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  min-width: 100%;
+  width: max-content;
+  max-width: min(340px, 100%);
+  z-index: 10001 !important;
+  background: #0c111d !important; /* Solid opaque dark canvas so buttons underneath never bleed through */
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   box-shadow: 
-    0 20px 48px -6px rgba(0, 0, 0, 0.85),
-    0 0 0 1px rgba(56, 189, 248, 0.18),
-    0 4px 16px rgba(0, 0, 0, 0.4);
-  padding: 6px;
+    0 24px 50px -4px rgba(0, 0, 0, 0.95),
+    0 0 0 1px rgba(56, 189, 248, 0.25),
+    0 8px 24px rgba(0, 0, 0, 0.7);
+  padding: 5px;
   box-sizing: border-box;
-  animation: selectMenuSpringIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: selectMenuSpringIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
   transform-origin: top center;
+  overflow: hidden;
 }
 
 @keyframes selectMenuSpringIn {
@@ -21405,22 +21418,24 @@ html, body {
   }
 }
 
+/* Scroll Container - Scrollbar Completely Hidden */
 .menu-scroll-container {
-  max-height: 220px;
+  max-height: 260px;
   overflow-y: auto;
+  overflow-x: hidden !important; /* Never allow horizontal scrollbar */
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  gap: 2px;
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE/Edge */
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .menu-scroll-container::-webkit-scrollbar {
-  width: 4px;
-}
-.menu-scroll-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* Option Items */
@@ -21428,34 +21443,34 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 9.5px 12px;
+  gap: 8px;
+  padding: 9px 12px;
   border-radius: 8px;
   color: #cbd5e1;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   user-select: none;
-  transition: background 0.15s cubic-bezier(0.16, 1, 0.3, 1), 
-              color 0.15s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  transition: background 0.15s ease, color 0.15s ease, padding-left 0.15s ease;
 }
 
 .animated-select-option:hover {
-  background: rgba(56, 189, 248, 0.1);
+  background: rgba(56, 189, 248, 0.12);
   color: #ffffff;
-  transform: translateX(3px);
+  padding-left: 15px; /* Smooth padding slide without causing horizontal overflow */
 }
 
 .animated-select-option.is-selected {
-  background: rgba(56, 189, 248, 0.14);
+  background: rgba(56, 189, 248, 0.16);
   color: #38bdf8;
   font-weight: 600;
 }
 
 .animated-select-option.is-selected:hover {
-  background: rgba(56, 189, 248, 0.2);
+  background: rgba(56, 189, 248, 0.24);
   color: #38bdf8;
 }
 
