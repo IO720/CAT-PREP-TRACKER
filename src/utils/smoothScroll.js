@@ -40,7 +40,21 @@ export function initSmoothScroll() {
     wheelMultiplier: 1.0,
     touchMultiplier: 1.0,
     infinite: false,
-    autoRaf: false
+    autoRaf: false,
+    prevent: (node) => {
+      if (!node || !node.closest) return false;
+      return (
+        node.hasAttribute?.('data-lenis-prevent') ||
+        Boolean(node.closest('[data-lenis-prevent]')) ||
+        Boolean(node.closest('.mock-modal-overlay')) ||
+        Boolean(node.closest('.edit-profile-modal-box')) ||
+        Boolean(node.closest('.showcase-modal-box')) ||
+        Boolean(node.closest('.auth-modal-box')) ||
+        Boolean(node.closest('.peer-inspector-overlay')) ||
+        Boolean(node.closest('[role="dialog"]')) ||
+        Boolean(node.closest('[class*="modal"]'))
+      );
+    }
   });
 
   // Connect Lenis scroll events to GSAP ScrollTrigger

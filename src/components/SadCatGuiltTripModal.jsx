@@ -18,7 +18,9 @@ export default function SadCatGuiltTripModal({
   subject = 'Quant',
   secondsLeft = 1500,
   isRunning = false,
-  isQuotaCompleted = false
+  isQuotaCompleted = false,
+  isPast15Hours = false,
+  hoursLeftInDay = 8
 }) {
   if (!isOpen) return null;
 
@@ -198,6 +200,11 @@ export default function SadCatGuiltTripModal({
                 <AnimatedTearIcon size={22} color="#38bdf8" />
               </h2>
               <p className="sad-cat-message">
+                {isPast15Hours && (
+                  <span style={{ display: 'block', marginBottom: '8px', color: '#f59e0b', fontWeight: 600, fontSize: '11.5px' }}>
+                    Clock's ticking! It's already past 15:00 hrs ({hoursLeftInDay}h left before midnight rollover) and today's quota is still incomplete.
+                  </span>
+                )}
                 {isRunning 
                   ? `We still have ${minsRemaining} minutes left on this ${subject} drill! I had the notebook open and everything... Are you really gonna abandon our session for distractions?`
                   : `I was just warming up the notes for our ${subject} sprint! Top 1% percentiles aren't built when you walk away from the desk.`}

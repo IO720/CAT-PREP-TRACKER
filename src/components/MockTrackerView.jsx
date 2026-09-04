@@ -10,6 +10,7 @@ import {
 import { playGamingAchievementSound } from '../utils/audioUtils';
 import { stripEmojis } from '../utils/textUtils';
 import AnimatedSelect from './animations/AnimatedSelect';
+import SmoothCaretInput from './animations/SmoothCaretInput';
 
 // CAT Percentile Estimator based on scaled composite scores
 const estimateCatPercentile = (score) => {
@@ -652,12 +653,12 @@ export default function MockTrackerView({ state, updateMockRow }) {
               <div className="form-row two-cols">
                 <div className="form-field">
                   <label>Mock Exam Title</label>
-                  <input
+                  <SmoothCaretInput
                     type="text"
                     required
                     placeholder="e.g. SIMCAT 1, AIMCAT 2601"
                     value={modalForm.title}
-                    onChange={(e) => setModalForm(prev => ({ ...prev, title: e.target.value }))}
+                    onChange={(e) => setModalForm(prev => ({ ...prev, title: stripEmojis(e.target.value) }))}
                   />
                 </div>
 

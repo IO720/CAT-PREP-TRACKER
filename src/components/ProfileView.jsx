@@ -9,11 +9,18 @@ import {
   removeFriend, 
   getLocalAspirantId, 
   generateUniqueAspirantId, 
-  isFirebaseConfigured 
+  isFirebaseConfigured
 } from '../utils/firebase';
+import { 
+  calculateLevelFromExp, 
+  getExpProgress
+} from '../utils/expSystem';
 import AvatarRenderer, { AVATAR_PRESETS } from './AvatarRenderer';
+import AspirantProfileCard from './AspirantProfileCard';
 import StudyContributionHeatmap from './StudyContributionHeatmap';
 import { calculateUserBadges } from '../utils/badgeUtils';
+import { AVATAR_FRAMES, PROFILE_BANNERS, getEffectiveFrameId, getEffectiveBannerId } from '../data/cosmeticsData';
+import MythicBannerOverlay from './MythicBannerOverlay';
 import { Icons } from './AspirantIcons';
 import { 
   AnimatedFlameIcon, 
@@ -26,6 +33,8 @@ import {
 } from './AnimatedUiIcons';
 import { stripEmojis } from '../utils/textUtils';
 import AnimatedSelect from './animations/AnimatedSelect';
+import SmoothCaretTextarea from './animations/SmoothCaretTextarea';
+import { getLenis } from '../utils/smoothScroll';
 
 const BG_COLORS = [
   '#38bdf8', '#818cf8', '#c084fc', '#f472b6', '#fb7185',
@@ -74,7 +83,8 @@ export default function ProfileView({
   initialSubTab = 'passport',
   onResetSubTab = null,
   isEditOpen = false,
-  onResetEditOpen = null
+  onResetEditOpen = null,
+  onTriggerLevelUp = null
 }) {
   // Navigation Section: 'passport' (Full Executive Profile) | 'network' (Friends & Invitations) | 'settings' (Data & Cloud)
   const [activeSection, setActiveSection] = useState(initialSubTab === 'friends' ? 'network' : 'passport');
@@ -85,231 +95,7 @@ export default function ProfileView({
     }
   }, [initialSubTab]);
 
-  // Edit Profile Modal
-  const [isEditModalOpen, setIsEditModalOpen] = useState(isEditOpen);
-
-  useEffect(() => {
-    if (isEditOpen) {
-      setIsEditModalOpen(true);
-      if (onResetEditOpen) onResetEditOpen();
-    }
-  }, [isEditOpen, onResetEditOpen]);
-
-  // Auth Modal State
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authDisplayName, setAuthDisplayName] = useState('');
-  const [authError, setAuthError] = useState('');
-  const [authLoading, setAuthLoading] = useState(false);
-
-  // Profile customization state
-  const [profName, setProfName] = useState(userProfile?.displayName || user?.displayName || '');
-  const [profUsername, setProfUsername] = useState(userProfile?.username || (user?.email ? user.email.split('@')[0] : 'aspirant'));
-  const [profAvatar, setProfAvatar] = useState(userProfile?.avatar || 'rocket');
-  const [profAvatarBg, setProfAvatarBg] = useState(userProfile?.avatarBg || '#38bdf8');
-  const [profBannerBg, setProfBannerBg] = useState(userProfile?.bannerBg || '#0b1120');
-  const [profBannerUrl, setProfBannerUrl] = useState(userProfile?.bannerUrl || '');
-  const [profBio, setProfBio] = useState(userProfile?.bio || '');
-  const [profTarget, setProfTarget] = useState(userProfile?.target || 'CAT (99.5+%ile • IIM-A Focus)');
-  const [profLocation, setProfLocation] = useState(userProfile?.location || '');
-  const [editModalTab, setEditModalTab] = useState('appearance');
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
-  const imageUploadInputRef = useRef(null);
-  const bannerUploadInputRef = useRef(null);
-
-  // Unique Aspirant ID
-  const currentAspirantId = userProfile?.aspirantId || (user ? generateUniqueAspirantId(user.uid) : getLocalAspirantId());
-  const [copiedMyId, setCopiedMyId] = useState(false);
-  const [toastMsg, setToastMsg] = useState('');
-
-  const showToast = (msg) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(''), 3000);
-  };
-
-  // Add Friend & Requests State
-  const [friendSearchInput, setFriendSearchInput] = useState('');
-  const [friendActionLoading, setFriendActionLoading] = useState(false);
-  const [friendFeedback, setFriendFeedback] = useState({ type: '', text: '' });
-  const [incomingRequests, setIncomingRequests] = useState([]);
-  const [processingRequestId, setProcessingRequestId] = useState(null);
-  const [removingFriendId, setRemovingFriendId] = useState(null);
-
-  // Sync state when userProfile updates
-  useEffect(() => {
-    if (userProfile) {
-      if (userProfile.displayName) setProfName(userProfile.displayName);
-      if (userProfile.username) setProfUsername(userProfile.username);
-      if (userProfile.avatar) setProfAvatar(userProfile.avatar);
-      if (userProfile.avatarBg) setProfAvatarBg(userProfile.avatarBg);
-      if (userProfile.bannerBg) setProfBannerBg(userProfile.bannerBg);
-      if (userProfile.bannerUrl) setProfBannerUrl(userProfile.bannerUrl);
-      if (userProfile.bio !== undefined) setProfBio(userProfile.bio);
-      if (userProfile.target) setProfTarget(userProfile.target);
-      if (userProfile.location !== undefined) setProfLocation(userProfile.location);
-    } else if (user) {
-      if (user.displayName) setProfName(user.displayName);
-      if (user.email) setProfUsername(user.email.split('@')[0]);
-    }
-  }, [userProfile, user]);
-
-  // Subscribe to real-time incoming friend requests
-  useEffect(() => {
-    if (user && isFirebaseConfigured) {
-      const unsubscribe = subscribeToFriendRequests(user.uid, (requests) => {
-        setIncomingRequests(requests);
-      });
-      return () => unsubscribe();
-    } else {
-      setIncomingRequests([]);
-    }
-  }, [user]);
-
-  // Copy own Unique ID
-  const handleCopyMyId = (e) => {
-    if (e) e.stopPropagation();
-    navigator.clipboard.writeText(currentAspirantId);
-    setCopiedMyId(true);
-    showToast(`Copied Aspirant ID ${currentAspirantId} to clipboard!`);
-    setTimeout(() => setCopiedMyId(false), 2400);
-  };
-
-  // Avatar Upload
-  const handleImageFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Avatar image size must be under 5MB.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_SIZE = 140;
-        let width = img.width;
-        let height = img.height;
-        if (width > height) {
-          if (width > MAX_SIZE) {
-            height *= MAX_SIZE / width;
-            width = MAX_SIZE;
-          }
-        } else {
-          if (height > MAX_SIZE) {
-            width *= MAX_SIZE / height;
-            height = MAX_SIZE;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        setProfAvatar(compressedDataUrl);
-        showToast("Avatar image updated!");
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Banner Upload
-  const handleBannerFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      alert("Banner file size must be under 8MB.");
-      return;
-    }
-    const isGif = file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
-    if (isGif) {
-      if (file.size > 400 * 1024) {
-        alert("Animated GIF must be under 400KB.");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setProfBannerBg(event.target.result);
-          setProfBannerUrl(event.target.result);
-          showToast("Animated banner applied!");
-        }
-      };
-      reader.readAsDataURL(file);
-    } else {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_W = 850;
-          const MAX_H = 320;
-          let width = img.width;
-          let height = img.height;
-          if (width > MAX_W) {
-            height = Math.round((height * MAX_W) / width);
-            width = MAX_W;
-          }
-          if (height > MAX_H) {
-            width = Math.round((width * MAX_H) / height);
-            height = MAX_H;
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          let compressed = canvas.toDataURL('image/jpeg', 0.80);
-          setProfBannerBg(compressed);
-          setProfBannerUrl(compressed);
-          showToast("Banner image applied!");
-        };
-        img.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Save Profile Changes
-  const handleSaveProfile = async (e) => {
-    if (e) e.preventDefault();
-    if (!user) {
-      alert("Please sign in to sync profile changes with cloud.");
-      return;
-    }
-
-    setProfileSaving(true);
-    setProfileSuccessMsg('');
-
-    try {
-      if (onUpdateProfile) {
-        await onUpdateProfile({
-          displayName: profName.trim() || user.email?.split('@')[0] || 'Aspirant',
-          username: profUsername.trim() || user.email?.split('@')[0] || 'aspirant',
-          avatar: profAvatar,
-          avatarBg: profAvatarBg,
-          bannerBg: profBannerBg,
-          bio: profBio.trim(),
-          target: profTarget.trim(),
-          location: profLocation.trim(),
-          aspirantId: currentAspirantId
-        });
-      }
-      setProfileSuccessMsg("Profile updated and synced!");
-      showToast("Profile changes saved successfully!");
-      setTimeout(() => setIsEditModalOpen(false), 1000);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save profile. Please check connection.");
-    } finally {
-      setProfileSaving(false);
-    }
-  };
-
-  // Live Live Aggregated Metrics Calculation
+  // Live Live Aggregated Metrics Calculation (Moved up to prevent TDZ ReferenceError)
   const liveStats = useMemo(() => {
     let streak = 0;
     let solvedQs = 0;
@@ -373,7 +159,323 @@ export default function ProfileView({
     });
   }, [liveStats]);
 
-  const unlockedBadges = badges.filter(b => b.isUnlocked);
+  const unlockedBadges = useMemo(() => badges.filter(b => b.isUnlocked), [badges]);
+
+  // Featured Showcase Badges (User-customizable 3 to 4 best achievements)
+  const [showcaseBadgeIds, setShowcaseBadgeIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('user_showcase_badges');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return userProfile?.showcaseBadgeIds || ['streak-1', 'solved-10', 'streak-3'];
+  });
+  const [isCustomizingShowcase, setIsCustomizingShowcase] = useState(false);
+
+  const showcaseBadges = useMemo(() => {
+    const selected = showcaseBadgeIds.map(id => badges.find(b => b.id === id)).filter(Boolean);
+    if (selected.length > 0) return selected.slice(0, 4);
+    return badges.slice(0, 3);
+  }, [showcaseBadgeIds, badges]);
+
+  const toggleShowcaseBadge = (badgeId) => {
+    setShowcaseBadgeIds(prev => {
+      let updated;
+      if (prev.includes(badgeId)) {
+        if (prev.length <= 1) return prev; // Keep at least 1 badge in showcase
+        updated = prev.filter(id => id !== badgeId);
+      } else {
+        if (prev.length >= 4) {
+          // Replace oldest to cap strictly at 4
+          updated = [...prev.slice(1), badgeId];
+        } else {
+          updated = [...prev, badgeId];
+        }
+      }
+      try {
+        localStorage.setItem('user_showcase_badges', JSON.stringify(updated));
+      } catch (e) {}
+      if (user && onUpdateProfile) {
+        onUpdateProfile({ showcaseBadgeIds: updated });
+      }
+      return updated;
+    });
+  };
+
+  // Edit Profile Modal
+  const [isEditModalOpen, setIsEditModalOpen] = useState(isEditOpen);
+
+  useEffect(() => {
+    if (isEditOpen) {
+      setIsEditModalOpen(true);
+      if (onResetEditOpen) onResetEditOpen();
+    }
+  }, [isEditOpen, onResetEditOpen]);
+
+  // Auth Modal State
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authDisplayName, setAuthDisplayName] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Prevent background website page from scrolling & stop Lenis wheel hijacking when modal is open
+  useEffect(() => {
+    if (isEditModalOpen || isCustomizingShowcase || isAuthModalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      const lenis = getLenis();
+      if (lenis) lenis.stop();
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        if (lenis) lenis.start();
+      };
+    }
+  }, [isEditModalOpen, isCustomizingShowcase, isAuthModalOpen]);
+
+  // RPG Level & EXP Progression (From Firebase Database for logged in users, defaulting strictly to Level 1 / 0 EXP for new accounts)
+  const currentExp = userProfile?.exp !== undefined 
+    ? userProfile.exp 
+    : (user ? 0 : (userProfile?.exp ?? 0));
+  const userLevel = userProfile?.level !== undefined
+    ? userProfile.level
+    : (user ? 1 : (calculateLevelFromExp(currentExp) || 1));
+  const expProgress = getExpProgress(currentExp);
+
+  // Profile customization state
+  const savedCosmetics = (() => {
+    try {
+      const s = localStorage.getItem('local_aspirant_cosmetics');
+      return s ? JSON.parse(s) : null;
+    } catch (e) {
+      return null;
+    }
+  })();
+
+  const [profName, setProfName] = useState(userProfile?.displayName || user?.displayName || savedCosmetics?.displayName || '');
+  const [profUsername, setProfUsername] = useState(userProfile?.username || (user?.email ? user.email.split('@')[0] : 'aspirant'));
+  const [profAvatar, setProfAvatar] = useState(userProfile?.avatar || savedCosmetics?.avatar || 'rocket');
+  const [profAvatarBg, setProfAvatarBg] = useState(userProfile?.avatarBg || savedCosmetics?.avatarBg || '#38bdf8');
+  const [profFrameId, setProfFrameId] = useState(getEffectiveFrameId(userProfile?.frameId || savedCosmetics?.frameId || 'default', userLevel));
+  const [profBannerId, setProfBannerId] = useState(getEffectiveBannerId(userProfile?.bannerId || savedCosmetics?.bannerId || 'cyber_grid', userLevel));
+  const [profBannerBg, setProfBannerBg] = useState(userProfile?.bannerBg || savedCosmetics?.bannerBg || '#0b1120');
+  const [profBannerUrl, setProfBannerUrl] = useState(userProfile?.bannerUrl || savedCosmetics?.bannerUrl || '');
+  const [profBio, setProfBio] = useState(userProfile?.bio || '');
+  const [profTarget, setProfTarget] = useState(userProfile?.target || 'CAT (99.5+%ile • IIM-A Focus)');
+  const [profLocation, setProfLocation] = useState(userProfile?.location || '');
+  const [editModalTab, setEditModalTab] = useState('avatar_frame');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
+
+  // Keep local fields strictly in sync whenever userProfile prop changes
+  useEffect(() => {
+    if (userProfile) {
+      if (userProfile.displayName !== undefined) setProfName(userProfile.displayName);
+      if (userProfile.username !== undefined) setProfUsername(userProfile.username);
+      if (userProfile.avatar !== undefined) setProfAvatar(userProfile.avatar);
+      if (userProfile.avatarBg !== undefined) setProfAvatarBg(userProfile.avatarBg);
+      if (userProfile.frameId !== undefined) {
+        setProfFrameId(getEffectiveFrameId(userProfile.frameId, userLevel));
+      }
+      if (userProfile.bannerId !== undefined) {
+        setProfBannerId(getEffectiveBannerId(userProfile.bannerId, userLevel));
+      }
+      if (userProfile.bannerBg !== undefined) setProfBannerBg(userProfile.bannerBg);
+      if (userProfile.bannerUrl !== undefined) setProfBannerUrl(userProfile.bannerUrl);
+      if (userProfile.bio !== undefined) setProfBio(userProfile.bio);
+      if (userProfile.target !== undefined) setProfTarget(userProfile.target);
+      if (userProfile.location !== undefined) setProfLocation(userProfile.location);
+    }
+  }, [userProfile, userLevel]);
+
+  // Instant equip handlers that propagate immediately to profile card
+  const handleEquipFrame = (frameId, frameName) => {
+    setProfFrameId(frameId);
+    showToast(`Equipped ${frameName} frame!`);
+    try {
+      const saved = JSON.parse(localStorage.getItem('local_aspirant_cosmetics') || '{}');
+      saved.frameId = frameId;
+      localStorage.setItem('local_aspirant_cosmetics', JSON.stringify(saved));
+    } catch (e) {}
+    if (onUpdateProfile) {
+      onUpdateProfile({ frameId });
+    }
+  };
+
+  const handleEquipBanner = (bannerId, bannerName) => {
+    setProfBannerId(bannerId);
+    setProfBannerUrl('');
+    showToast(`Equipped ${bannerName} banner!`);
+    try {
+      const saved = JSON.parse(localStorage.getItem('local_aspirant_cosmetics') || '{}');
+      saved.bannerId = bannerId;
+      saved.bannerUrl = '';
+      localStorage.setItem('local_aspirant_cosmetics', JSON.stringify(saved));
+    } catch (e) {}
+    if (onUpdateProfile) {
+      onUpdateProfile({ bannerId, bannerUrl: '' });
+    }
+  };
+
+  const handleSelectAvatarPreset = (avatarId, label) => {
+    setProfAvatar(avatarId);
+    showToast(`Selected ${label}!`);
+    try {
+      const saved = JSON.parse(localStorage.getItem('local_aspirant_cosmetics') || '{}');
+      saved.avatar = avatarId;
+      localStorage.setItem('local_aspirant_cosmetics', JSON.stringify(saved));
+    } catch (e) {}
+    if (onUpdateProfile) {
+      onUpdateProfile({ avatar: avatarId });
+    }
+  };
+
+  const handleSelectAvatarColor = (color) => {
+    setProfAvatarBg(color);
+    try {
+      const saved = JSON.parse(localStorage.getItem('local_aspirant_cosmetics') || '{}');
+      saved.avatarBg = color;
+      localStorage.setItem('local_aspirant_cosmetics', JSON.stringify(saved));
+    } catch (e) {}
+    if (onUpdateProfile) {
+      onUpdateProfile({ avatarBg: color });
+    }
+  };
+
+  // Effective Cosmetics validated against level (defaults to 'default' and 'cyber_grid' for Level 1)
+  const effectiveProfFrameId = getEffectiveFrameId(profFrameId, userLevel);
+  const effectiveProfBannerId = getEffectiveBannerId(profBannerId, userLevel);
+
+  // Sanitize stored local cosmetics if user level does not satisfy equipped frame/banner
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('local_aspirant_cosmetics');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        let changed = false;
+        if (parsed.frameId && getEffectiveFrameId(parsed.frameId, userLevel) !== parsed.frameId) {
+          parsed.frameId = 'default';
+          changed = true;
+          setProfFrameId('default');
+        }
+        if (parsed.bannerId && getEffectiveBannerId(parsed.bannerId, userLevel) !== parsed.bannerId) {
+          parsed.bannerId = 'cyber_grid';
+          changed = true;
+          setProfBannerId('cyber_grid');
+        }
+        if (changed) {
+          localStorage.setItem('local_aspirant_cosmetics', JSON.stringify(parsed));
+        }
+      }
+    } catch (e) {}
+  }, [userLevel]);
+
+  // Unique Aspirant ID
+  const currentAspirantId = userProfile?.aspirantId || (user ? generateUniqueAspirantId(user.uid) : getLocalAspirantId());
+  const [copiedMyId, setCopiedMyId] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+
+  const showToast = (msg) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(''), 3000);
+  };
+
+  // Add Friend & Requests State
+  const [friendSearchInput, setFriendSearchInput] = useState('');
+  const [friendActionLoading, setFriendActionLoading] = useState(false);
+  const [friendFeedback, setFriendFeedback] = useState({ type: '', text: '' });
+  const [incomingRequests, setIncomingRequests] = useState([]);
+  const [processingRequestId, setProcessingRequestId] = useState(null);
+  const [removingFriendId, setRemovingFriendId] = useState(null);
+
+  // Sync state when userProfile updates
+  useEffect(() => {
+    if (userProfile) {
+      if (userProfile.displayName) setProfName(userProfile.displayName);
+      if (userProfile.username) setProfUsername(userProfile.username);
+      if (userProfile.avatar) setProfAvatar(userProfile.avatar);
+      if (userProfile.avatarBg) setProfAvatarBg(userProfile.avatarBg);
+      if (userProfile.bannerBg) setProfBannerBg(userProfile.bannerBg);
+      if (userProfile.bannerUrl) setProfBannerUrl(userProfile.bannerUrl);
+      if (userProfile.bio !== undefined) setProfBio(userProfile.bio);
+      if (userProfile.target) setProfTarget(userProfile.target);
+      if (userProfile.location !== undefined) setProfLocation(userProfile.location);
+    } else if (user) {
+      if (user.displayName) setProfName(user.displayName);
+      if (user.email) setProfUsername(user.email.split('@')[0]);
+    }
+  }, [userProfile, user]);
+
+  // Subscribe to real-time incoming friend requests
+  useEffect(() => {
+    if (user && isFirebaseConfigured) {
+      const unsubscribe = subscribeToFriendRequests(user.uid, (requests) => {
+        setIncomingRequests(requests);
+      });
+      return () => unsubscribe();
+    } else {
+      setIncomingRequests([]);
+    }
+  }, [user]);
+
+  // Copy own Unique ID
+  const handleCopyMyId = (e) => {
+    if (e) e.stopPropagation();
+    navigator.clipboard.writeText(currentAspirantId);
+    setCopiedMyId(true);
+    showToast(`Copied Aspirant ID ${currentAspirantId} to clipboard!`);
+    setTimeout(() => setCopiedMyId(false), 2400);
+  };
+
+  // Save Profile Changes
+  const handleSaveProfile = async (e) => {
+    if (e) e.preventDefault();
+
+    setProfileSaving(true);
+    setProfileSuccessMsg('');
+
+    try {
+      const updatedProfileData = {
+        displayName: profName.trim() || user?.email?.split('@')[0] || 'Aspirant',
+        username: profUsername.trim() || user?.email?.split('@')[0] || 'aspirant',
+        avatar: profAvatar,
+        avatarBg: profAvatarBg,
+        frameId: profFrameId,
+        bannerId: profBannerId,
+        bannerBg: profBannerBg,
+        bannerUrl: profBannerUrl,
+        bio: profBio.trim(),
+        target: profTarget.trim(),
+        location: profLocation.trim(),
+        aspirantId: currentAspirantId
+      };
+
+      // Also persist to localStorage so guest / offline mode retains cosmetics
+      try {
+        localStorage.setItem('local_aspirant_cosmetics', JSON.stringify({
+          frameId: profFrameId,
+          bannerId: profBannerId,
+          bannerUrl: profBannerUrl,
+          displayName: profName.trim() || 'Aspirant',
+          avatar: profAvatar,
+          avatarBg: profAvatarBg
+        }));
+      } catch (err) {}
+
+      if (onUpdateProfile) {
+        await onUpdateProfile(updatedProfileData);
+      }
+      setProfileSuccessMsg("Loadout & Profile updated!");
+      showToast("Loadout & profile saved successfully!");
+      setTimeout(() => setIsEditModalOpen(false), 900);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save profile. Please check connection.");
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   // Send Friend Request
   const handleSendFriendRequest = async (e) => {
@@ -539,190 +641,66 @@ export default function ProfileView({
       </div>
 
       {/* ========================================================
-          PANORAMIC ASPIRANT PASSPORT HERO
-         ======================================================== */}
-      <div className="aspirant-passport-hero">
-        <div 
-          className="passport-banner-cover"
-          style={{
-            background: profBannerBg || 'linear-gradient(135deg, #0284c7 0%, #0f172a 100%)',
-            backgroundImage: profBannerUrl ? `url(${profBannerUrl})` : undefined,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        >
-          <div className="passport-banner-overlay" />
-          <div className="passport-banner-top-tags">
-            <span className="verified-aspirant-pill">
-              <AnimatedShieldCheckIcon size={14} color="#34d399" />
-              <span>CATalyze 2025 Verified</span>
-            </span>
-            <span className="aspirant-id-display-pill" onClick={handleCopyMyId} title="Click to copy your unique ID">
-              <Icons.Hash size={11} />
-              <span>{currentAspirantId}</span>
-              {copiedMyId ? <Icons.Check size={11} /> : <Icons.Copy size={11} />}
-            </span>
-          </div>
-        </div>
-
-        {/* Hero Identity Body */}
-        <div className="passport-identity-row">
-          <div className="passport-avatar-block">
-            <div className="passport-avatar-frame">
-              <AvatarRenderer 
-                avatar={profAvatar} 
-                name={profName || user?.displayName || 'Aspirant'} 
-                avatarBg={profAvatarBg} 
-                size={82}
-                status={user ? 'online' : 'offline'}
-              />
-            </div>
-          </div>
-
-          <div className="passport-meta-block">
-            <div className="passport-name-line">
-              <h1 className="passport-display-name">{profName || user?.displayName || 'Your Display Name'}</h1>
-              <span className="passport-handle">@{profUsername || 'aspirant'}</span>
-              {profLocation && (
-                <span className="passport-location-tag">
-                  <Icons.MapPin size={11} /> {profLocation}
-                </span>
-              )}
-            </div>
-
-            <div className="passport-target-line">
-              <div className="target-goal-badge">
-                <AnimatedTargetIcon size={14} color="#38bdf8" />
-                <span>{profTarget}</span>
-              </div>
-              <p className="passport-bio-text">
-                {profBio || 'Daily Quant drills, strategic LRDI set selection, and weekly mock analysis.'}
-              </p>
-            </div>
-          </div>
-
-          <div className="passport-actions-block">
-            <button
-              type="button"
-              className="passport-primary-edit-btn"
-              onClick={() => setIsEditModalOpen(true)}
-            >
-              <Icons.Edit3 size={14} />
-              <span>Edit Profile</span>
-            </button>
-
-            {user ? (
-              <button
-                type="button"
-                className="passport-secondary-btn"
-                onClick={handleLogout}
-              >
-                <span>Log Out</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="passport-secondary-btn highlight"
-                onClick={() => setIsAuthModalOpen(true)}
-              >
-                <span>Sign In / Join</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================================
-          SECTION 1: ASPIRANT PASSPORT (Full Workspace)
+          SECTION 1: ASPIRANT TACTICAL CAREER HUB (Spacious Layout)
          ======================================================== */}
       {activeSection === 'passport' && (
-        <div className="passport-workspace-grid">
+        <div className="tactical-career-workspace fade-in">
           
-          {/* 4 LIVE TELEMETRY STAT CARDS */}
-          <div className="passport-telemetry-row">
-            
-            {/* 1. Consistency Streak */}
-            <div className="telemetry-stat-card">
-              <div className="stat-card-head">
-                <span className="stat-label">CONSISTENCY MOMENTUM</span>
-                <div className="stat-icon-wrap streak">
-                  <AnimatedFlameIcon size={16} color="#fbbf24" />
-                </div>
-              </div>
-              <div className="stat-value-group">
-                <span className="stat-number">{liveStats.streak}</span>
-                <span className="stat-unit">Days Active</span>
-              </div>
-              <div className="stat-subtext">
-                {liveStats.activeDaysCount} total active study days recorded
-              </div>
-            </div>
-
-            {/* 2. Questions Conquered */}
-            <div className="telemetry-stat-card">
-              <div className="stat-card-head">
-                <span className="stat-label">PRACTICE VELOCITY</span>
-                <div className="stat-icon-wrap velocity">
-                  <Icons.Target size={16} />
-                </div>
-              </div>
-              <div className="stat-value-group">
-                <span className="stat-number">{liveStats.solvedQs.toLocaleString()}</span>
-                <span className="stat-unit">Qs Solved</span>
-              </div>
-              <div className="stat-subtext">
-                QA: {liveStats.quantQs} • DILR: {liveStats.lrdiQs} • VARC: {liveStats.varcQs}
-              </div>
-            </div>
-
-            {/* 3. Mocks Completed */}
-            <div className="telemetry-stat-card">
-              <div className="stat-card-head">
-                <span className="stat-label">EXAM READINESS</span>
-                <div className="stat-icon-wrap exam">
-                  <Icons.BookOpen size={16} />
-                </div>
-              </div>
-              <div className="stat-value-group">
-                <span className="stat-number">{liveStats.mocksCount} / 30</span>
-                <span className="stat-unit">Mocks</span>
-              </div>
-              <div className="stat-subtext">
-                {liveStats.avgMockScore > 0 ? `Avg Composite: ${liveStats.avgMockScore} pts` : 'Awaiting first completed mock'}
-              </div>
-            </div>
-
-            {/* 4. Trophies & Prestige */}
-            <div 
-              className="telemetry-stat-card clickable-telemetry"
-              onClick={() => setActiveTab && setActiveTab('achievements')}
-              title="Click to view all Achievement Badges"
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="stat-card-head">
-                <span className="stat-label">PRESTIGE MILESTONES</span>
-                <div className="stat-icon-wrap prestige">
-                  <AnimatedCrownIcon size={16} color="#f472b6" />
-                </div>
-              </div>
-              <div className="stat-value-group">
-                <span className="stat-number">{unlockedBadges.length} / {badges.length}</span>
-                <span className="stat-unit">Badges</span>
-              </div>
-              <div className="stat-subtext">
-                {unlockedBadges.length === badges.length ? 'Grandmaster Mastery Achieved' : 'Unlock badges via daily consistency'} ➔
-              </div>
-            </div>
-
+          {/* TOP: Full-Width Spacious Panoramic Operative Card */}
+          <div className="panoramic-card-wrapper">
+            <AspirantProfileCard
+              user={user}
+              profile={{
+                displayName: profName || user?.displayName,
+                target: profTarget,
+                bio: profBio,
+                location: profLocation,
+                avatar: profAvatar,
+                avatarBg: profAvatarBg,
+                frameId: effectiveProfFrameId,
+                bannerId: effectiveProfBannerId,
+                bannerUrl: profBannerUrl,
+                streak: liveStats.streak,
+                solvedQs: liveStats.solvedQs,
+                mocksCount: liveStats.mocksCount,
+                status: user ? 'online' : 'offline',
+                aspirantId: currentAspirantId,
+                exp: currentExp,
+                level: userLevel
+              }}
+              tracker={tracker}
+              showcaseBadges={showcaseBadges}
+              isSelf={true}
+              onEditProfile={() => setIsEditModalOpen(true)}
+              compact={false}
+            />
           </div>
 
-          {/* TWO COLUMN LOWER WORKSPACE */}
-          <div className="passport-details-columns">
+          {/* Candidate Level & EXP Progression Ribbon */}
+          <div className="exp-ribbon-panel">
+            <div className="exp-ribbon-top">
+              <div className="exp-ribbon-badge-col font-mono">
+                <span className="exp-ribbon-level">LEVEL {expProgress.currentLevel}</span>
+                <span className="exp-ribbon-title">{expProgress.milestoneTitle.toUpperCase()}</span>
+              </div>
+              <div className="exp-ribbon-actions font-mono">
+                <span className="exp-ribbon-counter">
+                  {expProgress.totalExp} TOTAL EXP • {expProgress.expIntoLevel} / {expProgress.expNeededForNext} to Level {expProgress.currentLevel + 1} ({expProgress.progressPercent}%)
+                </span>
+              </div>
+            </div>
+            <div className="exp-bar-track">
+              <div className="exp-bar-fill" style={{ width: `${expProgress.progressPercent}%` }} />
+            </div>
+          </div>
+
+          {/* LOWER WORKSPACE: 2-Column Telemetry & Social Hub */}
+          <div className="tactical-lower-workspace-grid">
             
-            {/* LEFT COLUMN: Study Activity Heatmap & Badges */}
-            <div className="passport-left-col">
+            {/* LEFT COLUMN: Activity Matrix & Dungeon Quotas */}
+            <div className="tactical-lower-main-col">
               
-              {/* GitHub-Style Study Contribution Heatmap */}
+              {/* Panel 1: Activity Matrix (GitHub-Style Heatmap) */}
               <div className="passport-glass-panel">
                 <div className="panel-top-title-row">
                   <div className="title-left">
@@ -740,64 +718,166 @@ export default function ProfileView({
                 </div>
               </div>
 
-              {/* Prestige Trophy Showcase */}
+              {/* Panel 2: Dungeon Campaign Quotas (Quant, DILR, VARC) */}
               <div className="passport-glass-panel">
                 <div className="panel-top-title-row">
                   <div className="title-left">
-                    <Icons.Trophy size={16} className="panel-ico" />
-                    <h3>Collected Badges & Prestige Perks ({unlockedBadges.length}/{badges.length})</h3>
+                    <Icons.Target size={16} className="panel-ico" />
+                    <h3>Dungeon Campaign Syllabus Telemetry</h3>
                   </div>
-                  {setActiveTab && (
+                  <span className="panel-tag font-mono">TARGET RATIO</span>
+                </div>
+                
+                <div className="syllabus-cards-container" style={{ margin: '8px 0 0 0' }}>
+                  {/* Quant Dungeon */}
+                  <div className="syllabus-progress-card quant-theme">
+                    <div className="syllabus-label-row">
+                      <div className="syllabus-sub-title">
+                        <span className="syllabus-icon-badge quant-badge"><Icons.Calculator size={13} /></span>
+                        <span className="syllabus-subject-name font-mono">QUANTITATIVE LABYRINTH</span>
+                      </div>
+                      <div className="syllabus-stats-badge font-mono">
+                        <span className="syllabus-count-val">{liveStats.quantQs.toLocaleString()} / 2,500 Qs</span>
+                        <span className="syllabus-percent-pill quant-pill">
+                          {Math.min(100, Math.round((liveStats.quantQs / 2500) * 100))}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="syllabus-track">
+                      <div 
+                        className="syllabus-fill quant" 
+                        style={{ width: `${Math.min(100, Math.round((liveStats.quantQs / 2500) * 100))}%` }} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* DILR Logic Crypt */}
+                  <div className="syllabus-progress-card lrdi-theme">
+                    <div className="syllabus-label-row">
+                      <div className="syllabus-sub-title">
+                        <span className="syllabus-icon-badge lrdi-badge"><Icons.Puzzle size={13} /></span>
+                        <span className="syllabus-subject-name font-mono">DILR LOGIC CRYPT</span>
+                      </div>
+                      <div className="syllabus-stats-badge font-mono">
+                        <span className="syllabus-count-val">{liveStats.lrdiQs.toLocaleString()} / 500 Sets</span>
+                        <span className="syllabus-percent-pill lrdi-pill">
+                          {Math.min(100, Math.round((liveStats.lrdiQs / 500) * 100))}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="syllabus-track">
+                      <div 
+                        className="syllabus-fill lrdi" 
+                        style={{ width: `${Math.min(100, Math.round((liveStats.lrdiQs / 500) * 100))}%` }} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* VARC Spire */}
+                  <div className="syllabus-progress-card varc-theme">
+                    <div className="syllabus-label-row">
+                      <div className="syllabus-sub-title">
+                        <span className="syllabus-icon-badge varc-badge"><Icons.BookOpen size={13} /></span>
+                        <span className="syllabus-subject-name font-mono">VARC COMPREHENSION SPIRE</span>
+                      </div>
+                      <div className="syllabus-stats-badge font-mono">
+                        <span className="syllabus-count-val">{liveStats.varcQs.toLocaleString()} / 500 Articles</span>
+                        <span className="syllabus-percent-pill varc-pill">
+                          {Math.min(100, Math.round((liveStats.varcQs / 500) * 100))}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="syllabus-track">
+                      <div 
+                        className="syllabus-fill varc" 
+                        style={{ width: `${Math.min(100, Math.round((liveStats.varcQs / 500) * 100))}%` }} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* RIGHT COLUMN: Prestige Armory & Battle Squad */}
+            <div className="tactical-lower-side-col">
+              
+              {/* Panel 3: Featured Achievements Showcase (User Customizable 3-4 Badges) */}
+              <div className="passport-glass-panel">
+                <div className="panel-top-title-row">
+                  <div className="title-left">
+                    <Icons.Award size={16} className="panel-ico" />
+                    <h3>Featured Achievements Showcase</h3>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button 
                       type="button" 
-                      className="panel-link-btn"
-                      onClick={() => setActiveTab('achievements')}
+                      className="panel-customize-btn font-mono"
+                      onClick={() => setIsCustomizingShowcase(true)}
+                      title="Choose which 3-4 badges to showcase"
                     >
-                      View All Achievements →
+                      <Icons.Edit3 size={11} />
+                      <span>SELECT ({showcaseBadges.length}/4)</span>
                     </button>
-                  )}
+                    {setActiveTab && (
+                      <button 
+                        type="button" 
+                        className="panel-link-btn"
+                        onClick={() => setActiveTab('achievements')}
+                      >
+                        All ({badges.length}) →
+                      </button>
+                    )}
+                  </div>
                 </div>
+                <p className="panel-explainer">
+                  Showcase of your best achievements and prestige medals pinned to your operative profile.
+                </p>
 
-                <div className="badges-horizontal-rack">
-                  {badges.map((badge) => {
+                <div className="featured-showcase-rack">
+                  {showcaseBadges.map((badge) => {
                     const IconComp = Icons[badge.iconName] || Icons.Award;
                     return (
                       <div 
-                        key={badge.id} 
-                        className={`badge-rack-item ${badge.isUnlocked ? 'unlocked' : 'locked'}`}
-                        title={`${badge.name}: ${badge.description}`}
+                        key={badge.id}
+                        className={`featured-showcase-card ${badge.isUnlocked ? 'unlocked' : 'locked'}`}
+                        style={{ '--accent-color': badge.color }}
+                        onClick={() => setIsCustomizingShowcase(true)}
+                        title="Click to customize your featured showcase"
                       >
-                        <div 
-                          className="badge-emblem-circle"
-                          style={{ '--accent-color': badge.color }}
-                        >
-                          <IconComp size={18} />
+                        <div className="showcase-card-top">
+                          <div className="showcase-emblem-wrap">
+                            <IconComp size={20} />
+                          </div>
+                          <span className={`showcase-status-chip font-mono ${badge.isUnlocked ? 'unlocked' : 'locked'}`}>
+                            {badge.isUnlocked ? 'UNLOCKED' : `REQ: ${badge.threshold}`}
+                          </span>
                         </div>
-                        <span className="badge-rack-name">{badge.name}</span>
-                        <span className="badge-rack-status">
-                          {badge.isUnlocked ? 'Unlocked' : `Lock (${badge.threshold})`}
-                        </span>
+                        <span className="showcase-badge-title font-mono">{badge.name}</span>
+                        <span className="showcase-badge-desc">{badge.perkTitle || badge.description}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-            </div>
-
-            {/* RIGHT COLUMN: Peer Quick Connect & Study Buddies Preview */}
-            <div className="passport-right-col">
-              
-              {/* Quick Buddy Connect Card */}
+              {/* Panel 4: Quick Peer Connect & Active Squad */}
               <div className="passport-glass-panel">
                 <div className="panel-top-title-row">
                   <div className="title-left">
-                    <Icons.UserPlus size={16} className="panel-ico" />
-                    <h3>Connect with a Peer</h3>
+                    <Icons.Users size={16} className="panel-ico" />
+                    <h3>Battle Squad ({friends.length})</h3>
                   </div>
+                  <button 
+                    type="button" 
+                    className="panel-link-btn"
+                    onClick={() => setActiveSection('network')}
+                  >
+                    Manage Squad →
+                  </button>
                 </div>
                 <p className="panel-explainer">
-                  Enter your study buddy's Unique Aspirant ID (e.g. <code>ASP-849201</code>) or email to link progress.
+                  Link with peer aspirants using their Unique ID (e.g. <code>ASP-849201</code>) or email to compare prep pace.
                 </p>
 
                 <form onSubmit={handleSendFriendRequest} className="quick-connect-form">
@@ -815,7 +895,7 @@ export default function ProfileView({
                       className="quick-connect-btn"
                       disabled={!user || friendActionLoading || !friendSearchInput.trim()}
                     >
-                      {friendActionLoading ? 'Sending...' : 'Connect'}
+                      {friendActionLoading ? 'Connecting...' : 'Connect'}
                     </button>
                   </div>
                 </form>
@@ -826,38 +906,16 @@ export default function ProfileView({
                     <span>{friendFeedback.text}</span>
                   </div>
                 )}
-              </div>
 
-              {/* Study Buddies Preview */}
-              <div className="passport-glass-panel">
-                <div className="panel-top-title-row">
-                  <div className="title-left">
-                    <Icons.Users size={16} className="panel-ico" />
-                    <h3>Active Study Network ({friends.length})</h3>
-                  </div>
-                  <button 
-                    type="button" 
-                    className="panel-link-btn"
-                    onClick={() => setActiveSection('network')}
-                  >
-                    Manage Buddies →
-                  </button>
-                </div>
-
-                {friends.length === 0 ? (
-                  <div className="empty-network-callout">
-                    <Icons.Users size={28} />
-                    <p>No study buddies added yet. Share your Unique ID <strong>{currentAspirantId}</strong> with friends to compare prep momentum!</p>
-                  </div>
-                ) : (
-                  <div className="friends-mini-stack">
-                    {friends.slice(0, 4).map((f) => (
+                {friends.length > 0 && (
+                  <div className="friends-mini-stack" style={{ marginTop: '12px' }}>
+                    {friends.slice(0, 3).map((f) => (
                       <div key={f.id || f.uid} className="friend-mini-row">
                         <AvatarRenderer 
                           avatar={f.avatar || 'rocket'} 
                           name={f.displayName || f.name} 
                           avatarBg={f.avatarBg || '#38bdf8'} 
-                          size={34}
+                          size={32}
                           status={f.status || 'offline'}
                         />
                         <div className="friend-mini-meta">
@@ -1170,11 +1228,108 @@ export default function ProfileView({
       )}
 
       {/* ========================================================
+          MODAL: CUSTOMIZE FEATURED ACHIEVEMENTS SHOWCASE (3-4 SLOTS)
+         ======================================================== */}
+      {isCustomizingShowcase && (
+        <div 
+          className="mock-modal-overlay" 
+          data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
+          onClick={() => setIsCustomizingShowcase(false)}
+        >
+          <div 
+            className="showcase-modal-box" 
+            data-lenis-prevent="true"
+            onWheel={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <Icons.Award size={16} />
+                <h3>Select Featured Achievements (Choose 3 or 4)</h3>
+              </div>
+              <button type="button" className="modal-close-btn" onClick={() => setIsCustomizingShowcase(false)}>
+                <Icons.Close size={16} />
+              </button>
+            </div>
+
+            <div className="showcase-modal-body">
+              <p className="showcase-modal-instruction">
+                Pick 3 or 4 of your proudest achievements to showcase on your operative profile card and career overview.
+                <span className="showcase-selection-count font-mono">
+                  {showcaseBadgeIds.length} / 4 PINNED
+                </span>
+              </p>
+
+              <div 
+                className="showcase-picker-grid"
+                data-lenis-prevent="true"
+                onWheel={(e) => e.stopPropagation()}
+              >
+                {badges.map((b) => {
+                  const IconComp = Icons[b.iconName] || Icons.Award;
+                  const isSelected = showcaseBadgeIds.includes(b.id);
+
+                  return (
+                    <div
+                      key={b.id}
+                      className={`showcase-picker-item ${isSelected ? 'selected' : ''} ${b.isUnlocked ? 'unlocked' : 'locked'}`}
+                      onClick={() => toggleShowcaseBadge(b.id)}
+                    >
+                      <div className="picker-item-left">
+                        <div className="picker-badge-icon" style={{ color: b.color, backgroundColor: `${b.color}18` }}>
+                          <IconComp size={18} />
+                        </div>
+                        <div className="picker-badge-details">
+                          <span className="picker-badge-name font-mono">{b.name}</span>
+                          <span className="picker-badge-desc">{b.perkTitle || b.description}</span>
+                          <span className="picker-badge-status font-mono">
+                            {b.isUnlocked ? 'Unlocked' : `Lock (${b.threshold})`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="picker-checkbox font-mono">
+                        {isSelected ? <Icons.Check size={14} /> : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="modal-footer-actions">
+                <button
+                  type="button"
+                  className="btn-save"
+                  onClick={() => {
+                    setIsCustomizingShowcase(false);
+                    showToast("Showcase updated!");
+                  }}
+                >
+                  Confirm &amp; Display Showcase
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
           MODAL: EDIT PROFILE & APPEARANCE
          ======================================================== */}
       {isEditModalOpen && (
-        <div className="mock-modal-overlay" onClick={() => setIsEditModalOpen(false)}>
-          <div className="edit-profile-modal-box" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="mock-modal-overlay" 
+          data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
+          onClick={() => setIsEditModalOpen(false)}
+        >
+          <div 
+            className="edit-profile-modal-box" 
+            data-lenis-prevent="true"
+            onWheel={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
             
             <div className="modal-header">
               <div className="modal-title-group">
@@ -1189,14 +1344,15 @@ export default function ProfileView({
             {/* Modal Live Banner & Avatar Preview */}
             <div className="modal-live-preview-card">
               <div 
-                className="live-preview-banner"
+                className={`live-preview-banner ${PROFILE_BANNERS.find(b => b.id === effectiveProfBannerId)?.overlayClass || ''}`}
                 style={{
-                  background: profBannerBg || 'linear-gradient(135deg, #0284c7 0%, #0f172a 100%)',
+                  background: PROFILE_BANNERS.find(b => b.id === effectiveProfBannerId)?.bg || profBannerBg || 'linear-gradient(135deg, #0284c7 0%, #0f172a 100%)',
                   backgroundImage: profBannerUrl ? `url(${profBannerUrl})` : undefined,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center'
                 }}
               >
+                <MythicBannerOverlay bannerId={effectiveProfBannerId} />
                 <div className="live-preview-banner-tint" />
                 <span className="live-badge">
                   <span className="live-badge-dot" />
@@ -1209,12 +1365,29 @@ export default function ProfileView({
                     avatar={profAvatar} 
                     name={profName || 'Your Name'} 
                     avatarBg={profAvatarBg} 
-                    size={56} 
+                    frameId={effectiveProfFrameId}
+                    size={60} 
                   />
                 </div>
                 <div className="live-preview-text">
-                  <span className="live-name">{profName || 'Your Name'}</span>
-                  <span className="live-target">{profTarget}</span>
+                  <div className="live-preview-row-title">
+                    <span className="live-name">{profName || 'Your Name'}</span>
+                    <span className="live-lvl-pill font-mono">
+                      LVL {userLevel} • {expProgress.milestoneTitle.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="live-preview-row-sub">
+                    <span className="live-target">{profTarget}</span>
+                    {profLocation && (
+                      <span className="live-location font-mono">• {profLocation}</span>
+                    )}
+                  </div>
+                  <div className="live-preview-exp-track">
+                    <div className="live-preview-exp-fill" style={{ width: `${expProgress.progressPercent}%` }} />
+                    <span className="live-preview-exp-label font-mono">
+                      {expProgress.expIntoLevel} / {expProgress.expNeededForNext} EXP to Level {userLevel + 1}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1223,19 +1396,27 @@ export default function ProfileView({
             <div className="modal-tabs-strip">
               <button
                 type="button"
-                className={`modal-tab-pill ${editModalTab === 'appearance' ? 'active' : ''}`}
-                onClick={() => setEditModalTab('appearance')}
+                className={`modal-tab-pill ${editModalTab === 'avatar_frame' || editModalTab === 'appearance' ? 'active' : ''}`}
+                onClick={() => setEditModalTab('avatar_frame')}
               >
-                <AnimatedSparkleIcon size={13} color="#38bdf8" />
-                <span>Appearance & Banner</span>
+                <AnimatedSparkleIcon size={14} color="#38bdf8" />
+                <span>Avatar &amp; Frames</span>
+              </button>
+              <button
+                type="button"
+                className={`modal-tab-pill ${editModalTab === 'banners' ? 'active' : ''}`}
+                onClick={() => setEditModalTab('banners')}
+              >
+                <AnimatedRadarBeaconIcon size={14} color="#a855f7" />
+                <span>Animated Banners</span>
               </button>
               <button
                 type="button"
                 className={`modal-tab-pill ${editModalTab === 'identity' ? 'active' : ''}`}
                 onClick={() => setEditModalTab('identity')}
               >
-                <Icons.User size={13} />
-                <span>Identity & Goals</span>
+                <Icons.User size={14} />
+                <span>Identity &amp; Goals</span>
               </button>
             </div>
 
@@ -1247,159 +1428,330 @@ export default function ProfileView({
                 </div>
               )}
 
-              {/* TAB 1: APPEARANCE */}
-              {editModalTab === 'appearance' && (
+              {/* TAB 1: AVATAR & FRAMES */}
+              {(editModalTab === 'avatar_frame' || editModalTab === 'appearance') && (
                 <div className="form-pane">
-                  <div className="form-field-group">
-                    <label>Avatar Photo</label>
-                    <div className="file-upload-row">
-                      <input 
-                        type="file" 
-                        ref={imageUploadInputRef} 
-                        accept="image/*" 
-                        style={{ display: 'none' }} 
-                        onChange={handleImageFileChange}
-                      />
-                      <button
-                        type="button"
-                        className="file-trigger-btn"
-                        onClick={() => imageUploadInputRef.current?.click()}
-                      >
-                        <Icons.Upload size={14} />
-                        <span>Upload Custom Photo</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="file-trigger-btn secondary"
-                        onClick={() => {
-                          setProfAvatar('default');
-                          showToast("Reset to default icon!");
-                        }}
-                      >
-                        Use Default Icon
-                      </button>
+                  {/* 1A. AVATAR SYMBOL & COLOR PALETTE */}
+                  <div className="edit-section-card">
+                    <div className="edit-section-header">
+                      <div className="edit-section-title font-mono">
+                        <Icons.User size={14} />
+                        <span>Avatar Symbol Preset &amp; Accent</span>
+                      </div>
+                      <span className="edit-section-hint font-mono">8 Presets • 10 Colors</span>
                     </div>
 
-                    <label style={{ marginTop: '12px' }}>Avatar Glow / Background Accent</label>
-                    <div className="color-swatches-grid">
-                      {BG_COLORS.map(c => (
-                        <button
-                          key={c}
-                          type="button"
-                          className={`swatch-circle ${profAvatarBg === c ? 'active' : ''}`}
-                          style={{ backgroundColor: c }}
-                          onClick={() => setProfAvatarBg(c)}
-                        />
-                      ))}
+                    <div className="avatar-preset-grid">
+                      {AVATAR_PRESETS.map((preset) => {
+                        const PresetIcon = preset.icon;
+                        const isSelected = profAvatar === preset.id;
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            className={`avatar-preset-tile ${isSelected ? 'selected' : ''}`}
+                            onClick={() => handleSelectAvatarPreset(preset.id, preset.label)}
+                          >
+                            <div 
+                              className="preset-icon-circle" 
+                              style={{ 
+                                backgroundColor: isSelected ? profAvatarBg : 'rgba(255, 255, 255, 0.05)',
+                                color: isSelected ? '#ffffff' : (preset.color || '#94a3b8')
+                              }}
+                            >
+                              <PresetIcon size={17} />
+                            </div>
+                            <span className="preset-label font-mono">{preset.label}</span>
+                            {isSelected && <span className="preset-active-dot" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="avatar-color-row">
+                      <span className="avatar-color-label font-mono">Aura Accent:</span>
+                      <div className="color-swatches-grid">
+                        {BG_COLORS.map(c => (
+                          <button
+                            key={c}
+                            type="button"
+                            className={`swatch-circle ${profAvatarBg === c ? 'active' : ''}`}
+                            style={{ backgroundColor: c }}
+                            onClick={() => handleSelectAvatarColor(c)}
+                            title={`Aura Accent: ${c}`}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="form-field-group" style={{ marginTop: '14px' }}>
-                    <label>Passport Banner (JPG, PNG, or GIF)</label>
-                    <div className="file-upload-row">
-                      <input 
-                        type="file" 
-                        ref={bannerUploadInputRef} 
-                        accept="image/*,.gif" 
-                        style={{ display: 'none' }} 
-                        onChange={handleBannerFileChange}
-                      />
-                      <button
-                        type="button"
-                        className="file-trigger-btn"
-                        onClick={() => bannerUploadInputRef.current?.click()}
-                      >
-                        <Icons.Upload size={14} />
-                        <span>Upload Banner Photo or GIF</span>
-                      </button>
+                  {/* 1B. UNLOCKABLE AVATAR FRAMES */}
+                  <div className="edit-section-card" style={{ marginTop: '4px' }}>
+                    <div className="edit-section-header">
+                      <div className="edit-section-title font-mono">
+                        <AnimatedSparkleIcon size={14} color="#38bdf8" />
+                        <span>Unlockable Avatar Frames</span>
+                      </div>
+                      <span className="edit-section-hint font-mono">
+                        Rank: Level {userLevel} • {AVATAR_FRAMES.filter(f => userLevel >= f.minLevel).length}/{AVATAR_FRAMES.length} Unlocked
+                      </span>
                     </div>
 
-                    <label style={{ marginTop: '12px' }}>Preset Cyber Theme Palettes</label>
-                    <div className="banner-swatches-grid">
-                      {BANNER_THEMES.map(theme => (
-                        <button
-                          key={theme.id}
-                          type="button"
-                          title={theme.name}
-                          className={`swatch-rect ${profBannerBg === theme.bg ? 'active' : ''}`}
-                          style={{ background: theme.bg }}
-                          onClick={() => {
-                            setProfBannerBg(theme.bg);
-                            setProfBannerUrl('');
-                          }}
-                        >
-                          {profBannerBg === theme.bg && <Icons.Check size={11} />}
-                        </button>
-                      ))}
+                    <div className="cosmetic-frames-grid-v2">
+                      {AVATAR_FRAMES.map((frame) => {
+                        const isUnlocked = userLevel >= frame.minLevel;
+                        const isEquipped = effectiveProfFrameId === frame.id;
+
+                        return (
+                          <div 
+                            key={frame.id}
+                            className={`cosmetic-frame-card-v2 ${isEquipped ? 'equipped' : ''} ${isUnlocked ? 'unlocked' : 'locked'}`}
+                            onClick={() => {
+                              if (isUnlocked) {
+                                handleEquipFrame(frame.id, frame.name);
+                              }
+                            }}
+                          >
+                            <div className="frame-card-preview-v2">
+                              <AvatarRenderer
+                                avatar={profAvatar}
+                                name={profName}
+                                avatarBg={profAvatarBg}
+                                frameId={frame.id}
+                                size={52}
+                              />
+                            </div>
+                            <div className="frame-card-content-v2">
+                              <div className="frame-card-header-v2 font-mono">
+                                <span className="frame-name-v2 font-mono">{frame.name}</span>
+                                <span 
+                                  className="frame-tier-badge-v2 font-mono" 
+                                  style={{ color: frame.color, borderColor: `${frame.color}50`, background: `${frame.color}18` }}
+                                >
+                                  {frame.tier}
+                                </span>
+                              </div>
+                              <p className="frame-desc-v2">{frame.description}</p>
+                              <div className="frame-card-footer-v2 font-mono">
+                                {isEquipped ? (
+                                  <span className="frame-status-pill equipped font-mono">
+                                    <Icons.Check size={11} /> EQUIPPED
+                                  </span>
+                                ) : isUnlocked ? (
+                                  <button type="button" className="frame-equip-action-btn font-mono">
+                                    EQUIP FRAME
+                                  </button>
+                                ) : (
+                                  <span className="frame-status-pill locked font-mono">
+                                    <Icons.Lock size={11} /> REQ. LVL {frame.minLevel}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* TAB 2: IDENTITY & GOALS */}
+              {/* TAB 2: ANIMATED BANNERS */}
+              {editModalTab === 'banners' && (
+                <div className="form-pane">
+                  <div className="edit-section-card">
+                    <div className="edit-section-header">
+                      <div className="edit-section-title font-mono">
+                        <AnimatedRadarBeaconIcon size={14} color="#a855f7" />
+                        <span>Unlockable Animated Horizon Banners</span>
+                      </div>
+                      <span className="edit-section-hint font-mono">
+                        Rank: Level {userLevel} • {PROFILE_BANNERS.filter(b => userLevel >= b.minLevel).length}/{PROFILE_BANNERS.length} Unlocked
+                      </span>
+                    </div>
+
+                    <div className="cosmetic-banners-grid-v2">
+                      {PROFILE_BANNERS.map((banner) => {
+                        const isUnlocked = userLevel >= banner.minLevel;
+                        const isEquipped = effectiveProfBannerId === banner.id && !profBannerUrl;
+
+                        return (
+                          <div 
+                            key={banner.id}
+                            className={`cosmetic-banner-card-v2 ${isEquipped ? 'equipped' : ''} ${isUnlocked ? 'unlocked' : 'locked'}`}
+                            onClick={() => {
+                              if (isUnlocked) {
+                                handleEquipBanner(banner.id, banner.name);
+                              }
+                            }}
+                          >
+                            <div 
+                              className={`banner-thumb-panoramic ${banner.overlayClass || ''}`}
+                              style={{ background: banner.bg }}
+                            >
+                              <MythicBannerOverlay bannerId={banner.id} />
+                              <div className="banner-thumb-scrim-v2" />
+                              <div className="banner-thumb-meta-top font-mono">
+                                <span 
+                                  className="banner-tier-badge-v2 font-mono"
+                                  style={{
+                                    color: banner.tierColor || '#94a3b8',
+                                    borderColor: `${banner.tierColor || '#94a3b8'}60`,
+                                    background: 'rgba(0, 0, 0, 0.65)'
+                                  }}
+                                >
+                                  {banner.tier}
+                                </span>
+                                {!isUnlocked && (
+                                  <span className="banner-lock-pill font-mono">
+                                    <Icons.Lock size={10} />
+                                    <span>LVL {banner.minLevel}</span>
+                                  </span>
+                                )}
+                              </div>
+                              <span className="banner-thumb-name font-mono">{banner.name}</span>
+                            </div>
+
+                            <div className="banner-card-body-v2">
+                              <p className="banner-desc-v2" title={banner.description}>
+                                {banner.description}
+                              </p>
+                              <div className="banner-action-row-v2 font-mono">
+                                {isEquipped ? (
+                                  <span className="banner-status-pill equipped font-mono">
+                                    <Icons.Check size={11} /> EQUIPPED
+                                  </span>
+                                ) : isUnlocked ? (
+                                  <button type="button" className="banner-equip-action-btn font-mono">
+                                    EQUIP BANNER
+                                  </button>
+                                ) : (
+                                  <span className="banner-status-pill locked font-mono">
+                                    <Icons.Lock size={11} /> UNLOCKS AT LVL {banner.minLevel}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: IDENTITY & GOALS */}
               {editModalTab === 'identity' && (
                 <div className="form-pane">
-                  <div className="form-row two-cols">
-                    <div className="form-field">
-                      <label>Display Name</label>
-                      <input
-                        type="text"
-                        required
-                        value={profName}
-                        onChange={(e) => setProfName(e.target.value)}
-                        placeholder="e.g. Sunny Pathak"
-                      />
+                  <div className="edit-section-card">
+                    <div className="edit-section-header">
+                      <div className="edit-section-title font-mono">
+                        <Icons.User size={14} />
+                        <span>Aspirant Identity &amp; Target Goal</span>
+                      </div>
+                      <span className="edit-section-hint font-mono">Candidate Bio &amp; Strategy</span>
                     </div>
-                    <div className="form-field">
-                      <label>Username / Handle</label>
-                      <input
-                        type="text"
-                        value={profUsername}
-                        onChange={(e) => setProfUsername(e.target.value)}
-                        placeholder="e.g. sunnypathak"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="form-row two-cols">
-                    <div className="form-field">
-                      <label>Target Examination & Goal</label>
-                      <AnimatedSelect
-                        value={profTarget}
-                        onChange={(e) => setProfTarget(e.target.value)}
-                        options={TARGET_PRESETS.map(t => ({ value: t, label: t }))}
-                      />
-                    </div>
-                    <div className="form-field">
-                      <label>Location / City (Optional)</label>
-                      <input
-                        type="text"
-                        value={profLocation}
-                        onChange={(e) => setProfLocation(e.target.value)}
-                        placeholder="e.g. Bengaluru, KA"
-                      />
-                    </div>
-                  </div>
+                    <div className="identity-form-fields">
+                      <div className="form-row two-cols">
+                        <div className="form-field">
+                          <label className="font-mono">Display Name</label>
+                          <input
+                            type="text"
+                            required
+                            value={profName}
+                            onChange={(e) => setProfName(e.target.value)}
+                            placeholder="e.g. Sunny Pathak"
+                            className="clean-field-input"
+                          />
+                        </div>
+                        <div className="form-field">
+                          <label className="font-mono">Handle / Username</label>
+                          <div className="input-with-affix">
+                            <span className="affix-at font-mono">@</span>
+                            <input
+                              type="text"
+                              value={profUsername}
+                              onChange={(e) => setProfUsername(e.target.value)}
+                              placeholder="sunnypathak"
+                              className="clean-field-input affixed"
+                            />
+                          </div>
+                        </div>
+                      </div>
 
-                  <div className="form-field full">
-                    <label>Aspirant Bio & Strategy Notes</label>
-                    <textarea
-                      rows={3}
-                      value={profBio}
-                      onChange={(e) => setProfBio(e.target.value)}
-                      placeholder="e.g. Targeting 99.5+%ile with disciplined morning Quant drills and weekly full-length analysis."
-                    />
+                      <div className="form-row two-cols">
+                        <div className="form-field">
+                          <label className="font-mono">Target Examination &amp; Goal</label>
+                          <AnimatedSelect
+                            value={profTarget}
+                            onChange={(e) => setProfTarget(e.target.value)}
+                            options={TARGET_PRESETS.map(t => ({ value: t, label: t }))}
+                          />
+                        </div>
+                        <div className="form-field">
+                          <label className="font-mono">Location / City (Optional)</label>
+                          <input
+                            type="text"
+                            value={profLocation}
+                            onChange={(e) => setProfLocation(e.target.value)}
+                            placeholder="e.g. Bengaluru, KA"
+                            className="clean-field-input"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-field full">
+                        <label className="font-mono">Aspirant Bio &amp; Strategy Notes</label>
+                        <SmoothCaretTextarea
+                          rows={3}
+                          value={profBio}
+                          onChange={(e) => setProfBio(e.target.value)}
+                          placeholder="e.g. Targeting 99.5+%ile with disciplined morning Quant drills and weekly full-length analysis."
+                          className="vault-textarea"
+                        />
+                      </div>
+
+                      <div className="aspirant-id-badge-row">
+                        <div className="aspirant-id-info">
+                          <span className="id-label font-mono">Aspirant ID:</span>
+                          <code className="id-code font-mono">{currentAspirantId}</code>
+                        </div>
+                        <button 
+                          type="button" 
+                          className="id-copy-action-btn font-mono"
+                          onClick={handleCopyMyId}
+                        >
+                          {copiedMyId ? (
+                            <>
+                              <Icons.Check size={12} color="#34d399" />
+                              <span style={{ color: '#34d399' }}>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Icons.Copy size={12} />
+                              <span>Copy ID</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
 
               <div className="modal-footer-actions">
-                <button type="button" className="btn-cancel" onClick={() => setIsEditModalOpen(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-save" disabled={profileSaving}>
-                  {profileSaving ? 'Saving...' : 'Save Changes'}
-                </button>
+                <div className="modal-footer-note font-mono">
+                  <span>Cosmetic modifications apply instantly across your profile card.</span>
+                </div>
+                <div className="modal-footer-btns">
+                  <button type="button" className="btn-cancel font-mono" onClick={() => setIsEditModalOpen(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-save font-mono" disabled={profileSaving}>
+                    {profileSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
               </div>
             </form>
 
@@ -1411,8 +1763,18 @@ export default function ProfileView({
           MODAL: AUTHENTICATION (SIGN IN / SIGN UP)
          ======================================================== */}
       {isAuthModalOpen && (
-        <div className="mock-modal-overlay" onClick={() => setIsAuthModalOpen(false)}>
-          <div className="auth-modal-box" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="mock-modal-overlay" 
+          data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
+          onClick={() => setIsAuthModalOpen(false)}
+        >
+          <div 
+            className="auth-modal-box" 
+            data-lenis-prevent="true"
+            onWheel={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <div className="modal-title-group">
                 <Icons.Shield size={16} />

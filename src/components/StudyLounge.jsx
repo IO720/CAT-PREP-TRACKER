@@ -12,6 +12,7 @@ import {
   MOCK_COMMUNITY_STATS, 
   MOCK_LEADERBOARD_ASPIRANTS 
 } from '../data/leaderboardData';
+import SmoothCaretInput from './animations/SmoothCaretInput';
 
 export default function StudyLounge({
   peers = [],
@@ -367,10 +368,10 @@ export default function StudyLounge({
           </button>
         </div>
 
-        {/* Search Filter */}
+        {/* Search Filter with Smooth Caret */}
         <div className="ladder-search-box">
           <Icons.Search size={13} className="ladder-search-ico" />
-          <input
+          <SmoothCaretInput
             type="text"
             placeholder="Search combatant or institute..."
             value={searchQuery}

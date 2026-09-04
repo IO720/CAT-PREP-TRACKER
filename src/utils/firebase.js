@@ -25,19 +25,30 @@ import {
   limit,
   deleteDoc
 } from "firebase/firestore";
+import { 
+  calculateLevelFromExp, 
+  calculateDailyLoginReward, 
+  getExpForLevel,
+  calculatePreviousDayObjectiveExp
+} from "./expSystem";
+import { getEffectiveFrameId, getEffectiveBannerId } from "../data/cosmeticsData";
 
-// Firebase configuration keys.
+// Firebase configuration keys (loaded securely via environment variables)
 const firebaseConfig = {
-  apiKey: "AIzaSyCfdozU_HP43lBywMdjjnpbGQQ4My2D3GI",
-  authDomain: "cat-tracker-1538d.firebaseapp.com",
-  projectId: "cat-tracker-1538d",
-  storageBucket: "cat-tracker-1538d.firebasestorage.app",
-  messagingSenderId: "448025945166",
-  appId: "1:448025945166:web:44bfb7c558b79f31a3cf1f",
-  measurementId: "G-VPEBJJWF8Y"
+  apiKey: import.meta.env?.VITE_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN || "cat-tracker-1538d.firebaseapp.com",
+  projectId: import.meta.env?.VITE_FIREBASE_PROJECT_ID || "cat-tracker-1538d",
+  storageBucket: import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET || "cat-tracker-1538d.firebasestorage.app",
+  messagingSenderId: import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID || "448025945166",
+  appId: import.meta.env?.VITE_FIREBASE_APP_ID || "1:448025945166:web:44bfb7c558b79f31a3cf1f",
+  measurementId: import.meta.env?.VITE_FIREBASE_MEASUREMENT_ID || "G-VPEBJJWF8Y"
 };
 // Check if Firebase keys are configured
-const isFirebaseConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.apiKey !== "";
+const isFirebaseConfigured = Boolean(
+  firebaseConfig.apiKey && 
+  firebaseConfig.apiKey !== "YOUR_API_KEY" && 
+  firebaseConfig.apiKey.trim() !== ""
+);
 
 let app;
 let auth;
@@ -113,9 +124,15 @@ export const signUpUser = async (email, password, displayName, targetExam = 'CAT
     email: normalizedEmail,
     streak: 0,
     solvedQs: 0,
+    exp: 0,
+    level: 1,
+    lastDailyLoginDate: '',
+    loginStreak: 0,
     friends: [],
     avatar: 'rocket',
     avatarBg: hashStringToColor(displayName || user.uid),
+    frameId: 'default',
+    bannerId: 'cyber_grid',
     bannerBg: '#1e1f22',
     bio: '',
     target: targetExam || 'CAT (99.5+%ile • IIM-A Focus)',
@@ -158,9 +175,15 @@ export const signInWithGoogle = async () => {
       email: user.email || '',
       streak: 0,
       solvedQs: 0,
+      exp: 0,
+      level: 1,
+      lastDailyLoginDate: '',
+      loginStreak: 0,
       friends: [],
       avatar: 'rocket',
       avatarBg: hashStringToColor(displayName || user.uid),
+      frameId: 'default',
+      bannerId: 'cyber_grid',
       bannerBg: '#1e1f22',
       bio: '',
       target: 'CAT (99.5+%ile • IIM-A Focus)',
@@ -236,12 +259,269 @@ export const getUserProfile = async (userId) => {
         data.aspirantId = assignedId;
         await updateDoc(doc(db, "profiles", userId), { aspirantId: assignedId }).catch(() => {});
       }
+      // Initialize exp & level if not present (strictly Level 1 / 0 EXP default for new accounts)
+      if (data.exp === undefined) {
+        data.exp = 0;
+        data.level = 1;
+        await updateDoc(doc(db, "profiles", userId), { 
+          exp: 0,
+          level: 1
+        }).catch(() => {});
+      } else if (!data.level) {
+        data.level = calculateLevelFromExp(data.exp || 0) || 1;
+      }
+
+      // Ensure equipped frame & banner are unlocked for this user's level (auto-heal old Level 4 defaults)
+      const effectiveFrame = getEffectiveFrameId(data.frameId, data.level);
+      if (data.frameId !== effectiveFrame) {
+        data.frameId = effectiveFrame;
+        await updateDoc(doc(db, "profiles", userId), { frameId: effectiveFrame }).catch(() => {});
+      }
+      const effectiveBanner = getEffectiveBannerId(data.bannerId, data.level);
+      if (data.bannerId !== effectiveBanner) {
+        data.bannerId = effectiveBanner;
+        await updateDoc(doc(db, "profiles", userId), { bannerId: effectiveBanner }).catch(() => {});
+      }
+
       return data;
     }
   } catch (err) {
     console.error("Error fetching user profile:", err);
   }
   return null;
+};
+
+// 6.01 Claim Daily Login EXP for authenticated users (Stored in Firestore)
+export const claimDailyLoginExp = async (userId) => {
+  if (!isFirebaseConfigured || !userId || !db) return { awarded: false, reason: 'unauthenticated' };
+
+  try {
+    const profileRef = doc(db, "profiles", userId);
+    const docSnap = await getDoc(profileRef);
+    if (!docSnap.exists()) return { awarded: false, reason: 'no_profile' };
+
+    const data = docSnap.data();
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // Check if user already claimed today's daily login bonus
+    if (data.lastDailyLoginDate === todayStr) {
+      return { 
+        awarded: false, 
+        reason: 'already_claimed',
+        currentExp: data.exp || 0,
+        currentLevel: data.level || calculateLevelFromExp(data.exp || 0),
+        streak: data.loginStreak || 1
+      };
+    }
+
+    // Check if streak is continuous from yesterday
+    const prevDateStr = data.lastDailyLoginDate;
+    let newStreak = 1;
+    if (prevDateStr) {
+      const prevDate = new Date(prevDateStr);
+      const todayDate = new Date(todayStr);
+      const diffDays = Math.round((todayDate - prevDate) / (1000 * 60 * 60 * 24));
+      if (diffDays === 1) {
+        newStreak = (data.loginStreak || 1) + 1;
+      }
+    }
+
+    const reward = calculateDailyLoginReward(newStreak - 1);
+    const oldExp = data.exp || 0;
+    const oldLevel = data.level || calculateLevelFromExp(oldExp);
+    const newExp = oldExp + reward.totalAward;
+    const newLevel = calculateLevelFromExp(newExp);
+    const leveledUp = newLevel > oldLevel;
+    const isMilestone = newLevel % 10 === 0 || (leveledUp && Math.floor(newLevel / 10) > Math.floor(oldLevel / 10));
+
+    await updateDoc(profileRef, {
+      exp: newExp,
+      level: newLevel,
+      lastDailyLoginDate: todayStr,
+      loginStreak: newStreak,
+      lastActive: new Date().toISOString()
+    });
+
+    return {
+      awarded: true,
+      earnedExp: reward.totalAward,
+      baseExp: reward.baseExp,
+      streakBonus: reward.streakBonus,
+      oldExp,
+      newExp,
+      oldLevel,
+      newLevel,
+      leveledUp,
+      isMilestone,
+      streak: newStreak
+    };
+  } catch (err) {
+    console.error("Error claiming daily login EXP:", err);
+    return { awarded: false, reason: err.message };
+  }
+};
+
+// 6.02 Add arbitrary EXP to authenticated user in Firestore (for study sessions, questions, testing)
+export const addExpToUser = async (userId, expAmount, reason = 'drill') => {
+  if (!isFirebaseConfigured || !userId || !db) return null;
+
+  try {
+    const profileRef = doc(db, "profiles", userId);
+    const docSnap = await getDoc(profileRef);
+    if (!docSnap.exists()) return null;
+
+    const data = docSnap.data();
+    const oldExp = data.exp || 0;
+    const oldLevel = data.level || calculateLevelFromExp(oldExp);
+    const newExp = Math.max(0, oldExp + Number(expAmount));
+    const newLevel = calculateLevelFromExp(newExp);
+    const leveledUp = newLevel > oldLevel;
+    const isMilestone = newLevel % 10 === 0 || (leveledUp && Math.floor(newLevel / 10) > Math.floor(oldLevel / 10));
+
+    await updateDoc(profileRef, {
+      exp: newExp,
+      level: newLevel,
+      lastActive: new Date().toISOString()
+    });
+
+    return {
+      earnedExp: Number(expAmount),
+      oldExp,
+      newExp,
+      oldLevel,
+      newLevel,
+      leveledUp,
+      isMilestone,
+      reason
+    };
+  } catch (err) {
+    console.error("Error adding EXP to user:", err);
+    return null;
+  }
+};
+
+// 6.03 Set test level for debugging / QA testing
+export const setTestLevelForUser = async (userId, targetLevel) => {
+  if (!isFirebaseConfigured || !userId || !db) return null;
+
+  try {
+    const profileRef = doc(db, "profiles", userId);
+    const targetExp = getExpForLevel(targetLevel);
+    
+    await updateDoc(profileRef, {
+      exp: targetExp,
+      level: targetLevel,
+      lastActive: new Date().toISOString()
+    });
+
+    return {
+      newExp: targetExp,
+      newLevel: targetLevel,
+      isMilestone: targetLevel % 10 === 0
+    };
+  } catch (err) {
+    console.error("Error setting test level:", err);
+    return null;
+  }
+};
+
+// 6.04 Settle and Claim Previous Day Objective Completion EXP (Strictly Idempotent - Calculated Once)
+export const claimPreviousDayObjectiveExp = async (userId, tracker, startDateStr, forceDate = null) => {
+  if (!tracker) return { awarded: false, reason: 'no_tracker' };
+
+  // 1. Calculate previous day objectives status
+  const calcRes = calculatePreviousDayObjectiveExp(tracker, startDateStr, forceDate);
+  if (!calcRes.allCompleted) {
+    return { 
+      awarded: false, 
+      reason: calcRes.reason || 'objectives_incomplete', 
+      dateISO: calcRes.dateISO,
+      dayName: calcRes.dayName,
+      incompleteList: calcRes.incompleteList
+    };
+  }
+
+  const targetDateISO = calcRes.dateISO;
+
+  // Check local offline persistence safeguard
+  try {
+    const localLastAwarded = localStorage.getItem('cat_last_awarded_objective_exp_date');
+    if (localLastAwarded === targetDateISO) {
+      return { awarded: false, reason: 'already_claimed_local', dateISO: targetDateISO };
+    }
+  } catch (e) {
+    // LocalStorage fallback
+  }
+
+  // 2. If unauthenticated / offline guest, award locally
+  if (!isFirebaseConfigured || !userId || !db) {
+    try {
+      localStorage.setItem('cat_last_awarded_objective_exp_date', targetDateISO);
+    } catch (e) {}
+    return {
+      awarded: true,
+      earnedExp: calcRes.totalAward,
+      dateISO: targetDateISO,
+      dayName: calcRes.dayName,
+      isGuest: true
+    };
+  }
+
+  try {
+    const profileRef = doc(db, "profiles", userId);
+    const docSnap = await getDoc(profileRef);
+    if (!docSnap.exists()) return { awarded: false, reason: 'no_profile' };
+
+    const data = docSnap.data();
+
+    // Strict Cloud Idempotency check: verify this exact calendar date hasn't been awarded
+    if (data.lastObjectiveExpAwardedDate === targetDateISO) {
+      return { 
+        awarded: false, 
+        reason: 'already_claimed_cloud', 
+        dateISO: targetDateISO,
+        currentExp: data.exp || 0,
+        currentLevel: data.level || 1
+      };
+    }
+
+    const oldExp = data.exp || 0;
+    const oldLevel = data.level || calculateLevelFromExp(oldExp);
+    const newExp = oldExp + calcRes.totalAward;
+    const newLevel = calculateLevelFromExp(newExp);
+    const leveledUp = newLevel > oldLevel;
+    const isMilestone = newLevel % 10 === 0 || (leveledUp && Math.floor(newLevel / 10) > Math.floor(oldLevel / 10));
+
+    await updateDoc(profileRef, {
+      exp: newExp,
+      level: newLevel,
+      lastObjectiveExpAwardedDate: targetDateISO,
+      lastActive: new Date().toISOString()
+    });
+
+    try {
+      localStorage.setItem('cat_last_awarded_objective_exp_date', targetDateISO);
+    } catch (e) {}
+
+    return {
+      awarded: true,
+      earnedExp: calcRes.totalAward,
+      baseExp: calcRes.baseExp,
+      volumeBonus: calcRes.volumeBonus,
+      solvedCount: calcRes.solvedCount,
+      oldExp,
+      newExp,
+      oldLevel,
+      newLevel,
+      leveledUp,
+      isMilestone,
+      dateISO: targetDateISO,
+      dayName: calcRes.dayName
+    };
+  } catch (err) {
+    console.error("Error claiming previous day objective EXP:", err);
+    return { awarded: false, reason: err.message };
+  }
 };
 
 // 6.1 Real-time Subscription to User's Own Profile

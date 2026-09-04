@@ -44,7 +44,7 @@ describe('Weekly Rollover, Data Isolation & Reset Functionality', () => {
     // In Week 2, syllabus header should indicate Week 2
     expect(screen.getByText(/Month 1 • Week 2/i)).toBeDefined();
 
-    // In Week 2 Monday, 0/3 quotas cleared should be displayed
+    // In Week 2 Monday, 0/3 quotas cleared should be displayed by default (QA, DILR, VARC)
     expect(screen.getByText('0 / 3')).toBeDefined();
     expect(screen.getByText('Quotas Cleared')).toBeDefined();
   });
@@ -197,5 +197,65 @@ describe('Weekly Rollover, Data Isolation & Reset Functionality', () => {
     );
 
     expect(screen.getByRole('heading', { level: 2, name: 'Tuesday' })).toBeDefined();
+  });
+
+  it('renders Custom Objective drill alongside QA, DILR, and VARC and allows toggling', () => {
+    let toggledSubject = null;
+    let toggledVal = null;
+    const updateDayMetric = vi.fn((m, w, d, subject, completed, qty) => {
+      toggledSubject = subject;
+      toggledVal = completed;
+    });
+
+    // 1. Initially without custom objective, shows "+ Add Custom Objective" button
+    const { unmount } = render(
+      <DailyTrackerView
+        state={mockState}
+        activeMonth="Month 1"
+        setActiveMonth={() => {}}
+        activeWeek="Week 1"
+        setActiveWeek={() => {}}
+        activeDayName="Monday"
+        setActiveDayName={() => {}}
+        updateDayMetric={updateDayMetric}
+        updateDayNotes={() => {}}
+      />
+    );
+
+    expect(screen.getByText('Add Custom Objective')).toBeDefined();
+    unmount();
+
+    // 2. When hasCustomObjective is true, renders custom card with Edit button and allows toggling
+    mockState.tracker['Month 1'][0].days[0].hasCustomObjective = true;
+
+    render(
+      <DailyTrackerView
+        state={mockState}
+        activeMonth="Month 1"
+        setActiveMonth={() => {}}
+        activeWeek="Week 1"
+        setActiveWeek={() => {}}
+        activeDayName="Monday"
+        setActiveDayName={() => {}}
+        updateDayMetric={updateDayMetric}
+        updateDayNotes={() => {}}
+      />
+    );
+
+    // Verify all drill badges and Edit button are rendered
+    expect(screen.getByText('CUSTOM')).toBeDefined();
+    expect(screen.getByText('Custom Objective')).toBeDefined();
+    expect(screen.getByText('Personal Focus')).toBeDefined();
+    expect(screen.getByText(/Solve 1 Sectional \/ Revision Drill/i)).toBeDefined();
+    expect(screen.getByText('Edit')).toBeDefined();
+
+    // Toggle custom objective
+    const customCheck = screen.getByRole('checkbox', { name: /Custom Objective completed/i });
+    expect(customCheck).toBeDefined();
+    fireEvent.click(customCheck);
+
+    expect(updateDayMetric).toHaveBeenCalled();
+    expect(toggledSubject).toBe('custom');
+    expect(toggledVal).toBe(true);
   });
 });

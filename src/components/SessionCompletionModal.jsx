@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { stripEmojis } from '../utils/textUtils';
+import SmoothCaretInput from './animations/SmoothCaretInput';
 
 // Helper to extract numeric target from target strings like "Solve 18 Quant Questions"
 export const parseTargetNumber = (targetStr, fallback = 18) => {
@@ -289,9 +290,9 @@ export default function SessionCompletionModal({
             </div>
           )}
 
-          {/* Quick Note Input */}
+          {/* Quick Note Input with Smooth Caret */}
           <div className="clean-note-wrap">
-            <input
+            <SmoothCaretInput
               id="session-modal-notes"
               type="text"
               className="clean-note-input"

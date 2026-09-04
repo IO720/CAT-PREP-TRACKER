@@ -1,8 +1,9 @@
 import React from 'react';
 import { Icons } from './AspirantIcons';
+import CosmeticFrameSvg from './CosmeticFrameSvg';
 
 export const AVATAR_PRESETS = [
-  { id: 'rocket', label: 'Rocket Voyager', icon: Icons.Sparkles, color: '#3b82f6' },
+  { id: 'rocket', label: 'Rocket Voyager', icon: Icons.Rocket, color: '#3b82f6' },
   { id: 'brain', label: 'Strategic Mind', icon: Icons.Zap, color: '#8b5cf6' },
   { id: 'target', label: 'Bullseye Focus', icon: Icons.Target, color: '#10b981' },
   { id: 'scholar', label: 'Scholar Elite', icon: Icons.BookOpen, color: '#f59e0b' },
@@ -18,14 +19,17 @@ export default function AvatarRenderer({
   avatarBg = '#3b82f6', 
   size = 40, 
   status = null, // 'studying' | 'online' | 'offline'
+  frameId = 'default',
   className = ''
 }) {
   const isImage = avatar && (avatar.startsWith('data:image') || avatar.startsWith('http://') || avatar.startsWith('https://'));
   const preset = AVATAR_PRESETS.find(p => p.id === avatar);
+  const PresetIcon = preset?.icon || (Icons[avatar] ? Icons[avatar] : null);
 
   return (
     <div 
-      className={`aspirant-avatar-container ${className}`}
+      className={`aspirant-avatar-container ${className} frame-${frameId}`}
+      data-frame={frameId}
       style={{
         width: `${size}px`,
         height: `${size}px`,
@@ -33,6 +37,25 @@ export default function AvatarRenderer({
         flexShrink: 0
       }}
     >
+      {/* High-Tier Unlockable Vector Cosmetic Frame */}
+      {frameId && (
+        <div 
+          className={`avatar-cosmetic-frame-wrap frame-wrap-${frameId}`}
+          style={{
+            position: 'absolute',
+            inset: '-15%',
+            width: '130%',
+            height: '130%',
+            pointerEvents: 'none',
+            zIndex: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <CosmeticFrameSvg frameId={frameId} />
+        </div>
+      )}
       <div
         style={{
           width: '100%',
@@ -59,8 +82,14 @@ export default function AvatarRenderer({
               e.target.style.display = 'none';
             }}
           />
+        ) : PresetIcon ? (
+          <PresetIcon size={Math.round(size * 0.52)} />
+        ) : avatar && avatar.length <= 2 ? (
+          <span>{avatar.toUpperCase()}</span>
+        ) : name ? (
+          <span>{name.trim().charAt(0).toUpperCase()}</span>
         ) : (
-          <Icons.Sparkles size={Math.round(size * 0.52)} />
+          <Icons.Rocket size={Math.round(size * 0.52)} />
         )}
       </div>
 

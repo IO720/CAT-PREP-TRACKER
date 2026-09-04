@@ -14,6 +14,8 @@ import {
   subscribeToFriendsLive,
   updateUserProfile,
   getUserProfile,
+  claimDailyLoginExp,
+  claimPreviousDayObjectiveExp,
   signOutUser
 } from './utils/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -57,6 +59,7 @@ const JapaneseCatStampRallyModal = lazy(() => import('./components/JapaneseCatSt
 const TermsAndPrivacyModal = lazy(() => import('./components/TermsAndPrivacyModal'));
 const OnboardingWelcomeModal = lazy(() => import('./components/OnboardingWelcomeModal'));
 const PeerInspectorModal = lazy(() => import('./components/PeerInspectorModal'));
+const LevelUpModal = lazy(() => import('./components/LevelUpModal'));
 import DitherBackground from './components/DitherBackground';
 import LiquidIntroLoader from './components/LiquidIntroLoader';
 import ClickSpark from './components/ClickSpark';
@@ -277,6 +280,31 @@ export default function App() {
   const [triggerStampAnimation, setTriggerStampAnimation] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
   const [isInitialEntrance, setIsInitialEntrance] = useState(false);
+
+  const [levelUpModalData, setLevelUpModalData] = useState({
+    isOpen: false,
+    oldLevel: 1,
+    newLevel: 2,
+    totalExp: 0,
+    isMilestone: false
+  });
+
+  // Global event listener for level-up pop-up events from anywhere in the app
+  useEffect(() => {
+    const handleExternalLevelUp = (e) => {
+      if (e.detail) {
+        setLevelUpModalData({
+          isOpen: true,
+          oldLevel: e.detail.oldLevel || 1,
+          newLevel: e.detail.newLevel || 2,
+          totalExp: e.detail.totalExp || 0,
+          isMilestone: Boolean(e.detail.isMilestone)
+        });
+      }
+    };
+    window.addEventListener('catalyze_trigger_levelup', handleExternalLevelUp);
+    return () => window.removeEventListener('catalyze_trigger_levelup', handleExternalLevelUp);
+  }, []);
 
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(() => {
     try {
@@ -515,6 +543,31 @@ export default function App() {
     setActiveWeek(pos.activeWeek);
     setActiveDayName(pos.dayName || 'Monday');
   }, [state.settings?.startDate]);
+
+  // Live calculation of remaining daily objectives for minimal dock notification badge
+  const todayObjectivesTelemetry = useMemo(() => {
+    try {
+      const pos = getTodayTrackerPosition(state.settings?.startDate);
+      const monthData = state.tracker?.[pos.activeMonth];
+      const weekData = monthData?.find(w => w.week === pos.activeWeek);
+      const dayData = weekData?.days?.find(d => d.day === pos.dayName);
+
+      if (!dayData) return { total: 3, done: 0, left: 3 };
+
+      const hasCustom = Boolean(dayData.hasCustomObjective);
+      const total = hasCustom ? 4 : 3;
+      let done = 0;
+      if (dayData.quantCompleted) done++;
+      if (dayData.lrdiCompleted) done++;
+      if (dayData.varcCompleted) done++;
+      if (hasCustom && dayData.customCompleted) done++;
+
+      const left = Math.max(0, total - done);
+      return { total, done, left };
+    } catch (e) {
+      return { total: 3, done: 0, left: 3 };
+    }
+  }, [state.tracker, state.settings?.startDate]);
 
   // Focus Timer State with persistent local storage hydration & drift reconciliation
   const [timerState, setTimerState] = useState(() => {
@@ -775,7 +828,17 @@ export default function App() {
   }, [state, activeMonth, activeWeek]);
 
   const [isCloudLoaded, setIsCloudLoaded] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const guest = localStorage.getItem('catalyze_guest_profile');
+      if (guest) return JSON.parse(guest);
+      const localCosmetics = localStorage.getItem('local_aspirant_cosmetics');
+      if (localCosmetics) return JSON.parse(localCosmetics);
+      return null;
+    } catch (e) {
+      return null;
+    }
+  });
   const [syncStatus, setSyncStatus] = useState('saved'); // 'saved' | 'syncing' | 'synced' | 'error'
   const [lastSyncedTimeStr, setLastSyncedTimeStr] = useState(() => {
     return localStorage.getItem('catalyze_last_synced_time') || localStorage.getItem('aspiranto_last_synced_time') || '';
@@ -803,6 +866,31 @@ export default function App() {
               setUserProfile(prof);
             }
 
+            // Claim / Check Daily Login EXP for authenticated users (Stored in Firestore)
+            try {
+              const dailyExpRes = await claimDailyLoginExp(firebaseUser.uid);
+              if (dailyExpRes && dailyExpRes.awarded) {
+                setUserProfile(prev => ({
+                  ...(prev || {}),
+                  exp: dailyExpRes.newExp,
+                  level: dailyExpRes.newLevel,
+                  lastDailyLoginDate: new Date().toISOString().split('T')[0],
+                  loginStreak: dailyExpRes.streak
+                }));
+                if (dailyExpRes.leveledUp) {
+                  setLevelUpModalData({
+                    isOpen: true,
+                    oldLevel: dailyExpRes.oldLevel,
+                    newLevel: dailyExpRes.newLevel,
+                    totalExp: dailyExpRes.newExp,
+                    isMilestone: dailyExpRes.isMilestone
+                  });
+                }
+              }
+            } catch (expErr) {
+              console.warn("Daily login EXP check skipped:", expErr);
+            }
+
             // Fetch Cloud tracker data
             const cloudData = await loadTrackerFromCloud(firebaseUser.uid);
             if (cloudData && cloudData.tracker) {
@@ -825,6 +913,44 @@ export default function App() {
               );
             }
             setHasUnsyncedCloudChanges(false);
+
+            // Settle / Calculate Previous Day Objective EXP once user returns or logs in (strictly once)
+            try {
+              const effectiveTracker = (cloudData && cloudData.tracker) ? cloudData.tracker : state.tracker;
+              const prevDayExpRes = await claimPreviousDayObjectiveExp(
+                firebaseUser.uid,
+                effectiveTracker,
+                state.settings?.startDate
+              );
+              if (prevDayExpRes && prevDayExpRes.awarded) {
+                if (prevDayExpRes.newExp !== undefined) {
+                  setUserProfile(prev => ({
+                    ...(prev || {}),
+                    exp: prevDayExpRes.newExp,
+                    level: prevDayExpRes.newLevel,
+                    lastObjectiveExpAwardedDate: prevDayExpRes.dateISO
+                  }));
+                }
+                setActivityNotification({
+                  type: 'objective_exp_awarded',
+                  title: 'Previous Day Objectives Conquered!',
+                  message: `All daily objectives cleared yesterday (${prevDayExpRes.dayName}). Awarded +${prevDayExpRes.earnedExp} EXP!`,
+                  actionLabel: null,
+                  onAction: null
+                });
+                if (prevDayExpRes.leveledUp) {
+                  setLevelUpModalData({
+                    isOpen: true,
+                    oldLevel: prevDayExpRes.oldLevel,
+                    newLevel: prevDayExpRes.newLevel,
+                    totalExp: prevDayExpRes.newExp,
+                    isMilestone: prevDayExpRes.isMilestone
+                  });
+                }
+              }
+            } catch (prevExpErr) {
+              console.warn("Previous day objective EXP check skipped:", prevExpErr);
+            }
           } catch (err) {
             console.warn("Using local cache, cloud load skipped:", err);
           } finally {
@@ -842,12 +968,29 @@ export default function App() {
 
   // Update Profile details and broadcast live
   const handleUpdateProfile = async (profileData) => {
-    if (!user) return;
-    await updateUserProfile(user.uid, profileData);
-    setUserProfile(prev => ({ ...prev, ...profileData }));
-    const hasFriends = Array.isArray(userProfile?.friends) && userProfile.friends.length > 0;
-    if (hasFriends || activeTab === 'study-lounge') {
-      updateUserPresence(user, timerState, activeStreak, totalSolved, profileData);
+    setUserProfile(prev => {
+      const next = { ...(prev || {}), ...profileData };
+      try {
+        localStorage.setItem('catalyze_guest_profile', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+
+    setSelectedFriend(prev => {
+      if (!prev || !prev.isSelf) return prev;
+      return { ...prev, ...profileData };
+    });
+
+    if (user) {
+      try {
+        await updateUserProfile(user.uid, profileData);
+      } catch (err) {
+        console.warn("Failed to persist profile to cloud:", err);
+      }
+      const hasFriends = Array.isArray(userProfile?.friends) && userProfile.friends.length > 0;
+      if (hasFriends || activeTab === 'study-lounge') {
+        updateUserPresence(user, timerState, activeStreak, totalSolved, profileData);
+      }
     }
   };
 
@@ -936,6 +1079,58 @@ export default function App() {
     window.addEventListener('beforeunload', handleBeforeUnloadPrompt);
     return () => window.removeEventListener('beforeunload', handleBeforeUnloadPrompt);
   }, [hasUnsyncedCloudChanges, user?.uid, state, activeStreak, totalSolved]);
+
+  // Settle previous day objectives when user returns after being offline or leaving site
+  useEffect(() => {
+    const handleRecheckPreviousDay = async () => {
+      if (document.visibilityState === 'visible' || navigator.onLine) {
+        if (state?.tracker) {
+          try {
+            const res = await claimPreviousDayObjectiveExp(
+              user?.uid, 
+              state.tracker, 
+              state.settings?.startDate
+            );
+            if (res && res.awarded) {
+              if (res.newExp !== undefined) {
+                setUserProfile(prev => ({
+                  ...(prev || {}),
+                  exp: res.newExp,
+                  level: res.newLevel,
+                  lastObjectiveExpAwardedDate: res.dateISO
+                }));
+              }
+              setActivityNotification({
+                type: 'objective_exp_awarded',
+                title: 'Previous Day Objectives Conquered!',
+                message: `All daily objectives cleared yesterday (${res.dayName}). Awarded +${res.earnedExp} EXP!`,
+                actionLabel: null,
+                onAction: null
+              });
+              if (res.leveledUp) {
+                setLevelUpModalData({
+                  isOpen: true,
+                  oldLevel: res.oldLevel,
+                  newLevel: res.newLevel,
+                  totalExp: res.newExp,
+                  isMilestone: res.isMilestone
+                });
+              }
+            }
+          } catch (e) {
+            // Background check silent fallback
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleRecheckPreviousDay);
+    window.addEventListener('online', handleRecheckPreviousDay);
+    return () => {
+      document.removeEventListener('visibilitychange', handleRecheckPreviousDay);
+      window.removeEventListener('online', handleRecheckPreviousDay);
+    };
+  }, [user?.uid, state.tracker, state.settings?.startDate]);
 
   // Real-time listener for current user's profile document (syncs friends list, display name, target, etc.)
   useEffect(() => {
@@ -1068,6 +1263,8 @@ export default function App() {
         username: userProfile?.username || (user?.email ? user.email.split('@')[0] : 'you'),
         avatar: userProfile?.avatar || (user?.displayName ? user.displayName[0] : 'rocket'),
         avatarBg: userProfile?.avatarBg || '#5865f2',
+        frameId: userProfile?.frameId || 'default',
+        bannerId: userProfile?.bannerId || 'cyber_grid',
         bannerBg: userProfile?.bannerBg || '#1e1f22',
         bannerUrl: userProfile?.bannerUrl || '',
         bio: userProfile?.bio || '',
@@ -1211,9 +1408,11 @@ export default function App() {
             quantCompleted: false,
             lrdiCompleted: false,
             varcCompleted: false,
+            customCompleted: false,
             quantCount: 0,
             lrdiCount: 0,
-            varcCount: 0
+            varcCount: 0,
+            customCount: 0
           }));
           return { ...week, days: resetDays };
         }
@@ -1239,9 +1438,11 @@ export default function App() {
                 quantCompleted: false,
                 lrdiCompleted: false,
                 varcCompleted: false,
+                customCompleted: false,
                 quantCount: 0,
                 lrdiCount: 0,
-                varcCount: 0
+                varcCount: 0,
+                customCount: 0
               };
             }
             return day;
@@ -1250,6 +1451,59 @@ export default function App() {
         }
         return week;
       });
+
+      return { ...prev, tracker: updatedTracker, lastUpdated: Date.now() };
+    });
+  };
+
+  // 3d. Update Day Custom Objective Target Description
+  const updateDayCustomTarget = (month, weekName, dayName, customTarget) => {
+    updateCustomObjectiveConfig(month, weekName, dayName, { target: customTarget });
+  };
+
+  // 3e. Update Custom Objective Full Configuration (Title, Badge, Target, TargetQty, Unit)
+  const updateCustomObjectiveConfig = (month, weekName, dayName, customConfig, applyToAllDays = false) => {
+    setState(prev => {
+      const updatedTracker = { ...prev.tracker };
+      const patch = {};
+      if (customConfig.hasCustomObjective !== undefined) {
+        patch.hasCustomObjective = customConfig.hasCustomObjective;
+        if (!customConfig.hasCustomObjective) {
+          patch.customCompleted = false;
+          patch.customCount = 0;
+        }
+      }
+      if (customConfig.title !== undefined) patch.customTitle = customConfig.title;
+      if (customConfig.badge !== undefined) patch.customBadge = customConfig.badge;
+      if (customConfig.target !== undefined) patch.customTarget = customConfig.target;
+      if (customConfig.targetQty !== undefined) patch.customTargetQty = Math.max(1, parseInt(customConfig.targetQty) || 1);
+      if (customConfig.unit !== undefined) patch.customUnit = customConfig.unit;
+
+      if (applyToAllDays) {
+        for (const mKey of Object.keys(updatedTracker)) {
+          updatedTracker[mKey] = (updatedTracker[mKey] || []).map(week => ({
+            ...week,
+            days: (week.days || []).map(day => ({
+              ...day,
+              ...patch
+            }))
+          }));
+        }
+      } else {
+        const monthWeeks = updatedTracker[month] || [];
+        updatedTracker[month] = monthWeeks.map(week => {
+          if (week.week === weekName) {
+            const updatedDays = (week.days || []).map(day => {
+              if (day.day === dayName) {
+                return { ...day, ...patch };
+              }
+              return day;
+            });
+            return { ...week, days: updatedDays };
+          }
+          return week;
+        });
+      }
 
       return { ...prev, tracker: updatedTracker, lastUpdated: Date.now() };
     });
@@ -1910,7 +2164,7 @@ export default function App() {
   }
 
   return (
-    <div className={`app-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''} ${activeTab === 'timer' ? 'in-timer-mode' : ''}`}>
+    <div className={`app-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       {/* Spylt-Inspired Cinematic Liquid Intro Loader */}
       {showIntro && (
         <LiquidIntroLoader 
@@ -1932,7 +2186,7 @@ export default function App() {
 
       {/* Draggable Floating Overlay Dock for Tabs (Zero Logo on Dock - Pure Tab Capsule Overlay) */}
       <aside 
-        className={`sidebar floating-overlay-dock ${isDraggingDock ? 'is-dragging' : ''} ${activeTab === 'timer' ? 'timer-mode-hidden' : ''}`}
+        className={`sidebar floating-overlay-dock ${isDraggingDock ? 'is-dragging' : ''}`}
         onPointerDown={handleDockPointerDown}
         style={dockPos ? { left: `${dockPos.x}px`, top: `${dockPos.y}px`, transform: 'none' } : undefined}
         aria-label="Main Navigation Dock"
@@ -2001,9 +2255,21 @@ export default function App() {
             onClick={() => setActiveTab('daily')} 
             ariaLabel="Daily Drills"
             tooltipTitle="Daily Drills"
-            tooltipTag="QUOTA SOLVER"
+            tooltipTag={todayObjectivesTelemetry.left === 0 ? "ALL CONQUERED" : `${todayObjectivesTelemetry.total} OBJS • ${todayObjectivesTelemetry.left} LEFT`}
           >
-            <Icons.Drills />
+            <div className="dock-drills-icon-wrap">
+              <Icons.Drills />
+              {todayObjectivesTelemetry.left > 0 ? (
+                <span 
+                  className="dock-drills-left-badge" 
+                  title={`${todayObjectivesTelemetry.total} objectives: ${todayObjectivesTelemetry.left} left today`}
+                >
+                  {todayObjectivesTelemetry.left}
+                </span>
+              ) : (
+                <span className="dock-drills-done-dot" title="All daily quotas conquered!" />
+              )}
+            </div>
           </DockItem>
 
           <DockItem 
@@ -2071,86 +2337,84 @@ export default function App() {
 
       {/* Main Layout Wrapper (Dynamically fills space on PC) */}
       <div className="app-main-wrapper">
-        {/* Clean Global Header (Hidden when inside Focus Timer) */}
-        {activeTab !== 'timer' && (
-          <header className="global-header cyber-bento-bar">
-            <div className="header-brand-title">
-              <button 
-                type="button" 
-                className="brand-emblem-badge header-logo-badge cyber-logo-pill" 
-                onClick={() => setShowIntro(true)} 
-                title="CATalyze - Replay Cinematic Intro"
-              >
-                <span className="brand-logo-emblem">
-                  <Icons.Logo size={20} />
+        {/* Clean Global Header */}
+        <header className="global-header cyber-bento-bar">
+          <div className="header-brand-title">
+            <button 
+              type="button" 
+              className="brand-emblem-badge header-logo-badge cyber-logo-pill" 
+              onClick={() => setShowIntro(true)} 
+              title="CATalyze - Replay Cinematic Intro"
+            >
+              <span className="brand-logo-emblem">
+                <Icons.Logo size={20} />
+              </span>
+              <span className="brand-logo-text-lockup">
+                <span className="brand-logo-title">
+                  <span className="brand-title-accent">CAT</span><span className="brand-title-light">alyze</span>
                 </span>
-                <span className="brand-logo-text-lockup">
-                  <span className="brand-logo-title">
-                    <span className="brand-title-accent">CAT</span><span className="brand-title-light">alyze</span>
-                  </span>
-                </span>
-              </button>
+              </span>
+            </button>
 
-              <div className="cyber-header-divider desktop-only" aria-hidden="true" />
+            <div className="cyber-header-divider desktop-only" aria-hidden="true" />
 
-              <div className="cyber-protocol-badge desktop-only">
-                <span className="cyber-pulse-dot" />
-                <span className="cyber-protocol-tag">// SYS /</span>
-                <span className="cyber-page-name" key={activeTab}>
-                  {activeTab === 'dashboard' ? 'DASHBOARD' : activeTab === 'lounge' ? 'STUDY LOUNGE' : activeTab === 'timeline' ? 'STUDY PLAN' : activeTab === 'daily' ? 'DAILY DRILLS' : activeTab === 'mocks' ? 'MOCK TESTS' : activeTab === 'achievements' ? 'ACHIEVEMENTS' : activeTab === 'errors' ? 'ERROR LOG' : activeTab === 'profile' ? 'PROFILE' : activeTab === 'settings' ? 'SETTINGS' : 'DASHBOARD'}
-                </span>
-              </div>
+            <div className="cyber-protocol-badge desktop-only">
+              <span className="cyber-pulse-dot" />
+              <span className="cyber-protocol-tag">// SYS /</span>
+              <span className="cyber-page-name" key={activeTab}>
+                {activeTab === 'dashboard' ? 'DASHBOARD' : activeTab === 'lounge' ? 'STUDY LOUNGE' : activeTab === 'timeline' ? 'STUDY PLAN' : activeTab === 'timer' ? 'FOCUS SANCTUARY' : activeTab === 'daily' ? 'DAILY DRILLS' : activeTab === 'mocks' ? 'MOCK TESTS' : activeTab === 'achievements' ? 'ACHIEVEMENTS' : activeTab === 'errors' ? 'ERROR LOG' : activeTab === 'profile' ? 'PROFILE' : activeTab === 'settings' ? 'SETTINGS' : 'DASHBOARD'}
+              </span>
             </div>
+          </div>
 
-            <div className="header-stats cyber-bento-cluster">
-              {/* Japanese Cat Stamp Rally Pill */}
-              <button 
-                type="button" 
-                className="stamp-rally-header-pill"
-                onClick={() => handleOpenStampRally(false)}
-                title="Inspect Japanese Cat Stamp Rally Card"
-              >
-                <svg className="stamp-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M12 7v10M9 9.5c.8-1 2.2-1 3 0s2.2 1 3 0" />
-                </svg>
-                <span className="stamp-pill-text"><span className="stamp-pill-word">Rally </span>({stampRallyData.currentCardStamps?.length || 0}/6)</span>
-              </button>
+          <div className="header-stats cyber-bento-cluster">
+            {/* Japanese Cat Stamp Rally Pill */}
+            <button 
+              type="button" 
+              className="stamp-rally-header-pill"
+              onClick={() => handleOpenStampRally(false)}
+              title="Inspect Japanese Cat Stamp Rally Card"
+            >
+              <svg className="stamp-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v10M9 9.5c.8-1 2.2-1 3 0s2.2 1 3 0" />
+              </svg>
+              <span className="stamp-pill-text"><span className="stamp-pill-word">Rally </span>({stampRallyData.currentCardStamps?.length || 0}/6)</span>
+            </button>
 
-              {/* Unique Animated Flame & Floating Embers Streak Pill */}
-              <AnimatedStreakBadge streak={activeStreak} />
+            {/* Unique Animated Flame & Floating Embers Streak Pill */}
+            <AnimatedStreakBadge streak={activeStreak} />
 
-              {/* Custom Animated Theme Popover Dropdown */}
-              <ThemeSelectorDropdown 
-                currentTheme={theme} 
-                onSelectTheme={handleSelectTheme}
-                unlockedThemes={unlockedThemes}
-                onOpenRedeemModal={handleOpenRedeemModal}
-              />
+            {/* Custom Animated Theme Popover Dropdown */}
+            <ThemeSelectorDropdown 
+              currentTheme={theme} 
+              onSelectTheme={handleSelectTheme}
+              unlockedThemes={unlockedThemes}
+              onOpenRedeemModal={handleOpenRedeemModal}
+            />
 
-              {/* Top Right Profile Shortcut & Actions Dropdown */}
-              <HeaderProfileDropdown
-                user={user}
-                userProfile={userProfile}
-                onInspectSelf={() => handleInspectFriend({ isSelf: true, ...userProfile, id: user?.uid || 'self', uid: user?.uid || 'self' })}
-                onNavigate={(tab) => setActiveTab(tab)}
-                onSignOut={async () => {
-                  if (window.confirm("Are you sure you want to sign out?")) {
-                    await signOutUser();
-                    setIsGuestMode(false);
-                  }
-                }}
-                onSignIn={() => {
+            {/* Top Right Profile Shortcut & Actions Dropdown */}
+            <HeaderProfileDropdown
+              user={user}
+              userProfile={userProfile}
+              onInspectSelf={() => handleInspectFriend({ isSelf: true, ...userProfile, id: user?.uid || 'self', uid: user?.uid || 'self' })}
+              onNavigate={(tab) => setActiveTab(tab)}
+              onSignOut={async () => {
+                if (window.confirm("Are you sure you want to sign out?")) {
+                  await signOutUser();
                   setIsGuestMode(false);
-                }}
-                timerState={timerState}
-              />
-            </div>
+                }
+              }}
+              onSignIn={() => {
+                setIsGuestMode(false);
+              }}
+              timerState={timerState}
+            />
+          </div>
 
-            {/* Kinetic Bottom Edge Border Beam */}
-            <div className="cyber-header-border-beam" aria-hidden="true" />
-          </header>
-        )}
+          {/* Kinetic Bottom Edge Border Beam */}
+          <div className="cyber-header-border-beam" aria-hidden="true" />
+        </header>
 
         {/* Comic Peeking Cat Study Buddy on Right Edge */}
         {activeTab !== 'timer' && (
@@ -2219,6 +2483,8 @@ export default function App() {
               updateDayNotes={updateDayNotes}
               resetWeekMetrics={resetWeekMetrics}
               resetDayMetrics={resetDayMetrics}
+              updateDayCustomTarget={updateDayCustomTarget}
+              updateCustomObjectiveConfig={updateCustomObjectiveConfig}
               syncStatus={syncStatus}
               lastSyncedTimeStr={lastSyncedTimeStr}
               hasUnsyncedCloudChanges={hasUnsyncedCloudChanges}
@@ -2238,6 +2504,7 @@ export default function App() {
             <ErrorLogView 
               state={state} 
               onDayClick={handleJumpToDay} 
+              onOpenTimer={() => setActiveTab('timer')}
             />
           )}
           {activeTab === 'timer' && (
@@ -2260,6 +2527,7 @@ export default function App() {
               currentUser={user}
               activeStreak={activeStreak}
               onLeaveTimer={() => setActiveTab('dashboard')}
+              onOpenNotes={() => setActiveTab('errors')}
               isFocusTransitioning={isFocusTransitioning}
               todayDay={todayDayObj}
               activeWeekDays={todayWeekObj?.days || []}
@@ -2305,6 +2573,7 @@ export default function App() {
               onResetSubTab={() => setProfileSubTab('profile')}
               isEditOpen={isEditProfileDirectOpen}
               onResetEditOpen={() => setIsEditProfileDirectOpen(false)}
+              onTriggerLevelUp={(data) => setLevelUpModalData({ isOpen: true, ...data })}
             />
           )}
           {activeTab === 'achievements' && (
@@ -2347,7 +2616,7 @@ export default function App() {
 
       {/* Streamlined Native Mobile Bottom Navigation / ReactBits Dock */}
       <nav 
-        className={`mobile-bottom-nav ${activeTab === 'timer' ? 'timer-mode-hidden' : ''}`}
+        className="mobile-bottom-nav"
         aria-label="Mobile Navigation"
       >
         <Dock direction="horizontal" magnification={1.25} distance={80} baseItemSize={44} className="mobile-dock-wrap">
@@ -2438,6 +2707,7 @@ export default function App() {
         <Suspense fallback={null}>
           <PeerInspectorModal
             friend={selectedFriend}
+            activePeer={selectedFriend}
             trackerData={selectedFriendTracker}
             loading={loadingFriendTracker}
             onClose={() => setSelectedFriend(null)}
@@ -2519,6 +2789,20 @@ export default function App() {
             onComplete={handleCompleteOnboarding}
             initialExamId={state.settings?.targetExam || 'cat'}
             activeTheme={theme}
+          />
+        </Suspense>
+      )}
+
+      {/* Candidate Level Up & Decade Milestone Pop-Up Modal */}
+      {levelUpModalData.isOpen && (
+        <Suspense fallback={null}>
+          <LevelUpModal
+            isOpen={levelUpModalData.isOpen}
+            onClose={() => setLevelUpModalData(prev => ({ ...prev, isOpen: false }))}
+            oldLevel={levelUpModalData.oldLevel}
+            newLevel={levelUpModalData.newLevel}
+            totalExp={levelUpModalData.totalExp}
+            isMilestone={levelUpModalData.isMilestone}
           />
         </Suspense>
       )}

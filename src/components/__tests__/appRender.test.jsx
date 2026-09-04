@@ -50,4 +50,44 @@ describe('App Root Render Test', () => {
     const dockBrandSection = dock.querySelector('.brand-section');
     expect(dockBrandSection).toBeNull();
   });
+
+  it('renders timer tab without crashing when activeTab is timer', async () => {
+    localStorage.setItem('catalyze_guest_mode', 'true');
+    const { container } = render(<App />);
+    const timerDockItem = container.querySelector('[aria-label="Focus & Study Timer"]');
+    if (timerDockItem) {
+      timerDockItem.click();
+    }
+  });
+
+  it('renders StudyTimerView directly without error', async () => {
+    const { default: StudyTimerView } = await import('../StudyTimerView');
+    const timerState = {
+      secondsLeft: 25 * 60,
+      totalSeconds: 25 * 60,
+      isRunning: false,
+      isPaused: false,
+      mode: 'pomodoro',
+      subject: 'Quant',
+      startTimeStr: null,
+      sessionNotes: ''
+    };
+    const { container } = render(
+      <StudyTimerView
+        timerState={timerState}
+        todaySessions={[]}
+        todayTotalHours={0}
+        theme="dark"
+        friends={[]}
+        activeStreak={1}
+        todayDay={{}}
+        activeWeekDays={[]}
+        activeWeekName="Week 1"
+        onOpenNotes={() => {}}
+        onLeaveTimer={() => {}}
+      />
+    );
+    expect(container).toBeDefined();
+    expect(container.querySelector('.study-timer-minimal-container')).not.toBeNull();
+  });
 });

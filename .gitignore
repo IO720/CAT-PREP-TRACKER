@@ -32,7 +32,10 @@ graphify-out/
 # Environment & Secrets
 .env
 .env.*
+!.env.example
 *.env
+*.tmp
+*.temp
 *.pem
 *.key
 *.cert

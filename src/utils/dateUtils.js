@@ -184,8 +184,68 @@ export const getTodayTrackerPosition = (startDateStr) => {
     activeMonth,
     activeWeek,
     dayName: WEEKDAY_NAMES_ORDER[dayIndex] || todayDayName,
+    diffDays,
+    dateISO: formatDateISO(now)
+  };
+};
+
+/**
+ * Determine which Month, Week, Day, and Date any calendar date falls into.
+ */
+export const getDateTrackerPosition = (targetDate, startDateStr) => {
+  const d = targetDate ? new Date(targetDate) : new Date();
+  d.setHours(0, 0, 0, 0);
+
+  const targetDayName = DAY_NAMES[d.getDay()];
+
+  let baseStartDate;
+  if (startDateStr) {
+    baseStartDate = getMondayOfWeek(parseISODate(startDateStr));
+  } else {
+    baseStartDate = getMondayOfWeek(d);
+  }
+  baseStartDate.setHours(0, 0, 0, 0);
+
+  const diffTime = d.getTime() - baseStartDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  let monthNum = 1;
+  let weekNum = 1;
+  let dayIndex = 0;
+
+  if (diffDays >= 0) {
+    const totalWeeks = Math.floor(diffDays / 7);
+    dayIndex = diffDays % 7;
+    const clampedWeeks = Math.min(15, totalWeeks);
+    monthNum = Math.floor(clampedWeeks / 4) + 1;
+    weekNum = (clampedWeeks % 4) + 1;
+  } else {
+    monthNum = 1;
+    weekNum = 1;
+    dayIndex = 0;
+  }
+
+  const activeMonth = `Month ${monthNum}`;
+  const activeWeek = `Week ${weekNum}`;
+
+  return {
+    dayName: WEEKDAY_NAMES_ORDER[dayIndex] || targetDayName,
+    dateISO: formatDateISO(d),
+    dateStr: formatDateShort(d),
+    monthDayStr: formatDateMonthDay(d),
+    activeMonth,
+    activeWeek,
     diffDays
   };
+};
+
+/**
+ * Get yesterday's tracker position relative to start date
+ */
+export const getPreviousDayTrackerPosition = (startDateStr, referenceDate = null) => {
+  const base = referenceDate ? new Date(referenceDate) : new Date();
+  const prevDate = new Date(base.getTime() - 24 * 60 * 60 * 1000);
+  return getDateTrackerPosition(prevDate, startDateStr);
 };
 
 /**
@@ -200,3 +260,4 @@ export const isToday = (monthName, weekName, dayName, startDateStr) => {
     now.getDate() === dayCalculated.getDate()
   );
 };
+

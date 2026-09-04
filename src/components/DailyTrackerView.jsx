@@ -16,6 +16,8 @@ import {
 import { stripEmojis } from '../utils/textUtils';
 import DailyQuotaCelebrationModal from './DailyQuotaCelebrationModal';
 import { getActiveExamConfig } from '../config/examConfig';
+import SmoothCaretInput from './animations/SmoothCaretInput';
+import SmoothCaretTextarea from './animations/SmoothCaretTextarea';
 
 function DailyTrackerView({ 
   state, 
@@ -29,6 +31,8 @@ function DailyTrackerView({
   updateDayNotes,
   resetWeekMetrics,
   resetDayMetrics,
+  updateDayCustomTarget,
+  updateCustomObjectiveConfig,
   syncStatus = 'saved',
   lastSyncedTimeStr = '',
   hasUnsyncedCloudChanges = false,
@@ -83,6 +87,67 @@ function DailyTrackerView({
   const setEffectiveDayName = (name) => {
     if (setActiveDayName) setActiveDayName(name);
     setInternalDayName(name);
+  };
+
+  // Custom objective full configuration state
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isCreatingCustomObj, setIsCreatingCustomObj] = useState(false);
+  const [configForm, setConfigForm] = useState({
+    title: 'Custom Objective',
+    badge: 'CUSTOM',
+    target: 'Solve 1 Sectional / Revision Drill',
+    targetQty: 1,
+    unit: 'Tasks',
+    applyToAllDays: true
+  });
+
+  const openConfigModal = (isCreating = false) => {
+    setIsCreatingCustomObj(isCreating);
+    setConfigForm({
+      title: isCreating ? '' : (selectedDay.customTitle || ''),
+      badge: isCreating ? 'CUSTOM' : (selectedDay.customBadge || 'CUSTOM'),
+      target: isCreating ? '' : (selectedDay.customTarget || ''),
+      targetQty: isCreating ? 1 : (selectedDay.customTargetQty || 1),
+      unit: isCreating ? 'Tasks' : (selectedDay.customUnit || 'Tasks'),
+      applyToAllDays: true
+    });
+    setIsConfigModalOpen(true);
+  };
+
+  const handleSaveConfig = () => {
+    if (updateCustomObjectiveConfig) {
+      updateCustomObjectiveConfig(
+        activeMonth,
+        activeWeek,
+        selectedDay.day,
+        {
+          hasCustomObjective: true,
+          title: configForm.title.trim() || 'Custom Objective',
+          badge: configForm.badge.trim().toUpperCase() || 'CUSTOM',
+          target: configForm.target.trim() || 'Complete daily custom goal',
+          targetQty: Math.max(1, parseInt(configForm.targetQty) || 1),
+          unit: configForm.unit.trim() || 'Tasks'
+        },
+        configForm.applyToAllDays
+      );
+    }
+    setIsConfigModalOpen(false);
+  };
+
+  const handleRemoveCustomObjective = () => {
+    if (updateCustomObjectiveConfig) {
+      updateCustomObjectiveConfig(
+        activeMonth,
+        activeWeek,
+        selectedDay.day,
+        {
+          hasCustomObjective: false
+        },
+        configForm.applyToAllDays
+      );
+      updateDayMetric(activeMonth, activeWeek, selectedDay.day, 'custom', false, 0);
+    }
+    setIsConfigModalOpen(false);
   };
 
   // Reset confirmation modal state
@@ -148,12 +213,16 @@ function DailyTrackerView({
       if (subject === 'quant') defaultQty = 18;
       if (subject === 'lrdi') defaultQty = 4;
       if (subject === 'varc') defaultQty = 4;
+      if (subject === 'custom') defaultQty = getSubjectTarget('custom', selectedDay) || 1;
     }
 
     updateDayMetric(month, weekName, dayName, subject, targetCompleted, defaultQty);
   };
 
   const getSubjectTarget = (subj, dayObj) => {
+    if (subj === 'custom') {
+      return Math.max(1, Number(dayObj?.customTargetQty) || 1);
+    }
     const targetStr = dayObj?.[`${subj}Target`];
     const match = targetStr ? targetStr.match(/\d+/) : null;
     if (match) return parseInt(match[0], 10);
@@ -187,10 +256,14 @@ function DailyTrackerView({
   const selectedDayDateFormatted = formatDateMonthDay(selectedDayDate);
   const selectedDayIsToday = isToday(activeMonth, activeWeek, selectedDay.day, startDateStr);
 
+  const hasCustomObjective = Boolean(selectedDay.hasCustomObjective);
+  const totalDayQuotas = hasCustomObjective ? 4 : 3;
+
   const selectedCompletedCount = 
     (selectedDay.quantCompleted ? 1 : 0) + 
     (selectedDay.lrdiCompleted ? 1 : 0) + 
-    (selectedDay.varcCompleted ? 1 : 0);
+    (selectedDay.varcCompleted ? 1 : 0) + 
+    (hasCustomObjective && selectedDay.customCompleted ? 1 : 0);
 
   const [showCelebrationModal, setShowCelebrationModal] = useState(false);
   const prevCompletedCountRef = useRef(null);
@@ -198,8 +271,8 @@ function DailyTrackerView({
   useEffect(() => {
     if (
       prevCompletedCountRef.current !== null &&
-      prevCompletedCountRef.current < 3 &&
-      selectedCompletedCount === 3
+      prevCompletedCountRef.current < totalDayQuotas &&
+      selectedCompletedCount === totalDayQuotas
     ) {
       setShowCelebrationModal(true);
       if (onAwardDailyStamp) {
@@ -208,17 +281,22 @@ function DailyTrackerView({
       }
     }
     prevCompletedCountRef.current = selectedCompletedCount;
-  }, [selectedCompletedCount, onAwardDailyStamp, selectedDay.day]);
+  }, [selectedCompletedCount, totalDayQuotas, onAwardDailyStamp, selectedDay.day]);
 
   // Subject timer sessions
   const quantSessions = (selectedDay.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'quant');
   const lrdiSessions = (selectedDay.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'lrdi');
   const varcSessions = (selectedDay.sessions || []).filter(s => (s.subject || '').toLowerCase() === 'varc');
+  const customSessions = (selectedDay.sessions || []).filter(s => {
+    const subj = (s.subject || '').toLowerCase();
+    return subj === 'custom' || subj === 'general' || subj.includes('mock') || subj.includes('revision');
+  });
 
   const quantMins = quantSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
   const lrdiMins = lrdiSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
   const varcMins = varcSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
-  const totalMins = quantMins + lrdiMins + varcMins;
+  const customMins = customSessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+  const totalMins = quantMins + lrdiMins + varcMins + customMins;
 
   // Day shorthand (Maps "Monday" -> "Mon", "Saturday" -> "Sat", "Day 1" -> "D1")
   const getDayShort = (dayStr) => {
@@ -267,26 +345,6 @@ function DailyTrackerView({
             <span className={`sync-dot ${syncStatus === 'syncing' ? 'syncing' : syncStatus === 'synced' ? 'synced' : 'ready'}`} />
             <span className="sync-lbl-text">{syncStatus === 'syncing' ? 'Syncing...' : 'Synced'}</span>
           </div>
-
-          {onOpenStampRally && (
-            <button 
-              type="button" 
-              className="minimal-btn outline stamp-rally-tracker-btn"
-              onClick={onOpenStampRally}
-              title="Inspect Japanese Cat Stamp Rally Card"
-              style={{
-                borderColor: 'rgba(244, 63, 94, 0.4)',
-                color: '#fb7185',
-                background: 'rgba(244, 63, 94, 0.08)'
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 8v8M8 12h8" />
-              </svg>
-              <span>Stamp Rally ({stampRallyData?.currentCardStamps?.length || 0}/6)</span>
-            </button>
-          )}
 
           {resetWeekMetrics && (
             <button 
@@ -383,10 +441,13 @@ function DailyTrackerView({
           {activeWeekDays.map((d, dIdx) => {
             const isDayToday = isToday(activeMonth, activeWeek, d.day, startDateStr);
             const isSelected = effectiveDayName === d.day;
+            const dHasCustom = Boolean(d.hasCustomObjective);
+            const dTotal = dHasCustom ? 4 : 3;
             const completed = 
               (d.quantCompleted ? 1 : 0) + 
               (d.lrdiCompleted ? 1 : 0) + 
-              (d.varcCompleted ? 1 : 0);
+              (d.varcCompleted ? 1 : 0) + 
+              (dHasCustom && d.customCompleted ? 1 : 0);
 
             return (
               <button
@@ -396,7 +457,7 @@ function DailyTrackerView({
                 onClick={() => setEffectiveDayName(d.day)}
               >
                 <span className="mini-day-name">{getDayShort(d.day)}</span>
-                <span className={`mini-day-dot ${completed === 3 ? 'all' : completed > 0 ? 'some' : ''}`} />
+                <span className={`mini-day-dot ${completed === dTotal ? 'all' : completed > 0 ? 'some' : ''}`} />
                 {d.studyHours > 0 && <span className="mini-day-hrs">{d.studyHours.toFixed(1)}h</span>}
               </button>
             );
@@ -407,7 +468,7 @@ function DailyTrackerView({
       {/* 3. RESPONSIVE WORKSPACE */}
       <div className="clean-workspace-grid">
         
-        {/* LEFT COLUMN: THE 3 DAILY DRILL QUOTAS */}
+        {/* LEFT COLUMN: THE 4 DAILY DRILL QUOTAS */}
         <div className="workspace-main-col">
           
           {/* Day Status Header */}
@@ -417,7 +478,7 @@ function DailyTrackerView({
                 <h2 className="selected-day-heading">{selectedDay.day}</h2>
                 <span className="selected-date-tag">{selectedDayDateFormatted}</span>
                 {selectedDayIsToday && <span className="today-live-tag">TODAY</span>}
-                {resetDayMetrics && (selectedCompletedCount > 0 || (selectedDay.quantCount || 0) + (selectedDay.lrdiCount || 0) + (selectedDay.varcCount || 0) > 0) && (
+                {resetDayMetrics && (selectedCompletedCount > 0 || (selectedDay.quantCount || 0) + (selectedDay.lrdiCount || 0) + (selectedDay.varcCount || 0) + (selectedDay.customCount || 0) > 0) && (
                   <button
                     type="button"
                     className="day-reset-inline-btn"
@@ -447,16 +508,16 @@ function DailyTrackerView({
             </div>
 
             <div 
-              className={`day-quota-tally ${selectedCompletedCount === 3 ? 'all-done clickable-celebrate' : ''}`}
+              className={`day-quota-tally ${selectedCompletedCount === totalDayQuotas ? 'all-done clickable-celebrate' : ''}`}
               onClick={() => {
-                if (selectedCompletedCount === 3) setShowCelebrationModal(true);
+                if (selectedCompletedCount === totalDayQuotas) setShowCelebrationModal(true);
               }}
-              title={selectedCompletedCount === 3 ? "Click to view celebration & Cat Mascot!" : undefined}
+              title={selectedCompletedCount === totalDayQuotas ? "Click to view celebration & Cat Mascot!" : undefined}
             >
-              <span className={`tally-score ${selectedCompletedCount === 3 ? 'all-done' : ''}`}>
-                {selectedCompletedCount} / 3
+              <span className={`tally-score ${selectedCompletedCount === totalDayQuotas ? 'all-done' : ''}`}>
+                {selectedCompletedCount} / {totalDayQuotas}
               </span>
-              <span className="tally-label">{selectedCompletedCount === 3 ? 'Conquered!' : 'Quotas Cleared'}</span>
+              <span className="tally-label">{selectedCompletedCount === totalDayQuotas ? 'Conquered!' : 'Quotas Cleared'}</span>
             </div>
           </div>
 
@@ -692,7 +753,7 @@ function DailyTrackerView({
                       onChange={(e) => handleDirectQtyChange(activeMonth, activeWeek, selectedDay.day, 'varc', e.target.value)}
                     />
                     <button 
-                      type="button"
+                      type="button" 
                       className="step-btn"
                       onClick={() => handleStepQty(activeMonth, activeWeek, selectedDay.day, 'varc', selectedDay.varcCount, 1)}
                     >
@@ -703,6 +764,158 @@ function DailyTrackerView({
               </div>
             </div>
 
+            {/* CUSTOM OBJECTIVE DRILL (Rendered if user added it, otherwise show "+ Add Custom Objective" button) */}
+            {hasCustomObjective ? (
+              <div className={`drill-item-card custom ${selectedDay.customCompleted ? 'done' : ''}`}>
+                <div className="drill-card-top-row">
+                  <button 
+                    type="button" 
+                    role="checkbox"
+                    aria-checked={Boolean(selectedDay.customCompleted)}
+                    aria-label={`${selectedDay.customTitle || 'Custom Objective'} completed`}
+                    className={`drill-check-bubble custom ${selectedDay.customCompleted ? 'checked' : ''}`}
+                    onClick={(e) => handleToggleDrill(activeMonth, activeWeek, selectedDay.day, 'custom', selectedDay.customCompleted, e)}
+                    title={selectedDay.customCompleted ? 'Completed' : 'Mark complete'}
+                  >
+                    <Icons.Check size={14} />
+                  </button>
+
+                  <div className="drill-subject-heading-row">
+                    <span 
+                      className="drill-subject-badge custom clickable-chip"
+                      onClick={() => openConfigModal(false)}
+                      title="Click to edit badge and settings"
+                      style={{
+                        color: 'var(--accent-color, #38bdf8)',
+                        background: 'rgba(var(--accent-rgb, 56, 189, 248), 0.14)',
+                        border: '1px solid var(--accent-color, #38bdf8)'
+                      }}
+                    >
+                      {selectedDay.customBadge || 'CUSTOM'}
+                    </span>
+                    <span 
+                      className="drill-subject-title clickable-title"
+                      onClick={() => openConfigModal(false)}
+                      title="Click to edit objective name"
+                    >
+                      {selectedDay.customTitle || 'Custom Objective'}
+                    </span>
+                    {customMins > 0 && (
+                      <span className="drill-timer-pill custom" style={{ color: 'var(--accent-color, #38bdf8)' }}>
+                        <Icons.Clock size={10} />
+                        <span>{customMins}m from Timer</span>
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="drill-card-config-btn"
+                      onClick={() => openConfigModal(false)}
+                      title="Edit Custom Objective (Name, Badge, Target, Unit, Scope)"
+                    >
+                      <Icons.Edit size={12} />
+                      <span>Edit</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="drill-card-bottom-row">
+                  <div className="drill-target-col" style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
+                    <span 
+                      className="drill-curriculum-pill custom clickable-chip"
+                      onClick={() => openConfigModal(false)}
+                      title="Click to edit"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: 'var(--accent-color, #38bdf8)',
+                        background: 'rgba(var(--accent-rgb, 56, 189, 248), 0.1)',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        width: 'fit-content',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Icons.Crosshair size={11} />
+                      <span>Personal Focus</span>
+                    </span>
+
+                    <div 
+                      className="drill-target-text-row custom-clickable" 
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', maxWidth: '100%' }}
+                      onClick={() => openConfigModal(false)}
+                      title="Click to edit target goal"
+                    >
+                      <span className="drill-target-text" title={selectedDay.customTarget || "Solve 1 Sectional / Revision Drill"}>
+                        {selectedDay.customTarget || "Solve 1 Sectional / Revision Drill"}
+                      </span>
+                      <span className="drill-edit-target-icon" style={{ opacity: 0.8, display: 'inline-flex', color: 'var(--accent-color, #38bdf8)' }}>
+                        <Icons.Edit size={11} />
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="drill-stepper-compact">
+                    <span 
+                      className="stepper-subtext clickable-unit" 
+                      onClick={() => openConfigModal(false)} 
+                      title="Click to edit metric unit"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      Solved {selectedDay.customUnit || 'Tasks'}:
+                    </span>
+                    <div className="stepper-buttons-wrap">
+                      <button 
+                        type="button"
+                        className="step-btn"
+                        onClick={() => handleStepQty(activeMonth, activeWeek, selectedDay.day, 'custom', selectedDay.customCount, -1)}
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number"
+                        min="0"
+                        className="step-input"
+                        value={selectedDay.customCount || 0}
+                        onChange={(e) => handleDirectQtyChange(activeMonth, activeWeek, selectedDay.day, 'custom', e.target.value)}
+                      />
+                      <button 
+                        type="button"
+                        className="step-btn"
+                        onClick={() => handleStepQty(activeMonth, activeWeek, selectedDay.day, 'custom', selectedDay.customCount, 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* + Add Custom Objective Button when not added */
+              <div className="add-custom-objective-card">
+                <button
+                  type="button"
+                  className="add-custom-objective-btn"
+                  onClick={() => openConfigModal(true)}
+                  title="Add a custom daily objective (e.g. GK, Mocks, Vocab, Revision)"
+                >
+                  <div className="add-custom-btn-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  </div>
+                  <div className="add-custom-btn-info">
+                    <span className="add-custom-btn-title">Add Custom Objective</span>
+                    <span className="add-custom-btn-sub">Add extra target for GK & Editorial, Mock Analysis, Vocabulary, or Sectionals</span>
+                  </div>
+                  <span className="add-custom-pill font-mono">+ ADD</span>
+                </button>
+              </div>
+            )}
+
           </div>
 
           {/* Clean Day Reflection & Mistake Notes */}
@@ -711,7 +924,7 @@ function DailyTrackerView({
               <span className="notes-card-title">Day Reflection & Error Log</span>
               <span className="notes-card-hint">Formula slips, trap answers, takeaways</span>
             </div>
-            <textarea
+            <SmoothCaretTextarea
               className="clean-notes-textarea"
               placeholder="Jot down formula triggers, mistakes made today, or question numbers to revise later..."
               value={selectedDay.notes || ''}
@@ -752,6 +965,7 @@ function DailyTrackerView({
                 {quantMins > 0 && <span className="dist-item quant">QA: {quantMins}m</span>}
                 {lrdiMins > 0 && <span className="dist-item lrdi">DILR: {lrdiMins}m</span>}
                 {varcMins > 0 && <span className="dist-item varc">VARC: {varcMins}m</span>}
+                {customMins > 0 && <span className="dist-item custom">Custom: {customMins}m</span>}
               </div>
             )}
           </div>
@@ -896,7 +1110,384 @@ function DailyTrackerView({
         </div>
       )}
 
-      {/* 3/3 Daily Quotas Conquered Cat Mascot Celebration Modal */}
+      {/* Full Control Custom Objective Config Modal */}
+      {isConfigModalOpen && (
+        <div 
+          className="modal-overlay-blur fade-in"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.78)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99999,
+            padding: '16px'
+          }}
+          onClick={() => setIsConfigModalOpen(false)}
+        >
+          <div 
+            className="clean-confirm-modal custom-obj-modal"
+            style={{
+              background: 'var(--surface-color, #131722)',
+              border: '1px solid var(--accent-color, #38bdf8)',
+              borderRadius: '16px',
+              padding: '22px',
+              maxWidth: '460px',
+              width: '100%',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.7), 0 0 30px var(--accent-glow, rgba(56, 189, 248, 0.2))'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '9px',
+                  background: 'rgba(var(--accent-rgb, 56, 189, 248), 0.15)',
+                  color: 'var(--accent-color, #38bdf8)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  {hasCustomObjective && !isCreatingCustomObj ? <Icons.Edit size={18} /> : <Icons.Sliders size={18} />}
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-primary, #f8fafc)' }}>
+                    {hasCustomObjective && !isCreatingCustomObj ? 'Edit Custom Objective' : 'Add Custom Objective'}
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '11.5px', color: 'var(--text-secondary, #94a3b8)' }}>
+                    {hasCustomObjective && !isCreatingCustomObj 
+                      ? 'Customize name, category badge, target quota, and metric.'
+                      : 'Set a personalized daily target with zero friction.'}
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsConfigModalOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+                title="Close"
+              >
+                <Icons.Close size={16} />
+              </button>
+            </div>
+
+            {/* Quick Templates & Clear All */}
+            <div style={{ marginBottom: '14px', background: 'rgba(255, 255, 255, 0.02)', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
+                <span style={{ fontSize: '10px', fontWeight: 700, fontFamily: 'JetBrains Mono', color: 'var(--accent-color, #38bdf8)', letterSpacing: '0.04em' }}>
+                  QUICK PRESETS
+                </span>
+                {(configForm.title || configForm.target) && (
+                  <button
+                    type="button"
+                    onClick={() => setConfigForm(prev => ({ ...prev, title: '', target: '', badge: 'CUSTOM' }))}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#ef4444',
+                      fontSize: '10.5px',
+                      cursor: 'pointer',
+                      padding: 0,
+                      fontWeight: 600
+                    }}
+                    title="Clear pre-filled text"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                {[
+                  { title: 'GK & Editorial', badge: 'GK', target: 'Read 2 Aeon/Hindu editorials & note current affairs', qty: 2, unit: 'Articles' },
+                  { title: 'Mock Analysis', badge: 'MOCK', target: 'Deep analysis of mock errors & trap solutions', qty: 1, unit: 'Mocks' },
+                  { title: 'Vocab Flashcards', badge: 'VOCAB', target: 'Review 20 unfamiliar words with mnemonics', qty: 20, unit: 'Words' },
+                  { title: 'Formula Revision', badge: 'REVISE', target: 'Revise Quant formula cheat sheet & speed drills', qty: 1, unit: 'Sets' },
+                  { title: 'Sectional Drill', badge: 'SECTION', target: 'Solve 1 timed sectional drill test', qty: 1, unit: 'Tests' }
+                ].map(preset => (
+                  <button
+                    key={preset.title}
+                    type="button"
+                    onClick={() => setConfigForm(prev => ({
+                      ...prev,
+                      title: preset.title,
+                      badge: preset.badge,
+                      target: preset.target,
+                      targetQty: preset.qty,
+                      unit: preset.unit
+                    }))}
+                    style={{
+                      padding: '2px 7px',
+                      fontSize: '10.5px',
+                      borderRadius: '5px',
+                      border: configForm.badge === preset.badge ? '1px solid var(--accent-color, #38bdf8)' : '1px solid rgba(255, 255, 255, 0.08)',
+                      background: configForm.badge === preset.badge ? 'rgba(var(--accent-rgb, 56, 189, 248), 0.18)' : 'rgba(255, 255, 255, 0.03)',
+                      color: configForm.badge === preset.badge ? 'var(--accent-color, #38bdf8)' : '#94a3b8',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    +{preset.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Form Fields */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
+              
+              {/* 1. Title & Badge in 1 Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: '8px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, fontFamily: 'JetBrains Mono', color: 'var(--accent-color, #38bdf8)', marginBottom: '4px' }}>
+                    OBJECTIVE TITLE
+                  </label>
+                  <div className="smooth-input-wrapper">
+                    <SmoothCaretInput
+                      type="text"
+                      className="smooth-text-input"
+                      value={configForm.title}
+                      onChange={(e) => setConfigForm(prev => ({ ...prev, title: stripEmojis(e.target.value) }))}
+                      placeholder="e.g. GK & Editorial..."
+                    />
+                    {configForm.title && (
+                      <button
+                        type="button"
+                        className="smooth-input-clear-btn"
+                        onClick={() => setConfigForm(prev => ({ ...prev, title: '' }))}
+                        title="Clear title"
+                      >
+                        <Icons.Close size={11} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, fontFamily: 'JetBrains Mono', color: 'var(--accent-color, #38bdf8)', marginBottom: '4px' }}>
+                    BADGE
+                  </label>
+                  <div className="smooth-input-wrapper">
+                    <SmoothCaretInput
+                      type="text"
+                      maxLength={8}
+                      className="smooth-text-input font-mono"
+                      style={{ textTransform: 'uppercase', fontWeight: 700, paddingRight: configForm.badge ? '26px' : '10px' }}
+                      value={configForm.badge}
+                      onChange={(e) => setConfigForm(prev => ({ ...prev, badge: stripEmojis(e.target.value).toUpperCase() }))}
+                      placeholder="CUSTOM"
+                    />
+                    {configForm.badge && (
+                      <button
+                        type="button"
+                        className="smooth-input-clear-btn"
+                        onClick={() => setConfigForm(prev => ({ ...prev, badge: '' }))}
+                        title="Clear badge"
+                      >
+                        <Icons.Close size={11} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Goal / Task Description with quick delete (X) */}
+              <div>
+                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, fontFamily: 'JetBrains Mono', color: 'var(--accent-color, #38bdf8)', marginBottom: '4px' }}>
+                  GOAL / TASK DESCRIPTION
+                </label>
+                <div className="smooth-input-wrapper">
+                  <SmoothCaretInput
+                    type="text"
+                    className="smooth-text-input"
+                    value={configForm.target}
+                    onChange={(e) => setConfigForm(prev => ({ ...prev, target: stripEmojis(e.target.value) }))}
+                    placeholder="e.g. Read 2 editorials & note key arguments"
+                  />
+                  {configForm.target && (
+                    <button
+                      type="button"
+                      className="smooth-input-clear-btn"
+                      onClick={() => setConfigForm(prev => ({ ...prev, target: '' }))}
+                      title="Clear goal description"
+                    >
+                      <Icons.Close size={11} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. Target Qty & Unit Split */}
+              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px', alignItems: 'flex-end' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, fontFamily: 'JetBrains Mono', color: 'var(--accent-color, #38bdf8)', marginBottom: '4px' }}>
+                    TARGET COUNT
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(10, 15, 29, 0.72)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '8px', height: '34px' }}>
+                    <button
+                      type="button"
+                      className="step-btn"
+                      onClick={() => setConfigForm(prev => ({ ...prev, targetQty: Math.max(1, (parseInt(prev.targetQty) || 1) - 1) }))}
+                      style={{ width: '28px', height: '100%' }}
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      max="999"
+                      className="step-input"
+                      style={{ flex: 1, width: '100%', fontSize: '12.5px' }}
+                      value={configForm.targetQty}
+                      onChange={(e) => setConfigForm(prev => ({ ...prev, targetQty: Math.max(1, parseInt(e.target.value) || 1) }))}
+                    />
+                    <button
+                      type="button"
+                      className="step-btn"
+                      onClick={() => setConfigForm(prev => ({ ...prev, targetQty: (parseInt(prev.targetQty) || 1) + 1 }))}
+                      style={{ width: '28px', height: '100%' }}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, fontFamily: 'JetBrains Mono', color: 'var(--accent-color, #38bdf8)', marginBottom: '4px' }}>
+                    METRIC UNIT
+                  </label>
+                  <div className="smooth-input-wrapper">
+                    <SmoothCaretInput
+                      type="text"
+                      maxLength={12}
+                      className="smooth-text-input"
+                      value={configForm.unit}
+                      onChange={(e) => setConfigForm(prev => ({ ...prev, unit: stripEmojis(e.target.value) }))}
+                      placeholder="Tasks, Sets, Mocks..."
+                    />
+                    {configForm.unit && (
+                      <button
+                        type="button"
+                        className="smooth-input-clear-btn"
+                        onClick={() => setConfigForm(prev => ({ ...prev, unit: '' }))}
+                        title="Clear unit"
+                      >
+                        <Icons.Close size={11} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Scope Selection */}
+              <div style={{
+                padding: '8px 10px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px'
+              }}>
+                <span style={{ fontSize: '11.5px', color: '#cbd5e1' }}>
+                  Scope: <strong>{configForm.applyToAllDays ? 'Every day (Template)' : `Only ${selectedDay.day || 'Today'}`}</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setConfigForm(prev => ({ ...prev, applyToAllDays: !prev.applyToAllDays }))}
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '10.5px',
+                    fontWeight: 600,
+                    borderRadius: '5px',
+                    border: '1px solid var(--accent-color, #38bdf8)',
+                    background: 'rgba(var(--accent-rgb, 56, 189, 248), 0.12)',
+                    color: 'var(--accent-color, #38bdf8)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {configForm.applyToAllDays ? 'Today only' : 'All days'}
+                </button>
+              </div>
+
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
+              {hasCustomObjective && !isCreatingCustomObj ? (
+                <button
+                  type="button"
+                  onClick={handleRemoveCustomObjective}
+                  style={{
+                    padding: '7px 12px',
+                    borderRadius: '7px',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    color: '#ef4444',
+                    fontSize: '11.5px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                  title="Remove this custom objective"
+                >
+                  Remove
+                </button>
+              ) : <div />}
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setIsConfigModalOpen(false)}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: '7px',
+                    border: '1px solid var(--border-color, #27272a)',
+                    background: 'transparent',
+                    color: 'var(--text-primary, #f4f4f5)',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveConfig}
+                  style={{
+                    padding: '7px 16px',
+                    borderRadius: '7px',
+                    border: 'none',
+                    background: 'var(--accent-color, #38bdf8)',
+                    color: 'var(--accent-contrast, #09090b)',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 0 14px var(--accent-glow, rgba(56, 189, 248, 0.35))'
+                  }}
+                >
+                  <Icons.Check size={13} />
+                  <span>{hasCustomObjective && !isCreatingCustomObj ? 'Save Changes' : 'Add Objective'}</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 4/4 Daily Quotas Conquered Cat Mascot Celebration Modal */}
       <DailyQuotaCelebrationModal
         isOpen={showCelebrationModal}
         onClose={() => setShowCelebrationModal(false)}
@@ -905,7 +1496,8 @@ function DailyTrackerView({
         totalSolvedToday={
           (Number(selectedDay.quantCount) || 0) + 
           (Number(selectedDay.lrdiCount) || 0) + 
-          (Number(selectedDay.varcCount) || 0)
+          (Number(selectedDay.varcCount) || 0) +
+          (Number(selectedDay.customCount) || 0)
         }
         onOpenStampRally={onOpenStampRally}
       />

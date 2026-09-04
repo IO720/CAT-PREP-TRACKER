@@ -10,6 +10,7 @@ import EditSessionModal from './EditSessionModal';
 import SkiperAnimatedTimer from './animations/SkiperAnimatedTimer';
 import ChronoTimerHUD from './animations/ChronoTimerHUD';
 import SmoothCaretInput from './animations/SmoothCaretInput';
+import { Icons } from './AspirantIcons';
 
 export default function StudyTimerView({
   timerState,
@@ -30,6 +31,7 @@ export default function StudyTimerView({
   currentUser = null,
   activeStreak = 0,
   onLeaveTimer,
+  onOpenNotes,
   isFocusTransitioning = false,
   todayDay = null,
   activeWeekDays = [],
@@ -39,15 +41,15 @@ export default function StudyTimerView({
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const companionRef = useRef(null);
   const {
-    secondsLeft,
-    totalSeconds,
-    isRunning,
-    isPaused,
-    mode,
-    subject,
-    startTimeStr,
-    sessionNotes
-  } = timerState;
+    secondsLeft = 1500,
+    totalSeconds = 1500,
+    isRunning = false,
+    isPaused = false,
+    mode = 'pomodoro',
+    subject = 'Quant',
+    startTimeStr = null,
+    sessionNotes = ''
+  } = timerState || {};
 
   const [selectedDuration, setSelectedDuration] = useState(25);
   const [customMinutes, setCustomMinutes] = useState(45);
@@ -221,9 +223,9 @@ export default function StudyTimerView({
   const pendingSessionData = React.useMemo(() => {
     const now = new Date();
     const endTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const startMs = timerState.startTimeMs || (now.getTime() - (totalSeconds - secondsLeft) * 1000);
+    const startMs = timerState?.startTimeMs || (now.getTime() - (totalSeconds - secondsLeft) * 1000);
     const startObj = new Date(startMs);
-    const calculatedStartTimeStr = timerState.startTimeStr || startObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const calculatedStartTimeStr = timerState?.startTimeStr || startObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     let elapsedMins;
     if (timerMode === 'stopwatch') {
@@ -270,18 +272,25 @@ export default function StudyTimerView({
       {!isZenFullscreen && (
         <div className="minimal-timer-header">
           <div className="header-left">
-            {/* Leave Sanctuary Button with Guilt Trip Trigger */}
+            {/* Leave Sanctuary Button */}
             <button 
               type="button" 
               className="zen-leave-sanctuary-btn"
-              onClick={() => setShowGuiltTrip(true)}
-              title="Leave Focus Sanctuary"
+              onClick={() => {
+                // If a study session is running, prompt confirmation / guilt-trip
+                if (isRunning) {
+                  setShowGuiltTrip(true);
+                } else {
+                  if (onLeaveTimer) onLeaveTimer();
+                }
+              }}
+              title="Return to Dashboard"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="19" y1="12" x2="5" y2="12"></line>
                 <polyline points="12 19 5 12 12 5"></polyline>
               </svg>
-              <span>Leave Sanctuary</span>
+              <span>Back to Dashboard</span>
             </button>
 
             <span className="live-timer-badge">
@@ -549,7 +558,20 @@ export default function StudyTimerView({
 
           {/* Session Notes */}
           <div className="minimal-box wide-box">
-            <span className="minimal-box-label">Session Focus Notes</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span className="minimal-box-label" style={{ margin: 0 }}>Session Focus Notes</span>
+              {onOpenNotes && (
+                <button
+                  type="button"
+                  className="quick-notes-redirect-btn font-mono"
+                  onClick={onOpenNotes}
+                  title="Open Error Log & Quick Notes Vault"
+                >
+                  <Icons.Edit3 size={11} />
+                  <span>Quick Notes &amp; Vault ↗</span>
+                </button>
+              )}
+            </div>
             <SmoothCaretInput
               type="text"
               className="day-textarea minimal-notes-input"
@@ -665,6 +687,8 @@ export default function StudyTimerView({
         secondsLeft={secondsLeft}
         isRunning={isRunning}
         isQuotaCompleted={Boolean(todayDay?.quantCompleted && todayDay?.lrdiCompleted && todayDay?.varcCompleted)}
+        isPast15Hours={new Date().getHours() >= 15}
+        hoursLeftInDay={Math.max(1, 24 - new Date().getHours())}
       />
 
       {/* Edit Session Modal for Time Corrections */}

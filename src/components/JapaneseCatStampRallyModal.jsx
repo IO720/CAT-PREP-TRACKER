@@ -87,22 +87,27 @@ export default function JapaneseCatStampRallyModal({
             YOKAI MASCOTS STAMP RALLY
           </h2>
           <p className="stamp-rally-instructions">
-            CONQUER 3/3 DAILY QUOTAS FOR AN AUTHENTIC JAPANESE HANKO STAMP • COLLECT ALL 6 FOR PRIZE THEMES
+            Conquer daily quotas to collect authentic Japanese Hanko stamps • Collect all 6 for prize themes
           </p>
         </div>
 
-        {/* 2. Physical Washi-Paper Stamp Rally Card (Exact layout of user photo) */}
+        {/* 2. Minimalist Japanese Washi-Paper Stamp Card */}
         <div className="washi-paper-card-wrapper">
           <div className="washi-card-inner">
             <div className="washi-card-header-row">
               <div className="washi-card-title-lockup">
-                <span className="washi-top-title font-display">YOKAI MASCOTS</span>
-                <span className="washi-bottom-title font-display">STAMP RALLY</span>
-                <span className="washi-card-subtitle font-mono">MAP AND PRIZE PREVIEWS ARE ON THE BACKSIDE!</span>
+                <div className="washi-stamp-seal-emblem">
+                  <span>御朱印</span>
+                </div>
+                <div className="washi-title-text-group">
+                  <span className="washi-top-title font-display">YOKAI MASCOTS</span>
+                  <span className="washi-card-sub-japanese font-mono">六門修行 • Goshuincho Card</span>
+                </div>
               </div>
-              <div className="washi-card-rules-box font-mono">
-                <span>CONQUER 3/3 DRILLS FOR A STAMP</span>
-                <span>COLLECT ALL STAMPS FOR A PRIZE PACK</span>
+
+              <div className="washi-card-progress-pill font-mono">
+                <span className="washi-pill-dot" />
+                <span>{stampsCollected.length} / 6 STAMPED</span>
               </div>
             </div>
 
@@ -119,11 +124,11 @@ export default function JapaneseCatStampRallyModal({
                     onClick={() => handleSlotClick(def, isStamped)}
                     title={isStamped ? `Click to inspect ${def.enName} Lore` : `Slot ${idx + 1}: ${def.slotCode} (Complete today's quota to stamp)`}
                   >
-                    {/* The Circular White Stamp Base */}
+                    {/* The Circular Stamp Base */}
                     <div className="washi-slot-circle">
                       {isStamped ? (
                         <div className={`hanko-ink-seal ${isCurrentAnimation ? 'hanko-slam-in' : ''}`}>
-                          {/* Outer Scalloped Cog Border like Sundrop Studios Stamp in Photo */}
+                          {/* Outer Scalloped Cog Border like authentic Hanko */}
                           <svg className="hanko-scallop-svg" viewBox="0 0 100 100">
                             <circle cx="50" cy="50" r="46" fill="none" stroke="#b91c1c" strokeWidth="2.5" strokeDasharray="3.5 2" />
                             <circle cx="50" cy="50" r="41" fill="none" stroke="#b91c1c" strokeWidth="1.2" />
@@ -144,7 +149,7 @@ export default function JapaneseCatStampRallyModal({
                               {/* Cat Ears */}
                               <polygon points="12,14 16,8 18,12" stroke="#b91c1c" strokeWidth="1.75" fill="#fffaf0" />
                               <polygon points="30,14 26,8 24,12" stroke="#b91c1c" strokeWidth="1.75" fill="#fffaf0" />
-                              {/* Persimmon / Mikan on Head like photo! */}
+                              {/* Persimmon / Mikan on Head */}
                               <circle cx="21" cy="8.5" r="3" stroke="#b91c1c" strokeWidth="1.5" fill="#fffaf0" />
                               <path d="M21 5.5V4" stroke="#b91c1c" strokeWidth="1.5" strokeLinecap="round" />
                               {/* Happy Face */}
@@ -163,15 +168,22 @@ export default function JapaneseCatStampRallyModal({
 
                           {/* Hanko Texture Sheen */}
                           <div className="hanko-ink-texture" />
+
+                          {/* Fluid Wet Ink Shockwave Ring */}
+                          {isCurrentAnimation && <div className="hanko-ink-shockwave" />}
                         </div>
                       ) : (
-                        <div className="washi-empty-prompt font-mono">
-                          <span>// PENDING</span>
+                        <div className="washi-slot-empty-state">
+                          <span className="washi-kanji-watermark">{def.kanji}</span>
+                          <span className="washi-slot-number font-mono">0{idx + 1}</span>
                         </div>
                       )}
+
+                      {/* Subtle hover ink ring */}
+                      <div className="slot-hover-sheen" />
                     </div>
 
-                    {/* Slot Label beneath each circle (Exact font style of photo) */}
+                    {/* Slot Label beneath each circle */}
                     <div className="washi-slot-caption font-display">
                       <span className={isStamped ? 'caption-stamped' : ''}>{def.slotCode}</span>
                     </div>
@@ -189,6 +201,13 @@ export default function JapaneseCatStampRallyModal({
             <span className="rewards-stamp-counter font-mono">
               STAMPS: <strong>{stampsCollected.length}</strong> / 6
             </span>
+          </div>
+
+          <div className="rewards-progress-bar">
+            <div 
+              className="rewards-progress-fill" 
+              style={{ width: `${Math.min(100, (stampsCollected.length / 6) * 100)}%` }} 
+            />
           </div>
 
           <div className="rewards-cards-grid">
