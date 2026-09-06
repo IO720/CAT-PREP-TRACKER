@@ -564,7 +564,12 @@ export default function BacklogRecoveryView({
                 <div className="strategy-option-info">
                   <div className="strategy-top-row">
                     <span className="strategy-title">7-Day Catch-Up Micro-Blitz</span>
-                    <span className="strategy-chip">RECOMMENDED</span>
+                    <div className="strategy-badges-cluster">
+                      <span className="strategy-chip recommended">RECOMMENDED</span>
+                      {activeStrategy === 'catch_up_blitz' && (
+                        <span className="strategy-chip active">ACTIVE</span>
+                      )}
+                    </div>
                   </div>
                   <p className="strategy-desc">
                     Distributes +18 QA, +4 DILR across your upcoming 7 days to eliminate this backlog without slowing roadmap.
@@ -585,6 +590,9 @@ export default function BacklogRecoveryView({
                 <div className="strategy-option-info">
                   <div className="strategy-top-row">
                     <span className="strategy-title">Weekend Recovery Sprint</span>
+                    {activeStrategy === 'weekend_sprint' && (
+                      <span className="strategy-chip active">ACTIVE</span>
+                    )}
                   </div>
                   <p className="strategy-desc">
                     Protects weekdays. Loads Saturday and Sunday with concentrated 4-hour deep practice blocks.
@@ -605,6 +613,9 @@ export default function BacklogRecoveryView({
                 <div className="strategy-option-info">
                   <div className="strategy-top-row">
                     <span className="strategy-title">Extend Schedule (+1 Buffer Week)</span>
+                    {activeStrategy === 'schedule_shift' && (
+                      <span className="strategy-chip active">ACTIVE</span>
+                    )}
                   </div>
                   <p className="strategy-desc">
                     Freezes progression and grants 7 dedicated days to clear this backlog before advancing.
@@ -625,6 +636,9 @@ export default function BacklogRecoveryView({
                 <div className="strategy-option-info">
                   <div className="strategy-top-row">
                     <span className="strategy-title">Pareto 80/20 High-Yield Triage</span>
+                    {activeStrategy === 'pareto_triage' && (
+                      <span className="strategy-chip active">ACTIVE</span>
+                    )}
                   </div>
                   <p className="strategy-desc">
                     Compresses backlog by 50%. Focuses exclusively on top exam-weighted questions.

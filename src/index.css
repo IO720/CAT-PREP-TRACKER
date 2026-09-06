@@ -37876,6 +37876,12 @@ button:hover svg, .nav-link:hover svg, .sidebar-toggle-btn:hover svg {
   color: #fbbf24;
 }
 
+.recovery-icon-badge.strategy {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
 .recovery-priority-tag {
   font-size: 9px;
   font-weight: 900;
@@ -38218,25 +38224,177 @@ button:hover svg, .nav-link:hover svg, .sidebar-toggle-btn:hover svg {
   padding-top: 6px;
 }
 
-.recovery-override-btn {
+/* Recovery Strategy Selector Card */
+.recovery-strategy-card {
+  border-color: rgba(56, 189, 248, 0.25);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.recovery-strategies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recovery-strategy-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.recovery-strategy-option:hover {
+  background: rgba(56, 189, 248, 0.05);
+  border-color: rgba(56, 189, 248, 0.3);
+  transform: translateY(-1px);
+}
+
+.recovery-strategy-option.selected {
+  background: rgba(56, 189, 248, 0.09);
+  border-color: #38bdf8;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.18), inset 0 0 12px rgba(56, 189, 248, 0.05);
+}
+
+.strategy-option-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all 0.18s ease;
+}
+
+.recovery-strategy-option:hover .strategy-option-radio {
+  border-color: rgba(56, 189, 248, 0.5);
+}
+
+.recovery-strategy-option.selected .strategy-option-radio {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+}
+
+.strategy-option-radio .radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #38bdf8;
+  opacity: 0;
+  transform: scale(0.4);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 6px #38bdf8;
+}
+
+.recovery-strategy-option.selected .strategy-option-radio .radio-dot {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.strategy-option-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.strategy-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.strategy-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1.3;
+  transition: color 0.15s ease;
+}
+
+.recovery-strategy-option.selected .strategy-title {
+  color: #38bdf8;
+}
+
+.strategy-badges-cluster {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
-  border-radius: 8px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  gap: 5px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.strategy-chip {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.strategy-chip.recommended {
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+}
+
+.strategy-chip.active {
+  background: rgba(52, 211, 153, 0.18);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  color: #34d399;
+}
+
+.strategy-desc {
+  font-size: 11.5px;
   color: #94a3b8;
-  font-size: 11px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.recovery-override-box {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.recovery-override-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  color: #cbd5e1;
+  font-size: 11.5px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
+  text-align: center;
 }
 
 .recovery-override-btn:hover {
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.5);
+  color: #34d399;
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.18);
 }
 
 /* ==========================================================================

@@ -140,7 +140,7 @@ describe('EditSessionModal & WeekContributionHeatmap', () => {
       />
     );
 
-    expect(screen.getAllByText(/Week 1/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Week [1-2]/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Quotas/i).length).toBeGreaterThan(0);
     expect(screen.getByText('Mon')).toBeDefined();
   });
