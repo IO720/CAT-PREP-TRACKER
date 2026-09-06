@@ -108,12 +108,11 @@ const Icons = {
         </linearGradient>
         <linearGradient id="brandArcGrad" x1="7" y1="7" x2="25" y2="25" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="var(--accent-color, #38bdf8)" />
-          <stop offset="50%" stopColor="#818cf8" />
-          <stop offset="100%" stopColor="var(--accent-secondary, #c084fc)" />
+          <stop offset="100%" stopColor="var(--accent-secondary, var(--accent-color, #38bdf8))" />
         </linearGradient>
         <linearGradient id="brandSparkGrad" x1="16" y1="8" x2="24" y2="18" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="var(--accent-color, #38bdf8)" />
-          <stop offset="100%" stopColor="#60a5fa" />
+          <stop offset="100%" stopColor="var(--accent-secondary, var(--accent-color, #38bdf8))" />
         </linearGradient>
       </defs>
     </svg>
@@ -914,6 +913,12 @@ export default function App() {
             // Fetch Profile Data
             const prof = await getUserProfile(firebaseUser.uid);
             if (prof) {
+              if (firebaseUser.photoURL && (!prof.avatar || prof.avatar === 'rocket')) {
+                prof.avatar = firebaseUser.photoURL;
+              }
+              if (firebaseUser.photoURL && !prof.photoURL) {
+                prof.photoURL = firebaseUser.photoURL;
+              }
               setUserProfile(prof);
             }
 

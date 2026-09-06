@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Icons } from './AspirantIcons';
 import AvatarRenderer from './AvatarRenderer';
 
@@ -18,7 +18,19 @@ export default function HeaderProfileDropdown({
   const isStudying = Boolean(timerState?.isRunning);
   const displayName = userProfile?.displayName || user?.displayName || (user ? 'Aspirant' : 'Guest Aspirant');
   const userEmail = user?.email || 'Offline Guest Mode';
-  const userAvatar = userProfile?.avatar || user?.photoURL;
+  
+  const userAvatar = useMemo(() => {
+    if (userProfile?.avatar && (userProfile.avatar.startsWith('http') || userProfile.avatar.startsWith('data:') || userProfile.avatar.startsWith('blob:'))) {
+      return userProfile.avatar;
+    }
+    if (userProfile?.avatar && userProfile.avatar !== 'rocket') {
+      return userProfile.avatar;
+    }
+    if (user?.photoURL) return user.photoURL;
+    if (userProfile?.photoURL) return userProfile.photoURL;
+    return userProfile?.avatar || 'rocket';
+  }, [userProfile?.avatar, userProfile?.photoURL, user?.photoURL]);
+
   const userAvatarBg = userProfile?.avatarBg || '#3b82f6';
 
   // Close dropdown on click outside or escape key
@@ -80,6 +92,7 @@ export default function HeaderProfileDropdown({
             name={displayName}
             avatarBg={userAvatarBg}
             size={26}
+            frameId={userProfile?.frameId || 'default'}
             status={isStudying ? 'studying' : user ? 'online' : 'offline'}
           />
         </div>
@@ -101,6 +114,7 @@ export default function HeaderProfileDropdown({
                 name={displayName}
                 avatarBg={userAvatarBg}
                 size={40}
+                frameId={userProfile?.frameId || 'default'}
                 status={isStudying ? 'studying' : user ? 'online' : 'offline'}
               />
               <div className="preview-user-details">

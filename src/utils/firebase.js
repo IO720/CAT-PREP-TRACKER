@@ -180,7 +180,8 @@ export const signInWithGoogle = async () => {
       lastDailyLoginDate: '',
       loginStreak: 0,
       friends: [],
-      avatar: 'rocket',
+      avatar: user.photoURL || 'rocket',
+      photoURL: user.photoURL || '',
       avatarBg: hashStringToColor(displayName || user.uid),
       frameId: 'default',
       bannerId: 'cyber_grid',
@@ -191,6 +192,14 @@ export const signInWithGoogle = async () => {
       lastActive: new Date().toISOString()
     };
     await setDoc(profileRef, profileData);
+  } else {
+    const existing = profileSnap.data();
+    if (user.photoURL && (!existing.photoURL || existing.avatar === 'rocket')) {
+      await updateDoc(profileRef, {
+        photoURL: user.photoURL,
+        avatar: (!existing.avatar || existing.avatar === 'rocket') ? user.photoURL : existing.avatar
+      }).catch(() => {});
+    }
   }
 
   return user;

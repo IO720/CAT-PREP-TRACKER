@@ -255,7 +255,11 @@ export default function ProfileView({
 
   const [profName, setProfName] = useState(userProfile?.displayName || user?.displayName || savedCosmetics?.displayName || '');
   const [profUsername, setProfUsername] = useState(userProfile?.username || (user?.email ? user.email.split('@')[0] : 'aspirant'));
-  const [profAvatar, setProfAvatar] = useState(userProfile?.avatar || savedCosmetics?.avatar || 'rocket');
+  const [profAvatar, setProfAvatar] = useState(
+    (userProfile?.avatar && userProfile.avatar !== 'rocket')
+      ? userProfile.avatar
+      : (user?.photoURL || userProfile?.photoURL || userProfile?.avatar || savedCosmetics?.avatar || 'rocket')
+  );
   const [profAvatarBg, setProfAvatarBg] = useState(userProfile?.avatarBg || savedCosmetics?.avatarBg || '#38bdf8');
   const [profFrameId, setProfFrameId] = useState(getEffectiveFrameId(userProfile?.frameId || savedCosmetics?.frameId || 'default', userLevel));
   const [profBannerId, setProfBannerId] = useState(getEffectiveBannerId(userProfile?.bannerId || savedCosmetics?.bannerId || 'cyber_grid', userLevel));
@@ -273,7 +277,13 @@ export default function ProfileView({
     if (userProfile) {
       if (userProfile.displayName !== undefined) setProfName(userProfile.displayName);
       if (userProfile.username !== undefined) setProfUsername(userProfile.username);
-      if (userProfile.avatar !== undefined) setProfAvatar(userProfile.avatar);
+      if (userProfile.avatar !== undefined) {
+        setProfAvatar(
+          (userProfile.avatar === 'rocket' && user?.photoURL)
+            ? user.photoURL
+            : userProfile.avatar
+        );
+      }
       if (userProfile.avatarBg !== undefined) setProfAvatarBg(userProfile.avatarBg);
       if (userProfile.frameId !== undefined) {
         setProfFrameId(getEffectiveFrameId(userProfile.frameId, userLevel));
@@ -343,6 +353,46 @@ export default function ProfileView({
     }
   };
 
+  const handleSelectGooglePhoto = (photoUrl) => {
+    if (!photoUrl) return;
+    setProfAvatar(photoUrl);
+    showToast('Applied Google account photo!');
+    try {
+      const saved = JSON.parse(localStorage.getItem('local_aspirant_cosmetics') || '{}');
+      saved.avatar = photoUrl;
+      localStorage.setItem('local_aspirant_cosmetics', JSON.stringify(saved));
+    } catch (e) {}
+    if (onUpdateProfile) {
+      onUpdateProfile({ avatar: photoUrl });
+    }
+  };
+
+  const handleCustomAvatarUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Image must be under 2MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result;
+      if (typeof dataUrl === 'string') {
+        setProfAvatar(dataUrl);
+        showToast('Uploaded custom avatar!');
+        try {
+          const saved = JSON.parse(localStorage.getItem('local_aspirant_cosmetics') || '{}');
+          saved.avatar = dataUrl;
+          localStorage.setItem('local_aspirant_cosmetics', JSON.stringify(saved));
+        } catch (err) {}
+        if (onUpdateProfile) {
+          onUpdateProfile({ avatar: dataUrl });
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Effective Cosmetics validated against level (defaults to 'default' and 'cyber_grid' for Level 1)
   const effectiveProfFrameId = getEffectiveFrameId(profFrameId, userLevel);
   const effectiveProfBannerId = getEffectiveBannerId(profBannerId, userLevel);
@@ -394,7 +444,13 @@ export default function ProfileView({
     if (userProfile) {
       if (userProfile.displayName) setProfName(userProfile.displayName);
       if (userProfile.username) setProfUsername(userProfile.username);
-      if (userProfile.avatar) setProfAvatar(userProfile.avatar);
+      if (userProfile.avatar) {
+        setProfAvatar(
+          (userProfile.avatar === 'rocket' && user?.photoURL)
+            ? user.photoURL
+            : userProfile.avatar
+        );
+      }
       if (userProfile.avatarBg) setProfAvatarBg(userProfile.avatarBg);
       if (userProfile.bannerBg) setProfBannerBg(userProfile.bannerBg);
       if (userProfile.bannerUrl) setProfBannerUrl(userProfile.bannerUrl);
@@ -1439,6 +1495,63 @@ export default function ProfileView({
                         <span>Avatar Symbol Preset &amp; Accent</span>
                       </div>
                       <span className="edit-section-hint font-mono">8 Presets • 10 Colors</span>
+                    </div>
+
+                    <div className="avatar-photo-source-row" style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                      {user?.photoURL && (
+                        <button
+                          type="button"
+                          className={`avatar-source-btn ${profAvatar === user.photoURL ? 'selected' : ''}`}
+                          onClick={() => handleSelectGooglePhoto(user.photoURL)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            background: profAvatar === user.photoURL ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                            border: profAvatar === user.photoURL ? '1px solid var(--accent-color, #38bdf8)' : '1px solid rgba(255, 255, 255, 0.08)',
+                            color: '#ffffff',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          <img
+                            src={user.photoURL}
+                            alt="Google"
+                            referrerPolicy="no-referrer"
+                            crossOrigin="anonymous"
+                            style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }}
+                          />
+                          <span className="font-mono">Use Google Account Photo</span>
+                          {profAvatar === user.photoURL && <span className="preset-active-dot" style={{ position: 'static', marginLeft: 'auto' }} />}
+                        </button>
+                      )}
+
+                      <label
+                        className={`avatar-source-btn ${profAvatar && (profAvatar.startsWith('data:image') || profAvatar.startsWith('blob:')) ? 'selected' : ''}`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          background: profAvatar && (profAvatar.startsWith('data:image') || profAvatar.startsWith('blob:')) ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                          border: profAvatar && (profAvatar.startsWith('data:image') || profAvatar.startsWith('blob:')) ? '1px solid var(--accent-color, #38bdf8)' : '1px solid rgba(255, 255, 255, 0.08)',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        <Icons.Upload size={14} />
+                        <span className="font-mono">Upload Photo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCustomAvatarUpload}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
                     </div>
 
                     <div className="avatar-preset-grid">

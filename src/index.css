@@ -1299,8 +1299,8 @@ button, input, select, textarea {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: var(--accent-gradient-subtle, rgba(56, 189, 248, 0.1));
-  border: 1px solid var(--border-color-hover, rgba(56, 189, 248, 0.3));
+  background: color-mix(in srgb, var(--accent-color, #38bdf8) 12%, rgba(255, 255, 255, 0.03));
+  border: 1px solid color-mix(in srgb, var(--accent-color, #38bdf8) 32%, transparent);
   color: var(--accent-color, #38bdf8);
   display: flex;
   align-items: center;
@@ -1332,9 +1332,10 @@ button, input, select, textarea {
 
 .brand-title-accent {
   color: var(--accent-color, #38bdf8);
-  background: var(--accent-gradient, linear-gradient(135deg, #38bdf8 0%, #818cf8 100%));
+  background: linear-gradient(135deg, var(--accent-color, #38bdf8) 0%, var(--accent-secondary, var(--accent-color, #38bdf8)) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 8px var(--accent-glow, rgba(56, 189, 248, 0.25)));
 }
 
 .brand-title-light {

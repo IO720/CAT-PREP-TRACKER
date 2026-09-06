@@ -36,7 +36,17 @@ export default function AspirantProfileCard({
   const displayName = profile?.displayName || user?.displayName || 'Aspirant';
   const username = profile?.target || 'CAT 2025';
   const location = profile?.location || '';
-  const avatar = profile?.avatar || 'rocket';
+  const avatar = useMemo(() => {
+    if (profile?.avatar && (profile.avatar.startsWith('http') || profile.avatar.startsWith('data:') || profile.avatar.startsWith('blob:'))) {
+      return profile.avatar;
+    }
+    if (profile?.avatar && profile.avatar !== 'rocket') {
+      return profile.avatar;
+    }
+    if (profile?.photoURL) return profile.photoURL;
+    if (user?.photoURL) return user.photoURL;
+    return profile?.avatar || 'rocket';
+  }, [profile?.avatar, profile?.photoURL, user?.photoURL]);
   const avatarBg = profile?.avatarBg || '#0284c7';
   const bio = profile?.bio || '';
   const streak = profile?.streak || user?.streak || 0;

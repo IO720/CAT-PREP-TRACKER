@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icons } from './AspirantIcons';
 import CosmeticFrameSvg from './CosmeticFrameSvg';
 
@@ -22,7 +22,18 @@ export default function AvatarRenderer({
   frameId = 'default',
   className = ''
 }) {
-  const isImage = avatar && (avatar.startsWith('data:image') || avatar.startsWith('http://') || avatar.startsWith('https://'));
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [avatar]);
+
+  const isImage = Boolean(avatar && (
+    avatar.startsWith('data:image') || 
+    avatar.startsWith('http://') || 
+    avatar.startsWith('https://') || 
+    avatar.startsWith('blob:')
+  ));
   const preset = AVATAR_PRESETS.find(p => p.id === avatar);
   const PresetIcon = preset?.icon || (Icons[avatar] ? Icons[avatar] : null);
 
@@ -73,13 +84,15 @@ export default function AvatarRenderer({
           fontSize: `${Math.max(12, Math.round(size * 0.4))}px`
         }}
       >
-        {isImage ? (
+        {isImage && !imgError ? (
           <img 
             src={avatar} 
             alt={name || 'Avatar'} 
+            referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-            onError={(e) => {
-              e.target.style.display = 'none';
+            onError={() => {
+              setImgError(true);
             }}
           />
         ) : PresetIcon ? (
@@ -89,7 +102,7 @@ export default function AvatarRenderer({
         ) : name ? (
           <span>{name.trim().charAt(0).toUpperCase()}</span>
         ) : (
-          <Icons.Rocket size={Math.round(size * 0.52)} />
+          <Icons.User size={Math.round(size * 0.52)} />
         )}
       </div>
 
