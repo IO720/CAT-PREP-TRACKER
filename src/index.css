@@ -4468,6 +4468,70 @@ button, input, select, textarea {
   text-overflow: ellipsis;
 }
 
+.day-overview-right-cluster {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.daily-stamp-rally-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: #f87171;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+}
+
+.daily-stamp-rally-card-btn:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.55);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.28);
+  transform: translateY(-1px);
+}
+
+.stamp-card-icon-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f87171;
+  flex-shrink: 0;
+}
+
+.stamp-card-btn-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  line-height: 1.15;
+}
+
+.stamp-card-btn-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #f87171;
+}
+
+.stamp-card-btn-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
 .day-quota-tally {
   display: flex;
   flex-direction: column;
@@ -4494,6 +4558,20 @@ button, input, select, textarea {
   color: #64748b;
   font-family: 'JetBrains Mono', monospace;
   white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .day-overview-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .day-overview-right-cluster {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
 }
 
 /* The 3 Drill Cards (Uniform 2-Row Layout) */

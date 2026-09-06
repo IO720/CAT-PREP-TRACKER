@@ -2693,30 +2693,8 @@ export default function App() {
               <span>v1.0.88</span>
             </button>
 
-            {/* Japanese Cat Stamp Rally Pill */}
-            <button 
-              type="button" 
-              className="stamp-rally-header-pill"
-              onClick={() => handleOpenStampRally(false)}
-              title="Inspect Japanese Cat Stamp Rally Card"
-            >
-              <svg className="stamp-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="9" />
-                <path d="M12 7v10M9 9.5c.8-1 2.2-1 3 0s2.2 1 3 0" />
-              </svg>
-              <span className="stamp-pill-text"><span className="stamp-pill-word">Rally </span>({stampRallyData.currentCardStamps?.length || 0}/6)</span>
-            </button>
-
             {/* Unique Animated Flame & Floating Embers Streak Pill */}
             <AnimatedStreakBadge streak={activeStreak} />
-
-            {/* Custom Animated Theme Popover Dropdown */}
-            <ThemeSelectorDropdown 
-              currentTheme={theme} 
-              onSelectTheme={handleSelectTheme}
-              unlockedThemes={unlockedThemes}
-              onOpenRedeemModal={handleOpenRedeemModal}
-            />
 
             {/* Top Right Profile Shortcut & Actions Dropdown */}
             <HeaderProfileDropdown

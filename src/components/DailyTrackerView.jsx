@@ -712,17 +712,41 @@ function DailyTrackerView({
               </span>
             </div>
 
-            <div 
-              className={`day-quota-tally ${selectedCompletedCount === totalDayQuotas ? 'all-done clickable-celebrate' : ''}`}
-              onClick={() => {
-                if (selectedCompletedCount === totalDayQuotas) setShowCelebrationModal(true);
-              }}
-              title={selectedCompletedCount === totalDayQuotas ? "Click to view celebration & Cat Mascot!" : undefined}
-            >
-              <span className={`tally-score ${selectedCompletedCount === totalDayQuotas ? 'all-done' : ''}`}>
-                {selectedCompletedCount} / {totalDayQuotas}
-              </span>
-              <span className="tally-label">{selectedCompletedCount === totalDayQuotas ? 'Conquered!' : 'Quotas Cleared'}</span>
+            <div className="day-overview-right-cluster">
+              {onOpenStampRally && (
+                <button
+                  type="button"
+                  className="daily-stamp-rally-card-btn"
+                  onClick={onOpenStampRally}
+                  title="Inspect Japanese Cat Stamp Rally Card (6 Daily Stamps to Unlock Sakura Theme)"
+                >
+                  <div className="stamp-card-icon-circle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ width: 14, height: 14 }}>
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M12 7v10M9 9.5c.8-1 2.2-1 3 0s2.2 1 3 0" />
+                    </svg>
+                  </div>
+                  <div className="stamp-card-btn-content">
+                    <span className="stamp-card-btn-tag">STAMP RALLY</span>
+                    <span className="stamp-card-btn-val">
+                      {stampRallyData?.currentCardStamps?.length || 0}/6 Stamps
+                    </span>
+                  </div>
+                </button>
+              )}
+
+              <div 
+                className={`day-quota-tally ${selectedCompletedCount === totalDayQuotas ? 'all-done clickable-celebrate' : ''}`}
+                onClick={() => {
+                  if (selectedCompletedCount === totalDayQuotas) setShowCelebrationModal(true);
+                }}
+                title={selectedCompletedCount === totalDayQuotas ? "Click to view celebration & Cat Mascot!" : undefined}
+              >
+                <span className={`tally-score ${selectedCompletedCount === totalDayQuotas ? 'all-done' : ''}`}>
+                  {selectedCompletedCount} / {totalDayQuotas}
+                </span>
+                <span className="tally-label">{selectedCompletedCount === totalDayQuotas ? 'Conquered!' : 'Quotas Cleared'}</span>
+              </div>
             </div>
           </div>
 
