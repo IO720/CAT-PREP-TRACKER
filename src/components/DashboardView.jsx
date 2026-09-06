@@ -163,6 +163,26 @@ function DashboardView({
         </div>
       </div>
 
+      {/* Adaptive Recovery Protocol Alert */}
+      {Boolean(todayWeekObj?.catchUpActive || todayDayObj?.catchUpActive || activeWeek?.isExtended) && (
+        <div className="dashboard-recovery-alert">
+          <div className="dashboard-recovery-alert-content">
+            <Icons.Zap size={16} color="#fbbf24" />
+            <span>
+              <strong>Adaptive Plan Active:</strong> {activeWeek?.isExtended ? `${todayPos.activeWeek} (+1 Buffer Week)` : '7-Day Catch-Up Blitz'} is loaded with recovery targets.
+            </span>
+          </div>
+          <button
+            type="button"
+            className="dashboard-recovery-alert-btn"
+            onClick={() => setActiveTab('daily')}
+          >
+            <span>Start Today's Drills</span>
+            <Icons.ArrowRight size={12} />
+          </button>
+        </div>
+      )}
+
       {/* 4 Core Subject Metrics Grid */}
       <div className="minimal-metrics-grid">
         {/* Slot 1: Quant / Physics / Core */}
@@ -248,7 +268,7 @@ function DashboardView({
 
         <div className="dashboard-heatmap-dual-row">
           <div className="heatmap-matrix-left-col">
-            <StudyContributionHeatmap tracker={tracker} compact={false} />
+            <StudyContributionHeatmap tracker={tracker} startDateStr={settings?.startDate} compact={false} />
           </div>
 
           <div className="streak-analytics-right-col">

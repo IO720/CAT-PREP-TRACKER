@@ -126,9 +126,14 @@ export const mergeTrackerStates = (localState, cloudState) => {
     const cloudWeeks = cloudState.tracker?.[month] || [];
     const baseWeeks = base.tracker?.[month] || [];
 
-    const weekNames = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    // Support standard weeks plus any extended buffer weeks
+    const allWeekNames = new Set([
+      'Week 1', 'Week 2', 'Week 3', 'Week 4',
+      ...(localWeeks.map(w => w.week)),
+      ...(cloudWeeks.map(w => w.week))
+    ]);
 
-    mergedTracker[month] = weekNames.map((wName, wIdx) => {
+    mergedTracker[month] = Array.from(allWeekNames).map((wName, wIdx) => {
       const lWeek = localWeeks.find(w => w.week === wName) || baseWeeks[wIdx] || { week: wName, days: [] };
       const cWeek = cloudWeeks.find(w => w.week === wName) || { week: wName, days: [] };
 
@@ -168,6 +173,10 @@ export const mergeTrackerStates = (localState, cloudState) => {
           customTargetQty: Number(lDay.customTargetQty || cDay.customTargetQty) || 1,
           customUnit: lDay.customUnit || cDay.customUnit || "Tasks",
           hasCustomObjective: Boolean(lDay.hasCustomObjective ?? cDay.hasCustomObjective ?? false),
+          catchUpActive: Boolean(lDay.catchUpActive || cDay.catchUpActive),
+          catchUpQuant: Number(lDay.catchUpQuant || cDay.catchUpQuant) || 0,
+          catchUpLrdi: Number(lDay.catchUpLrdi || cDay.catchUpLrdi) || 0,
+          catchUpVarc: Number(lDay.catchUpVarc || cDay.catchUpVarc) || 0,
           studyHours: Math.max(Number(lDay.studyHours) || 0, Number(cDay.studyHours) || 0),
           notes: mergedNotes,
           sessions: Array.from(sessionsMap.values())
@@ -175,14 +184,20 @@ export const mergeTrackerStates = (localState, cloudState) => {
       });
 
       return {
+        ...lWeek,
         week: wName,
+        isExtended: Boolean(lWeek.isExtended || cWeek.isExtended),
         days
       };
     });
   }
 
   // Merge Study Plan
-  const mergedStudyPlan = (localState.studyPlan || base.studyPlan).map((lPlan, idx) => {
+  const planSource = (localState.studyPlan?.length || 0) >= (cloudState.studyPlan?.length || 0)
+    ? (localState.studyPlan || base.studyPlan)
+    : (cloudState.studyPlan || base.studyPlan);
+
+  const mergedStudyPlan = planSource.map((lPlan, idx) => {
     const cPlan = (cloudState.studyPlan || [])[idx] || {};
     let status = lPlan.status || "Not Started";
     if (cPlan.status === 'Completed' || status === 'Completed') {
@@ -190,9 +205,17 @@ export const mergeTrackerStates = (localState, cloudState) => {
     } else if (cPlan.status === 'In Progress' || status === 'In Progress') {
       status = 'In Progress';
     }
+    const completedSubtopics = Array.from(new Set([
+      ...(lPlan.completedSubtopics || []),
+      ...(cPlan.completedSubtopics || [])
+    ]));
+
     return {
       ...lPlan,
-      status
+      ...cPlan,
+      status,
+      completedSubtopics,
+      isExtended: Boolean(lPlan.isExtended || cPlan.isExtended)
     };
   });
 

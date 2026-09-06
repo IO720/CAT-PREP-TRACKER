@@ -258,4 +258,39 @@ describe('Weekly Rollover, Data Isolation & Reset Functionality', () => {
     expect(toggledSubject).toBe('custom');
     expect(toggledVal).toBe(true);
   });
+
+  it('blurs and locks days prior to start date when prep starts mid-week', () => {
+    // Prep start date is Sunday Sep 6
+    const stateMidWeek = {
+      ...mockState,
+      settings: {
+        ...mockState.settings,
+        startDate: '2026-09-06'
+      }
+    };
+
+    const { container } = render(
+      <DailyTrackerView
+        state={stateMidWeek}
+        activeMonth="Month 1"
+        setActiveMonth={() => {}}
+        activeWeek="Week 1"
+        setActiveWeek={() => {}}
+        activeDayName="Monday" // Monday is Aug 31 (prior to Sep 6)
+        setActiveDayName={() => {}}
+        updateDayMetric={() => {}}
+        updateDayNotes={() => {}}
+      />
+    );
+
+    // Locked alert card should be displayed
+    expect(screen.getByText(/Prior to Preparation Start Date/i)).toBeDefined();
+    expect(screen.getByText(/Go to Day 1/i)).toBeDefined();
+
+    // Mini track should have is-prior-day buttons
+    expect(container.querySelectorAll('.mini-day-pill.is-prior-day').length).toBe(6); // Mon to Sat
+
+    // Drills stack should have prior-day-blurred class
+    expect(container.querySelector('.drills-stack.prior-day-blurred')).toBeDefined();
+  });
 });

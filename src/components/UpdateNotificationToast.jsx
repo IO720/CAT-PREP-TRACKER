@@ -2,7 +2,7 @@ import React from 'react';
 import { applyInstantUpdate } from '../utils/versionCheck';
 import { Icons } from './AspirantIcons';
 
-export default function UpdateNotificationToast({ updateData, onDismiss }) {
+export default function UpdateNotificationToast({ updateData, onDismiss, onOpenPatchNotes }) {
   if (!updateData) return null;
 
   return (
@@ -16,11 +16,31 @@ export default function UpdateNotificationToast({ updateData, onDismiss }) {
             New App Update (v{updateData.version})
           </div>
           <div className="update-toast-subtitle">
-            {updateData.releaseNotes || 'New features and UI improvements are ready.'}
+            {updateData.releaseNotes || 'New features, security hardening, and UI improvements are ready.'}
           </div>
         </div>
       </div>
       <div className="update-toast-actions">
+        {onOpenPatchNotes && (
+          <button
+            type="button"
+            className="update-toast-btn-notes"
+            onClick={onOpenPatchNotes}
+            style={{
+              padding: '6px 10px',
+              background: 'rgba(56, 189, 248, 0.15)',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              color: '#38bdf8',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Patch Notes
+          </button>
+        )}
         <button 
           className="update-toast-btn-apply"
           onClick={() => applyInstantUpdate(updateData.version)}

@@ -22,7 +22,9 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { 
   getTodayTrackerPosition, 
   fetchWebOrOsDate, 
-  formatDateShort 
+  formatDateShort,
+  formatDateISO,
+  getMondayOfWeek 
 } from './utils/dateUtils';
 import { stripEmojis } from './utils/textUtils';
 import HeaderProfileDropdown from './components/HeaderProfileDropdown';
@@ -52,6 +54,7 @@ const StudyTimerView = lazy(() => import('./components/StudyTimerView'));
 const StudyLounge = lazy(() => import('./components/StudyLounge'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 const AchievementsView = lazy(() => import('./components/AchievementsView'));
+const BacklogRecoveryView = lazy(() => import('./components/BacklogRecoveryView'));
 
 // Code-split lazy modals
 const ThemeRedeemModal = lazy(() => import('./components/ThemeRedeemModal'));
@@ -60,6 +63,18 @@ const TermsAndPrivacyModal = lazy(() => import('./components/TermsAndPrivacyModa
 const OnboardingWelcomeModal = lazy(() => import('./components/OnboardingWelcomeModal'));
 const PeerInspectorModal = lazy(() => import('./components/PeerInspectorModal'));
 const LevelUpModal = lazy(() => import('./components/LevelUpModal'));
+const AdaptiveWeekReviewModal = lazy(() => import('./components/AdaptiveWeekReviewModal'));
+const PatchNotesHubModal = lazy(() => import('./components/PatchNotesHubModal'));
+
+import {
+  calculateWeekProgress,
+  applyCatchUpBlitzToState,
+  applyWeekendSprintToState,
+  applyScheduleShiftToState,
+  calculateOverallBacklog,
+  sanitizeTrackerState
+} from './utils/adaptiveStudyEngine';
+import { recordBehaviorTelemetry } from './utils/studyBehaviorEngine';
 import DitherBackground from './components/DitherBackground';
 import LiquidIntroLoader from './components/LiquidIntroLoader';
 import ClickSpark from './components/ClickSpark';
@@ -277,6 +292,7 @@ export default function App() {
   const [redeemPreselectTheme, setRedeemPreselectTheme] = useState(null);
   const [stampRallyData, setStampRallyData] = useState(() => getStampRallyData());
   const [isStampRallyOpen, setIsStampRallyOpen] = useState(false);
+  const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
   const [triggerStampAnimation, setTriggerStampAnimation] = useState(false);
   const [appLoading, setAppLoading] = useState(true);
   const [isInitialEntrance, setIsInitialEntrance] = useState(false);
@@ -305,6 +321,21 @@ export default function App() {
     window.addEventListener('catalyze_trigger_levelup', handleExternalLevelUp);
     return () => window.removeEventListener('catalyze_trigger_levelup', handleExternalLevelUp);
   }, []);
+
+  // Auto-sanitize any duplicate stacked extended weeks from legacy state
+  useEffect(() => {
+    setState(prev => {
+      const sanitized = sanitizeTrackerState(prev);
+      if (sanitized !== prev) {
+        saveState(sanitized);
+        return sanitized;
+      }
+      return prev;
+    });
+  }, []);
+
+  const [checkpointWeekData, setCheckpointWeekData] = useState(null);
+  const [isCheckpointModalOpen, setIsCheckpointModalOpen] = useState(false);
 
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(() => {
     try {
@@ -568,6 +599,26 @@ export default function App() {
       return { total: 3, done: 0, left: 3 };
     }
   }, [state.tracker, state.settings?.startDate]);
+
+  // Live calculation of syllabus backlog and deficits for dedicated recovery cockpit tab
+  const overallBacklog = useMemo(() => {
+    try {
+      const pos = getTodayTrackerPosition(state.settings?.startDate);
+      const mNum = parseInt(pos.activeMonth?.replace(/\D/g, ''), 10) || 1;
+      const wNum = parseInt(pos.activeWeek?.replace(/\D/g, ''), 10) || 1;
+      const gWeek = Math.min(16, Math.max(1, (mNum - 1) * 4 + wNum));
+      return calculateOverallBacklog(state, gWeek);
+    } catch (_e) {
+      return { hasBacklog: false, totalDeficitDrills: 0, backlogWeeks: [] };
+    }
+  }, [state]);
+
+  // If user is currently on recovery tab but has no backlog (e.g., newly started account), redirect to daily drills
+  useEffect(() => {
+    if (activeTab === 'recovery' && !overallBacklog.hasBacklog) {
+      setActiveTab('daily');
+    }
+  }, [activeTab, overallBacklog.hasBacklog]);
 
   // Focus Timer State with persistent local storage hydration & drift reconciliation
   const [timerState, setTimerState] = useState(() => {
@@ -1238,6 +1289,9 @@ export default function App() {
   // Reset all tracker data to defaults
   const handleReset = () => {
     if (window.confirm("Are you sure you want to reset all tracker data to defaults? This action cannot be undone.")) {
+      try {
+        localStorage.removeItem('cat_active_timer_session');
+      } catch (_e) {}
       const initial = getInitialState();
       setState(initial);
       saveState(initial);
@@ -1343,6 +1397,248 @@ export default function App() {
     });
   };
   const updateWeekStatus = (weekTitle, status) => updateWeekPlan(weekTitle, status);
+
+  // Adaptive Syllabus Checkpoint Handlers
+  const handleOpenCheckpoint = (monthKey, weekKey, globalWeekIdx) => {
+    let gIdx = globalWeekIdx;
+    if (!gIdx) {
+      const mNum = parseInt(monthKey?.replace(/\D/g, ''), 10) || 1;
+      const wNum = parseInt(weekKey?.replace(/\D/g, ''), 10) || 1;
+      gIdx = Math.min(16, Math.max(1, (mNum - 1) * 4 + wNum));
+    }
+    const progress = calculateWeekProgress(state, monthKey, weekKey, gIdx);
+    setCheckpointWeekData(progress);
+    setIsCheckpointModalOpen(true);
+  };
+
+  const handleCloseCheckpoint = () => {
+    setIsCheckpointModalOpen(false);
+  };
+
+  const handleApplyRecoveryPlan = (planId, chosenOption, progressData) => {
+    const { monthKey, weekKey, globalWeekIdx } = progressData;
+
+    if (planId === 'reset_start_date') {
+      const todayDateStr = formatDateISO(new Date());
+      const todayWeekday = DAY_NAMES[new Date().getDay()] || 'Monday';
+      try {
+        localStorage.removeItem('cat_active_timer_session');
+      } catch (_e) {}
+      setState(prev => {
+        // Clean up any duplicate extended buffer weeks from tracker and studyPlan
+        const cleanedStudyPlan = (prev.studyPlan || [])
+          .filter(w => !w.isExtended)
+          .map(w => ({
+            ...w,
+            status: 'Not Started',
+            triageActive: false,
+            completedSubtopics: []
+          }));
+        const cleanedTracker = { ...prev.tracker };
+        for (const mKey of Object.keys(cleanedTracker)) {
+          cleanedTracker[mKey] = (cleanedTracker[mKey] || [])
+            .filter(w => !w.isExtended && !w.week.includes('(Extended Buffer)'))
+            .map(w => ({
+              ...w,
+              days: (w.days || []).map(day => ({
+                ...day,
+                quantCompleted: false,
+                lrdiCompleted: false,
+                varcCompleted: false,
+                customCompleted: false,
+                quantCount: 0,
+                lrdiCount: 0,
+                varcCount: 0,
+                customCount: 0,
+                studyHours: 0,
+                timerSessions: [],
+                sessions: [],
+                notes: ''
+              }))
+            }));
+        }
+        return {
+          ...prev,
+          studyPlan: cleanedStudyPlan,
+          tracker: cleanedTracker,
+          settings: {
+            ...prev.settings,
+            startDate: todayDateStr
+          },
+          lastUpdated: Date.now()
+        };
+      });
+      setActiveMonth('Month 1');
+      setActiveWeek('Week 1');
+      setActiveDayName(todayWeekday);
+      setActiveTab('daily');
+      if (typeof setActivityNotification === 'function') {
+        setActivityNotification({
+          title: 'Prep Start Date Reset to Today!',
+          message: 'Your 16-week timeline has restarted from Day 1. Start your initial Month 1: Week 1 drills!',
+          actionLabel: 'Start Week 1',
+          onAction: () => {
+            setActiveMonth('Month 1');
+            setActiveWeek('Week 1');
+            setActiveDayName(todayWeekday);
+            setActiveTab('daily');
+          }
+        });
+      }
+    } else if (planId === 'stay_on_week') {
+      const todayWeekday = DAY_NAMES[new Date().getDay()] || 'Monday';
+      setActiveMonth(monthKey);
+      setActiveWeek(weekKey);
+      setActiveDayName(todayWeekday);
+      setActiveTab('daily');
+      if (typeof setActivityNotification === 'function') {
+        setActivityNotification({
+          title: 'Staying on Track!',
+          message: `Continuing ${monthKey} • ${weekKey} daily drills. Master your daily quotas across Monday to Sunday to build consistent momentum!`,
+          actionLabel: 'View Today',
+          onAction: () => {
+            setActiveMonth(monthKey);
+            setActiveWeek(weekKey);
+            setActiveTab('daily');
+          }
+        });
+      }
+    } else if (planId === 'redirect_week1') {
+      setActiveMonth('Month 1');
+      setActiveWeek('Week 1');
+      setActiveDayName('Monday');
+      setActiveTab('daily');
+      if (typeof setActivityNotification === 'function') {
+        setActivityNotification({
+          title: 'Switched to Initial Exercises',
+          message: 'Redirected to Month 1 • Week 1. Begin with foundation concept lectures and daily drills.',
+          actionLabel: 'Start Week 1',
+          onAction: () => {
+            setActiveMonth('Month 1');
+            setActiveWeek('Week 1');
+            setActiveTab('daily');
+          }
+        });
+      }
+    } else if (planId === 'schedule_shift') {
+      const bufferWeekTitle = `${weekKey} (Extended Buffer)`;
+      setState(prev => applyScheduleShiftToState(prev, monthKey, weekKey, globalWeekIdx));
+      setActiveMonth(monthKey);
+      setActiveWeek(bufferWeekTitle);
+      setActiveDayName('Monday');
+      setActiveTab('daily');
+      if (typeof setActivityNotification === 'function') {
+        setActivityNotification({
+          title: 'Syllabus Extended (+1 Buffer Week)',
+          message: `Switched to ${bufferWeekTitle}: 7 extra days granted. Start with Monday foundation drills!`,
+          actionLabel: 'View Drills',
+          onAction: () => {
+            setActiveMonth(monthKey);
+            setActiveWeek(bufferWeekTitle);
+            setActiveTab('daily');
+          }
+        });
+      }
+    } else if (planId === 'catch_up_blitz') {
+      const nextWeekNum = (parseInt(weekKey?.replace(/\D/g, ''), 10) % 4) + 1;
+      const targetWeekKey = `Week ${nextWeekNum}`;
+      setState(prev => applyCatchUpBlitzToState(prev, monthKey, targetWeekKey, chosenOption));
+      setActiveMonth(monthKey);
+      setActiveWeek(targetWeekKey);
+      setActiveDayName('Monday');
+      setActiveTab('daily');
+      if (typeof setActivityNotification === 'function') {
+        setActivityNotification({
+          title: '7-Day Catch-Up Blitz Active',
+          message: `Switched to ${targetWeekKey}: daily micro-targets (+${chosenOption.dailyExtraQuant || 0} QA, +${chosenOption.dailyExtraLrdi || 0} DILR) are active on Monday!`,
+          actionLabel: 'Start Today',
+          onAction: () => {
+            setActiveMonth(monthKey);
+            setActiveWeek(targetWeekKey);
+            setActiveTab('daily');
+          }
+        });
+      }
+    } else if (planId === 'weekend_sprint') {
+      const nextWeekNum = (parseInt(weekKey?.replace(/\D/g, ''), 10) % 4) + 1;
+      const targetWeekKey = `Week ${nextWeekNum}`;
+      setState(prev => applyWeekendSprintToState(prev, monthKey, targetWeekKey, chosenOption));
+      setActiveMonth(monthKey);
+      setActiveWeek(targetWeekKey);
+      setActiveDayName('Saturday');
+      setActiveTab('daily');
+      if (typeof setActivityNotification === 'function') {
+        setActivityNotification({
+          title: 'Weekend Recovery Sprint Active',
+          message: `Switched to ${targetWeekKey} Saturday: deep-work sprint targets (+${chosenOption.satTargets?.quant || 0} QA) ready!`,
+          actionLabel: 'Start Saturday',
+          onAction: () => {
+            setActiveMonth(monthKey);
+            setActiveWeek(targetWeekKey);
+            setActiveDayName('Saturday');
+            setActiveTab('daily');
+          }
+        });
+      }
+    } else if (planId === 'pareto_triage') {
+      updateWeekPlan(progressData.planItem?.week || `${monthKey}: ${weekKey}`, {
+        status: 'In Progress',
+        triageActive: true,
+        triageNotes: chosenOption?.description || 'Pareto 80/20 Core Concept Focus'
+      });
+      setActiveMonth(monthKey);
+      setActiveWeek(weekKey);
+      setActiveDayName('Monday');
+      setActiveTab('daily');
+      if (typeof setActivityNotification === 'function') {
+        setActivityNotification({
+          title: 'Pareto 80/20 Triage Active',
+          message: 'Target high-yield core concepts on your checklist to clear the syllabus bottleneck.',
+          actionLabel: 'View Checklist',
+          onAction: () => {
+            setActiveMonth(monthKey);
+            setActiveWeek(weekKey);
+            setActiveTab('timeline');
+          }
+        });
+      }
+    } else if (planId === 'mark_complete') {
+      updateWeekPlan(progressData.planItem?.week || `${monthKey}: ${weekKey}`, {
+        status: 'Completed'
+      });
+      const nextWeekNum = (parseInt(weekKey?.replace(/\D/g, ''), 10) % 4) + 1;
+      const targetWeekKey = `Week ${nextWeekNum}`;
+      setActiveMonth(monthKey);
+      setActiveWeek(targetWeekKey);
+      setActiveDayName('Monday');
+      setActiveTab('daily');
+      if (typeof setActivityNotification === 'function') {
+        setActivityNotification({
+          title: 'Week Marked Complete',
+          message: `Self-study confirmed. Unlocked and switched to ${targetWeekKey}!`,
+          actionLabel: 'Start Next Week',
+          onAction: () => {
+            setActiveMonth(monthKey);
+            setActiveWeek(targetWeekKey);
+            setActiveTab('daily');
+          }
+        });
+      }
+    }
+
+    // Record persistent study behavior telemetry for AI personalization research
+    try {
+      const wasRecommended = (progressData?.recommendedPlan === planId) || (chosenOption?.isRecommended);
+      setState(prev => recordBehaviorTelemetry(prev, 'RECOVERY_PLAN_APPLIED', {
+        planId,
+        monthKey,
+        weekKey,
+        globalWeekIdx,
+        wasRecommended,
+        appliedAt: Date.now()
+      }));
+    } catch (_e) {}
+  };
 
 
   // 2. Update Quantities and Completion status in Daily Tracker
@@ -2250,6 +2546,24 @@ export default function App() {
             <Icons.Trophy />
           </DockItem>
 
+          {overallBacklog.hasBacklog && (
+            <DockItem 
+              active={activeTab === 'recovery'} 
+              onClick={() => setActiveTab('recovery')} 
+              ariaLabel="Backlog Recovery Cockpit"
+              tooltipTitle="Backlog Recovery"
+              tooltipTag={`${overallBacklog.totalDeficitDrills} DEFICIT Qs`}
+              className="dock-item-backlog-pulse"
+            >
+              <div className="dock-backlog-icon-wrap">
+                <Icons.Zap size={20} color={activeTab === 'recovery' ? '#f59e0b' : '#fbbf24'} />
+                <span className="dock-backlog-deficit-badge" title={`${overallBacklog.totalDeficitDrills} backlog questions pending`}>
+                  {overallBacklog.totalDeficitDrills > 99 ? '99+' : overallBacklog.totalDeficitDrills}
+                </span>
+              </div>
+            </DockItem>
+          )}
+
           <DockItem 
             active={activeTab === 'daily'} 
             onClick={() => setActiveTab('daily')} 
@@ -2362,12 +2676,23 @@ export default function App() {
               <span className="cyber-pulse-dot" />
               <span className="cyber-protocol-tag">// SYS /</span>
               <span className="cyber-page-name" key={activeTab}>
-                {activeTab === 'dashboard' ? 'DASHBOARD' : activeTab === 'lounge' ? 'STUDY LOUNGE' : activeTab === 'timeline' ? 'STUDY PLAN' : activeTab === 'timer' ? 'FOCUS SANCTUARY' : activeTab === 'daily' ? 'DAILY DRILLS' : activeTab === 'mocks' ? 'MOCK TESTS' : activeTab === 'achievements' ? 'ACHIEVEMENTS' : activeTab === 'errors' ? 'ERROR LOG' : activeTab === 'profile' ? 'PROFILE' : activeTab === 'settings' ? 'SETTINGS' : 'DASHBOARD'}
+                {activeTab === 'dashboard' ? 'DASHBOARD' : activeTab === 'recovery' ? 'BACKLOG RECOVERY' : activeTab === 'lounge' ? 'STUDY LOUNGE' : activeTab === 'timeline' ? 'STUDY PLAN' : activeTab === 'timer' ? 'FOCUS SANCTUARY' : activeTab === 'daily' ? 'DAILY DRILLS' : activeTab === 'mocks' ? 'MOCK TESTS' : activeTab === 'achievements' ? 'ACHIEVEMENTS' : activeTab === 'errors' ? 'ERROR LOG' : activeTab === 'profile' ? 'PROFILE' : activeTab === 'settings' ? 'SETTINGS' : 'DASHBOARD'}
               </span>
             </div>
           </div>
 
           <div className="header-stats cyber-bento-cluster">
+            {/* Release Notes & System Updates Pill */}
+            <button 
+              type="button" 
+              className="header-patch-notes-btn"
+              onClick={() => setIsPatchNotesOpen(true)}
+              title="Inspect What's New, Security Hardening & System Updates"
+            >
+              <span className="header-patch-pulse-dot" />
+              <span>v1.0.88</span>
+            </button>
+
             {/* Japanese Cat Stamp Rally Pill */}
             <button 
               type="button" 
@@ -2409,6 +2734,7 @@ export default function App() {
                 setIsGuestMode(false);
               }}
               timerState={timerState}
+              onOpenPatchNotes={() => setIsPatchNotesOpen(true)}
             />
           </div>
 
@@ -2468,6 +2794,26 @@ export default function App() {
               updateWeekStatus={updateWeekStatus} 
               updateWeekPlan={updateWeekPlan}
               onWeekClick={handleJumpToWeek} 
+              onOpenCheckpoint={handleOpenCheckpoint}
+            />
+          )}
+          {activeTab === 'recovery' && (
+            <BacklogRecoveryView 
+              state={state}
+              overallBacklog={overallBacklog}
+              activeMonth={activeMonth}
+              activeWeek={activeWeek}
+              onUpdateDayMetric={updateDayMetric}
+              onUpdateWeekPlan={updateWeekPlan}
+              onApplyPlan={handleApplyRecoveryPlan}
+              onNavigateToDaily={(targetMonth, targetWeek, targetDay) => {
+                if (targetMonth) setActiveMonth(targetMonth);
+                if (targetWeek) setActiveWeek(targetWeek);
+                if (targetDay) setActiveDayName(targetDay);
+                setActiveTab('daily');
+              }}
+              onNavigateToTimer={() => setActiveTab('timer')}
+              onNavigateToTimeline={() => setActiveTab('timeline')}
             />
           )}
           {activeTab === 'daily' && (
@@ -2492,6 +2838,9 @@ export default function App() {
               onOpenStampRally={() => handleOpenStampRally(true)}
               onAwardDailyStamp={handleAwardStamp}
               stampRallyData={stampRallyData}
+              onOpenCheckpoint={handleOpenCheckpoint}
+              onNavigateToBacklog={() => setActiveTab('recovery')}
+              hasBacklog={overallBacklog.hasBacklog}
             />
           )}
           {activeTab === 'mocks' && (
@@ -2608,6 +2957,7 @@ export default function App() {
               targetExam={state.settings?.targetExam || 'cat'}
               onSelectTargetExam={handleSelectTargetExam}
               onOpenOnboarding={() => setIsOnboardingOpen(true)}
+              onOpenPatchNotes={() => setIsPatchNotesOpen(true)}
             />
           )}
           </Suspense>
@@ -2639,6 +2989,19 @@ export default function App() {
           >
             <Icons.Drills size={22} />
           </DockItem>
+
+          {overallBacklog.hasBacklog && (
+            <DockItem 
+              active={activeTab === 'recovery'} 
+              onClick={() => setActiveTab('recovery')} 
+              ariaLabel="Backlog Recovery"
+              tooltipTitle="Recovery"
+              className="mobile-dock-btn mobile-dock-backlog-btn"
+            >
+              <Icons.Zap size={22} color={activeTab === 'recovery' ? '#f59e0b' : '#fbbf24'} />
+              <span className="mobile-dock-backlog-dot" />
+            </DockItem>
+          )}
 
           <DockItem 
             active={activeTab === 'lounge'} 
@@ -2727,6 +3090,7 @@ export default function App() {
         <UpdateNotificationToast
           updateData={availableUpdate}
           onDismiss={() => setAvailableUpdate(null)}
+          onOpenPatchNotes={() => setIsPatchNotesOpen(true)}
         />
       )}
 
@@ -2803,6 +3167,35 @@ export default function App() {
             newLevel={levelUpModalData.newLevel}
             totalExp={levelUpModalData.totalExp}
             isMilestone={levelUpModalData.isMilestone}
+          />
+        </Suspense>
+      )}
+
+      {/* Adaptive Syllabus & Quota Checkpoint Modal */}
+      {isCheckpointModalOpen && checkpointWeekData && (
+        <Suspense fallback={null}>
+          <AdaptiveWeekReviewModal
+            isOpen={isCheckpointModalOpen}
+            onClose={handleCloseCheckpoint}
+            progressData={checkpointWeekData}
+            onApplyPlan={handleApplyRecoveryPlan}
+            state={state}
+          />
+        </Suspense>
+      )}
+
+      {/* Release Notes & System Updates Hub Modal */}
+      {isPatchNotesOpen && (
+        <Suspense fallback={null}>
+          <PatchNotesHubModal
+            isOpen={isPatchNotesOpen}
+            onClose={() => setIsPatchNotesOpen(false)}
+            onNavigateTab={(tab) => {
+              setActiveTab(tab);
+              setIsPatchNotesOpen(false);
+            }}
+            initialVersion="1.0.88"
+            theme={theme}
           />
         </Suspense>
       )}

@@ -11,13 +11,15 @@ import {
   getCalculatedDateForTrackerDay, 
   formatDateMonthDay, 
   isToday, 
-  getTodayTrackerPosition 
+  getTodayTrackerPosition,
+  isDayPriorToStartDate
 } from '../utils/dateUtils';
 import { stripEmojis } from '../utils/textUtils';
 import DailyQuotaCelebrationModal from './DailyQuotaCelebrationModal';
 import { getActiveExamConfig } from '../config/examConfig';
 import SmoothCaretInput from './animations/SmoothCaretInput';
 import SmoothCaretTextarea from './animations/SmoothCaretTextarea';
+import { calculateWeekProgress } from '../utils/adaptiveStudyEngine';
 
 function DailyTrackerView({ 
   state, 
@@ -39,7 +41,10 @@ function DailyTrackerView({
   onRecordDayProgress,
   onOpenStampRally,
   onAwardDailyStamp,
-  stampRallyData
+  stampRallyData,
+  onOpenCheckpoint,
+  onNavigateToBacklog,
+  hasBacklog = false
 }) {
   const { tracker, settings } = state;
   const startDateStr = settings?.startDate;
@@ -61,6 +66,16 @@ function DailyTrackerView({
   // Available weeks in current month
   const weeks = tracker[activeMonth] || [];
 
+  // Standard 4 curriculum weeks only (strictly prevents extended buffer weeks from cluttering navigator)
+  const standardWeeks = useMemo(() => {
+    const standardKeys = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    const currentMonthWeeks = tracker[activeMonth] || [];
+    return standardKeys.map(k => {
+      const found = currentMonthWeeks.find(w => w.week === k);
+      return found || { week: k, days: [] };
+    });
+  }, [tracker, activeMonth]);
+
   // Active days for selected week
   const activeWeekDays = useMemo(() => {
     const found = weeks.find(w => w.week === activeWeek);
@@ -78,6 +93,37 @@ function DailyTrackerView({
   const globalWeekNum = Math.min(16, Math.max(1, (monthNum - 1) * 4 + weekNum));
   const activeWeekPlan = (state.studyPlan || [])[globalWeekNum - 1] || null;
 
+  // Real-time weekly progress and syllabus pacing audit
+  const currentWeekProgress = useMemo(() => {
+    return calculateWeekProgress(state, activeMonth, activeWeek, globalWeekNum);
+  }, [state, activeMonth, activeWeek, globalWeekNum]);
+
+  // Forward week switching handler with adaptive incomplete checkpoint guard
+  const handleSelectWeek = (targetWeekName) => {
+    const currentWeekIdx = weeks.findIndex(w => w.week === activeWeek);
+    const targetWeekIdx = weeks.findIndex(w => w.week === targetWeekName);
+
+    // If advancing forward past an ELAPSED week that has incomplete portion (<70% and not completed), trigger checkpoint!
+    if (
+      targetWeekIdx > currentWeekIdx && 
+      currentWeekProgress.isElapsed &&
+      currentWeekProgress.overallProgressPct < 70 && 
+      !currentWeekProgress.isExplicitlyCompleted
+    ) {
+      if (onOpenCheckpoint) {
+        onOpenCheckpoint(activeMonth, activeWeek, globalWeekNum);
+        return;
+      }
+    }
+
+    setActiveWeek(targetWeekName);
+    const targetDays = (weeks.find(w => w.week === targetWeekName)?.days) || [];
+    const targetDay = targetDays.some(d => d.day === effectiveDayName)
+      ? effectiveDayName
+      : (todayPosition.dayName || 'Monday');
+    setEffectiveDayName(targetDay);
+  };
+
   // Selected Day spotlight (controlled via activeDayName prop or local fallback)
   const [internalDayName, setInternalDayName] = useState(() => {
     return todayPosition.dayName || 'Monday';
@@ -88,6 +134,20 @@ function DailyTrackerView({
     if (setActiveDayName) setActiveDayName(name);
     setInternalDayName(name);
   };
+
+  // Ensure selected day is not prior to start date when on start week
+  useEffect(() => {
+    if (startDateStr && isDayPriorToStartDate(activeMonth, activeWeek, effectiveDayName, startDateStr)) {
+      if (todayPosition?.dayName && !isDayPriorToStartDate(activeMonth, activeWeek, todayPosition.dayName, startDateStr)) {
+        setEffectiveDayName(todayPosition.dayName);
+      } else {
+        const firstValidDay = activeWeekDays.find(d => !isDayPriorToStartDate(activeMonth, activeWeek, d.day, startDateStr));
+        if (firstValidDay) {
+          setEffectiveDayName(firstValidDay.day);
+        }
+      }
+    }
+  }, [activeMonth, activeWeek, startDateStr, activeWeekDays]);
 
   // Custom objective full configuration state
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
@@ -225,11 +285,24 @@ function DailyTrackerView({
     }
     const targetStr = dayObj?.[`${subj}Target`];
     const match = targetStr ? targetStr.match(/\d+/) : null;
-    if (match) return parseInt(match[0], 10);
-    if (subj === 'quant') return 18;
-    if (subj === 'lrdi') return 4;
-    if (subj === 'varc') return 4;
-    return 1;
+    let base = match ? parseInt(match[0], 10) : (subj === 'quant' ? 18 : 4);
+
+    if (dayObj?.catchUpActive) {
+      if (subj === 'quant' && (dayObj.catchUpQuant || 0) > 0) {
+        if (!targetStr || (!targetStr.includes('Boost') && !targetStr.includes('Sprint') && !targetStr.includes('Backlog') && !targetStr.includes('Catch-Up'))) {
+          base += dayObj.catchUpQuant;
+        }
+      } else if (subj === 'lrdi' && (dayObj.catchUpLrdi || 0) > 0) {
+        if (!targetStr || (!targetStr.includes('Boost') && !targetStr.includes('Sprint') && !targetStr.includes('Backlog') && !targetStr.includes('Catch-Up'))) {
+          base += dayObj.catchUpLrdi;
+        }
+      } else if (subj === 'varc' && (dayObj.catchUpVarc || 0) > 0) {
+        if (!targetStr || (!targetStr.includes('Boost') && !targetStr.includes('Sprint') && !targetStr.includes('Backlog') && !targetStr.includes('Catch-Up'))) {
+          base += dayObj.catchUpVarc;
+        }
+      }
+    }
+    return base;
   };
 
   const handleStepQty = (month, weekName, dayName, subject, currentVal, delta) => {
@@ -255,9 +328,20 @@ function DailyTrackerView({
   const selectedDayDate = getCalculatedDateForTrackerDay(activeMonth, activeWeek, selectedDay.day, startDateStr);
   const selectedDayDateFormatted = formatDateMonthDay(selectedDayDate);
   const selectedDayIsToday = isToday(activeMonth, activeWeek, selectedDay.day, startDateStr);
+  const selectedDayIsPrior = isDayPriorToStartDate(activeMonth, activeWeek, selectedDay.day, startDateStr);
 
-  const hasCustomObjective = Boolean(selectedDay.hasCustomObjective);
+  const isLegacyCatchUpCustom = Boolean(
+    selectedDay.customTitle === 'Catch-Up Micro Target' ||
+    selectedDay.customTitle?.includes('Recovery Sprint') ||
+    selectedDay.customBadge === 'CATCH-UP' ||
+    selectedDay.customBadge === 'SPRINT'
+  );
+  const hasCustomObjective = Boolean(selectedDay.hasCustomObjective && !isLegacyCatchUpCustom);
   const totalDayQuotas = hasCustomObjective ? 4 : 3;
+
+  const quantTargetQty = getSubjectTarget('quant', selectedDay);
+  const lrdiTargetQty = getSubjectTarget('lrdi', selectedDay);
+  const varcTargetQty = getSubjectTarget('varc', selectedDay);
 
   const selectedCompletedCount = 
     (selectedDay.quantCompleted ? 1 : 0) + 
@@ -346,9 +430,27 @@ function DailyTrackerView({
             <span className="sync-lbl-text">{syncStatus === 'syncing' ? 'Syncing...' : 'Synced'}</span>
           </div>
 
+          {/* Adaptive Syllabus & Quota Checkpoint Trigger */}
+          <button 
+            type="button" 
+            className="minimal-btn outline adaptive-pacing-btn"
+            onClick={() => onOpenCheckpoint && onOpenCheckpoint(activeMonth, activeWeek, globalWeekNum)}
+            title="Review weekly syllabus progress, deficits, and recovery plans"
+            style={{
+              borderColor: currentWeekProgress.badgeColor ? `${currentWeekProgress.badgeColor}55` : undefined,
+              color: currentWeekProgress.badgeColor || '#38bdf8'
+            }}
+          >
+            <Icons.Target size={12} color={currentWeekProgress.badgeColor || '#38bdf8'} />
+            <span>
+              {currentWeekProgress.statusBadge}: {currentWeekProgress.overallProgressPct}%
+              {currentWeekProgress.isElapsed && currentWeekProgress.deficitQuant > 0 ? ` (-${currentWeekProgress.deficitQuant + currentWeekProgress.deficitLrdi} Qs)` : ''}
+            </span>
+          </button>
+
           {resetWeekMetrics && (
             <button 
-              type="button"
+              type="button" 
               className="minimal-btn outline reset-week-trigger-btn"
               onClick={() => setResetModal({ isOpen: true, type: 'week' })}
               title={`Reset completed drills for ${activeWeek}`}
@@ -360,7 +462,7 @@ function DailyTrackerView({
 
           {onRecordDayProgress && (
             <button 
-              type="button"
+              type="button" 
               className="minimal-btn outline"
               onClick={onRecordDayProgress}
               disabled={syncStatus === 'syncing'}
@@ -372,7 +474,7 @@ function DailyTrackerView({
           )}
 
           <button 
-            type="button"
+            type="button" 
             className="minimal-btn accent"
             onClick={handleJumpToToday}
             title="Jump to today's active day"
@@ -416,19 +518,12 @@ function DailyTrackerView({
 
           {/* Weeks */}
           <div className="period-pills-row">
-            {weeks.map(w => (
+            {standardWeeks.map(w => (
               <button
                 key={w.week}
                 type="button"
                 className={`period-pill week ${activeWeek === w.week ? 'active' : ''}`}
-                onClick={() => {
-                  setActiveWeek(w.week);
-                  const targetDays = w.days || [];
-                  const targetDay = targetDays.some(d => d.day === effectiveDayName)
-                    ? effectiveDayName
-                    : (todayPosition.dayName || 'Monday');
-                  setEffectiveDayName(targetDay);
-                }}
+                onClick={() => handleSelectWeek(w.week)}
               >
                 {w.week.replace('Week ', 'W')}
               </button>
@@ -440,6 +535,7 @@ function DailyTrackerView({
         <div className="mini-day-track">
           {activeWeekDays.map((d, dIdx) => {
             const isDayToday = isToday(activeMonth, activeWeek, d.day, startDateStr);
+            const isPrior = isDayPriorToStartDate(activeMonth, activeWeek, d.day, startDateStr);
             const isSelected = effectiveDayName === d.day;
             const dHasCustom = Boolean(d.hasCustomObjective);
             const dTotal = dHasCustom ? 4 : 3;
@@ -453,12 +549,19 @@ function DailyTrackerView({
               <button
                 key={d.day || dIdx}
                 type="button"
-                className={`mini-day-pill ${isSelected ? 'selected' : ''} ${isDayToday ? 'is-today' : ''}`}
+                className={`mini-day-pill ${isSelected ? 'selected' : ''} ${isDayToday ? 'is-today' : ''} ${isPrior ? 'is-prior-day' : ''}`}
                 onClick={() => setEffectiveDayName(d.day)}
+                title={isPrior ? `Prior to preparation start date (${startDateStr})` : `${d.day}: ${completed}/${dTotal} quotas`}
               >
                 <span className="mini-day-name">{getDayShort(d.day)}</span>
-                <span className={`mini-day-dot ${completed === dTotal ? 'all' : completed > 0 ? 'some' : ''}`} />
-                {d.studyHours > 0 && <span className="mini-day-hrs">{d.studyHours.toFixed(1)}h</span>}
+                {isPrior ? (
+                  <span className="mini-day-lock-icon" title="Prior to prep start date">
+                    <Icons.Lock size={10} />
+                  </span>
+                ) : (
+                  <span className={`mini-day-dot ${completed === dTotal ? 'all' : completed > 0 ? 'some' : ''}`} />
+                )}
+                {!isPrior && d.studyHours > 0 && <span className="mini-day-hrs">{d.studyHours.toFixed(1)}h</span>}
               </button>
             );
           })}
@@ -470,6 +573,108 @@ function DailyTrackerView({
         
         {/* LEFT COLUMN: THE 4 DAILY DRILL QUOTAS */}
         <div className="workspace-main-col">
+
+          {/* Active Adaptive Plan Guidance Banner */}
+          {(() => {
+            const isExtendedWeek = Boolean(activeWeek?.includes('(Extended Buffer)') || activeWeekPlan?.isExtended);
+            const isCatchUpActive = Boolean(selectedDay?.catchUpActive || activeWeekDays.some(d => d.catchUpActive));
+            const isWeekendSprintActive = Boolean(selectedDay?.customBadge === 'SPRINT' || activeWeekDays.some(d => d.customBadge === 'SPRINT'));
+            const isTriageActive = Boolean(activeWeekPlan?.triageActive);
+
+            if (!isExtendedWeek && !isCatchUpActive && !isWeekendSprintActive && !isTriageActive) return null;
+
+            return (
+              <div className={`adaptive-recovery-guide-banner ${isExtendedWeek ? 'buffer-plan' : isWeekendSprintActive ? 'sprint-plan' : ''}`}>
+                <div className="guidance-banner-left">
+                  <div className="guidance-icon-badge">
+                    {isExtendedWeek ? <Icons.Clock size={20} /> : isWeekendSprintActive ? <Icons.Flame size={20} /> : <Icons.Zap size={20} />}
+                  </div>
+                  <div className="guidance-text">
+                    <div className="guidance-title-row">
+                      <span className="guidance-badge">
+                        {isExtendedWeek ? 'BUFFER WEEK ACTIVE' : isWeekendSprintActive ? 'WEEKEND SPRINT' : isTriageActive ? 'TRIAGE ACTIVE' : 'CATCH-UP BLITZ'}
+                      </span>
+                      <h4>
+                        {isExtendedWeek 
+                          ? `${activeWeek} (+1 Buffer Extension)`
+                          : isWeekendSprintActive
+                          ? 'Weekend Recovery Sprint Active'
+                          : isTriageActive
+                          ? 'Pareto 80/20 Core Mastery Triage'
+                          : '7-Day Catch-Up Micro-Blitz Active'}
+                      </h4>
+                    </div>
+                    <p>
+                      {globalWeekNum > 1 && currentWeekProgress.overallProgressPct === 0
+                        ? "Haven't done initial foundation exercises yet? You can jump straight to Week 1 drills or reset your start date to today."
+                        : isExtendedWeek
+                        ? "Your master syllabus shifted to grant 7 extra days for this foundation topic. Complete your concept checklist and daily drills below."
+                        : isWeekendSprintActive
+                        ? `Focused weekend sprint active. Saturday and Sunday are loaded with +${selectedDay.catchUpQuant || 15} QA recovery targets.`
+                        : isTriageActive
+                        ? `${activeWeekPlan?.triageNotes || 'Focusing strictly on high-yield core concepts to protect mock schedule.'}`
+                        : `Daily micro-targets (+${selectedDay.catchUpQuant || 18} QA & +${selectedDay.catchUpLrdi || 4} DILR) are active on your drill cards.`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="guidance-banner-actions">
+                  {globalWeekNum > 1 && currentWeekProgress.overallProgressPct === 0 && (
+                    <button
+                      type="button"
+                      className="guidance-secondary-btn"
+                      onClick={() => {
+                        setActiveMonth('Month 1');
+                        setActiveWeek('Week 1');
+                        setEffectiveDayName('Monday');
+                      }}
+                      title="Jump to Week 1 initial foundation exercises"
+                      style={{ color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.35)' }}
+                    >
+                      <Icons.ArrowRight size={12} />
+                      <span>Go to Week 1 Initial Drills</span>
+                    </button>
+                  )}
+                  {onNavigateToBacklog && hasBacklog && (
+                    <button
+                      type="button"
+                      className="guidance-outline-btn guidance-backlog-btn"
+                      onClick={onNavigateToBacklog}
+                      title="Open dedicated Backlog Recovery Cockpit"
+                      style={{ color: '#fbbf24', borderColor: 'rgba(251, 191, 36, 0.4)' }}
+                    >
+                      <Icons.Zap size={13} color="#fbbf24" />
+                      <span>Backlog Recovery Tab &rarr;</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="guidance-primary-btn"
+                    onClick={() => {
+                      const drillEl = document.querySelector('.drill-item-card.quant');
+                      if (drillEl) {
+                        drillEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }
+                    }}
+                    title="Start today's drill quotas"
+                  >
+                    <Icons.Target size={13} />
+                    <span>Start Today's Drills</span>
+                  </button>
+                  {onOpenCheckpoint && (
+                    <button
+                      type="button"
+                      className="guidance-outline-btn"
+                      onClick={() => onOpenCheckpoint(activeMonth, activeWeek, globalWeekNum)}
+                      title="Review or adjust syllabus plan"
+                    >
+                      Adjust Plan
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
           
           {/* Day Status Header */}
           <div className="day-overview-header">
@@ -521,11 +726,41 @@ function DailyTrackerView({
             </div>
           </div>
 
+          {/* Prior to Preparation Start Date Alert Banner */}
+          {selectedDayIsPrior && (
+            <div className="day-prior-locked-card">
+              <div className="day-prior-locked-inner">
+                <div className="day-prior-locked-badge">
+                  <Icons.Lock size={18} color="#94a3b8" />
+                </div>
+                <div className="day-prior-locked-info">
+                  <h4>Prior to Preparation Start Date</h4>
+                  <p>
+                    {selectedDay.day} ({selectedDayDateFormatted}) occurred before your official prep start date ({startDateStr}).
+                    Official preparation and drill quotas begin on Day 1 ({startDateStr}).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="day-prior-jump-btn"
+                  onClick={() => {
+                    if (todayPosition?.dayName) {
+                      setEffectiveDayName(todayPosition.dayName);
+                    }
+                  }}
+                >
+                  <Icons.ArrowRight size={13} />
+                  <span>Go to Day 1 ({todayPosition?.dayName || 'Today'})</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* The 3 Drill Cards */}
-          <div className="drills-stack">
+          <div className={`drills-stack ${selectedDayIsPrior ? 'prior-day-blurred' : ''}`}>
             
             {/* QUANT DRILL */}
-            <div className={`drill-item-card quant ${selectedDay.quantCompleted ? 'done' : ''}`}>
+            <div className={`drill-item-card quant ${selectedDay.quantCompleted ? 'done' : ''} ${Boolean(selectedDay.catchUpActive && selectedDay.catchUpQuant > 0) ? 'has-catch-up' : ''}`}>
               <div className="drill-card-top-row">
                 <button 
                   type="button" 
@@ -570,13 +805,32 @@ function DailyTrackerView({
                       <span>{activeWeekPlan.quantFocus}</span>
                     </span>
                   )}
+                  {Boolean(selectedDay.catchUpActive && selectedDay.catchUpQuant > 0) && (
+                    <span className="drill-curriculum-pill" style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      color: '#f59e0b',
+                      background: 'rgba(245, 158, 11, 0.12)',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      width: 'fit-content'
+                    }}>
+                      <Icons.Zap size={10} color="#f59e0b" />
+                      <span>+{selectedDay.catchUpQuant} CATCH-UP BOOST</span>
+                    </span>
+                  )}
                   <span className="drill-target-text" title={selectedDay.quantTarget}>
-                    {selectedDay.quantTarget || `${secQuant.name} Practice Drill`}
+                    {selectedDay.catchUpActive && (selectedDay.catchUpQuant || 0) > 0
+                      ? `Solve ${quantTargetQty} Quant Questions (${quantTargetQty - selectedDay.catchUpQuant} Base + ${selectedDay.catchUpQuant} Backlog Boost)`
+                      : (selectedDay.quantTarget || `Solve ${quantTargetQty} ${secQuant.name} Questions`)}
                   </span>
                 </div>
 
                 <div className="drill-stepper-compact">
-                  <span className="stepper-subtext">Solved {secQuant.unit}:</span>
+                  <span className="stepper-subtext">Solved {secQuant.unit} ({selectedDay.quantCount || 0}/{quantTargetQty}):</span>
                   <div className="stepper-buttons-wrap">
                     <button 
                       type="button"
@@ -605,7 +859,7 @@ function DailyTrackerView({
             </div>
 
             {/* DILR DRILL */}
-            <div className={`drill-item-card lrdi ${selectedDay.lrdiCompleted ? 'done' : ''}`}>
+            <div className={`drill-item-card lrdi ${selectedDay.lrdiCompleted ? 'done' : ''} ${Boolean(selectedDay.catchUpActive && selectedDay.catchUpLrdi > 0) ? 'has-catch-up' : ''}`}>
               <div className="drill-card-top-row">
                 <button 
                   type="button"
@@ -650,13 +904,32 @@ function DailyTrackerView({
                       <span>{activeWeekPlan.lrdiFocus}</span>
                     </span>
                   )}
+                  {Boolean(selectedDay.catchUpActive && selectedDay.catchUpLrdi > 0) && (
+                    <span className="drill-curriculum-pill" style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      color: '#f59e0b',
+                      background: 'rgba(245, 158, 11, 0.12)',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      width: 'fit-content'
+                    }}>
+                      <Icons.Zap size={10} color="#f59e0b" />
+                      <span>+{selectedDay.catchUpLrdi} CATCH-UP BOOST</span>
+                    </span>
+                  )}
                   <span className="drill-target-text" title={selectedDay.lrdiTarget}>
-                    {selectedDay.lrdiTarget || `${secLrdi.name} Practice Sets`}
+                    {selectedDay.catchUpActive && (selectedDay.catchUpLrdi || 0) > 0
+                      ? `Solve ${lrdiTargetQty} LRDI Sets (${lrdiTargetQty - selectedDay.catchUpLrdi} Base + ${selectedDay.catchUpLrdi} Backlog Boost)`
+                      : (selectedDay.lrdiTarget || `Solve ${lrdiTargetQty} ${secLrdi.name} Sets`)}
                   </span>
                 </div>
 
                 <div className="drill-stepper-compact">
-                  <span className="stepper-subtext">Solved {secLrdi.unit}:</span>
+                  <span className="stepper-subtext">Solved {secLrdi.unit} ({selectedDay.lrdiCount || 0}/{lrdiTargetQty}):</span>
                   <div className="stepper-buttons-wrap">
                     <button 
                       type="button"
@@ -685,10 +958,10 @@ function DailyTrackerView({
             </div>
 
             {/* VARC DRILL */}
-            <div className={`drill-item-card varc ${selectedDay.varcCompleted ? 'done' : ''}`}>
+            <div className={`drill-item-card varc ${selectedDay.varcCompleted ? 'done' : ''} ${Boolean(selectedDay.catchUpActive && selectedDay.catchUpVarc > 0) ? 'has-catch-up' : ''}`}>
               <div className="drill-card-top-row">
                 <button 
-                  type="button"
+                  type="button" 
                   role="checkbox"
                   aria-checked={Boolean(selectedDay.varcCompleted)}
                   aria-label={`${secVarc.shortName} completed`}
@@ -730,13 +1003,32 @@ function DailyTrackerView({
                       <span>{activeWeekPlan.varcFocus}</span>
                     </span>
                   )}
+                  {Boolean(selectedDay.catchUpActive && selectedDay.catchUpVarc > 0) && (
+                    <span className="drill-curriculum-pill" style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      color: '#f59e0b',
+                      background: 'rgba(245, 158, 11, 0.12)',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      width: 'fit-content'
+                    }}>
+                      <Icons.Zap size={10} color="#f59e0b" />
+                      <span>+{selectedDay.catchUpVarc} CATCH-UP BOOST</span>
+                    </span>
+                  )}
                   <span className="drill-target-text" title={selectedDay.varcTarget}>
-                    {selectedDay.varcTarget || `${secVarc.name} Exercises`}
+                    {selectedDay.catchUpActive && (selectedDay.catchUpVarc || 0) > 0
+                      ? `Solve ${varcTargetQty} Reading Comprehensions (${varcTargetQty - selectedDay.catchUpVarc} Base + ${selectedDay.catchUpVarc} Backlog Boost)`
+                      : (selectedDay.varcTarget || `Solve ${varcTargetQty} ${secVarc.name} Exercises`)}
                   </span>
                 </div>
 
                 <div className="drill-stepper-compact">
-                  <span className="stepper-subtext">Solved {secVarc.unit}:</span>
+                  <span className="stepper-subtext">Solved {secVarc.unit} ({selectedDay.varcCount || 0}/{varcTargetQty}):</span>
                   <div className="stepper-buttons-wrap">
                     <button 
                       type="button"

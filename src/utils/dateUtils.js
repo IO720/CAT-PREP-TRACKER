@@ -261,3 +261,20 @@ export const isToday = (monthName, weekName, dayName, startDateStr) => {
   );
 };
 
+/**
+ * Checks if a specific tracker day is strictly prior to the preparation start date.
+ * E.g., if start date is Sunday Sep 6, Monday-Saturday (Aug 31-Sep 5) in Week 1 are prior to start.
+ */
+export const isDayPriorToStartDate = (monthName, weekName, dayName, startDateStr) => {
+  if (!startDateStr) return false;
+  try {
+    const dayDate = getCalculatedDateForTrackerDay(monthName, weekName, dayName, startDateStr);
+    const startDateObj = parseISODate(startDateStr);
+    dayDate.setHours(0, 0, 0, 0);
+    startDateObj.setHours(0, 0, 0, 0);
+    return dayDate.getTime() < startDateObj.getTime();
+  } catch (_e) {
+    return false;
+  }
+};
+

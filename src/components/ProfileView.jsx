@@ -714,7 +714,7 @@ export default function ProfileView({
                 </p>
 
                 <div className="embedded-heatmap-container">
-                  <StudyContributionHeatmap tracker={tracker || {}} compact={false} />
+                  <StudyContributionHeatmap tracker={tracker || {}} startDateStr={startDate} compact={false} />
                 </div>
               </div>
 

@@ -7,7 +7,8 @@ import {
   parseISODate, 
   getCalculatedDateForTrackerDay, 
   getTodayTrackerPosition,
-  isToday
+  isToday,
+  isDayPriorToStartDate
 } from '../dateUtils';
 
 describe('dateUtils - OS and Web Date Tracking Logic', () => {
@@ -91,5 +92,21 @@ describe('dateUtils - OS and Web Date Tracking Logic', () => {
 
     const result = isToday('Month 1', 'Week 1', todayName, startDate);
     expect(result).toBe(true);
+  });
+
+  it('correctly identifies days prior to start date when starting mid-week', () => {
+    // Start date is Sunday 2026-09-06
+    const sundayStartDate = '2026-09-06';
+
+    // Monday to Saturday in Month 1 Week 1 are before Sep 6
+    expect(isDayPriorToStartDate('Month 1', 'Week 1', 'Monday', sundayStartDate)).toBe(true);
+    expect(isDayPriorToStartDate('Month 1', 'Week 1', 'Wednesday', sundayStartDate)).toBe(true);
+    expect(isDayPriorToStartDate('Month 1', 'Week 1', 'Saturday', sundayStartDate)).toBe(true);
+
+    // Sunday (Day 1) is NOT prior to start date
+    expect(isDayPriorToStartDate('Month 1', 'Week 1', 'Sunday', sundayStartDate)).toBe(false);
+
+    // Month 1 Week 2 Monday is NOT prior to start date
+    expect(isDayPriorToStartDate('Month 1', 'Week 2', 'Monday', sundayStartDate)).toBe(false);
   });
 });

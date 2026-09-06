@@ -3,7 +3,11 @@ export const APP_BUILD_TIME = new Date().toISOString();
 
 export async function checkForAppUpdate() {
   try {
-    const res = await fetch(`/version.json?t=${Date.now()}`, {
+    const origin = (typeof window !== 'undefined' && window.location?.origin && window.location.origin !== 'null') 
+      ? window.location.origin 
+      : '';
+    const url = origin ? `${origin}/version.json?t=${Date.now()}` : `/version.json?t=${Date.now()}`;
+    const res = await fetch(url, {
       cache: 'no-store',
       headers: {
         'Cache-Control': 'no-cache',

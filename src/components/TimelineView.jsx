@@ -13,7 +13,8 @@ export default function TimelineView({
   state, 
   updateWeekStatus, 
   updateWeekPlan,
-  onWeekClick 
+  onWeekClick,
+  onOpenCheckpoint
 }) {
   const { studyPlan = [] } = state;
 
@@ -436,6 +437,18 @@ export default function TimelineView({
                             <span>Milestone</span>
                           </span>
                         )}
+                        {week.isExtended && (
+                          <span className="dossier-milestone-flag" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', borderColor: 'rgba(168, 85, 247, 0.3)' }} title="Extended Buffer Week Active">
+                            <Icons.Clock size={11} />
+                            <span>Buffer Week</span>
+                          </span>
+                        )}
+                        {week.catchUpActive && (
+                          <span className="dossier-milestone-flag" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', borderColor: 'rgba(245, 158, 11, 0.3)' }} title="Catch-Up Blitz Active">
+                            <Icons.Zap size={11} />
+                            <span>Catch-Up</span>
+                          </span>
+                        )}
                         <button
                           type="button"
                           className={`dossier-status-pill ${
@@ -495,7 +508,7 @@ export default function TimelineView({
                           }}
                           title={`Go to Daily Drills for ${week.week}`}
                         >
-                          <span>Drills</span>
+                          <span>{week.isExtended || week.catchUpActive ? 'Start Drills' : 'Drills'}</span>
                           <span className="dossier-arrow">↗</span>
                         </button>
                       </div>
@@ -510,10 +523,15 @@ export default function TimelineView({
 
       {/* 4. Detailed Syllabus Inspector Drawer */}
       {inspectedWeekData && (
-        <div className="blueprint-inspector-overlay" onClick={() => setInspectedWeekIdx(null)}>
+        <div 
+          className="blueprint-inspector-overlay" 
+          onClick={() => setInspectedWeekIdx(null)}
+          data-lenis-prevent="true"
+        >
           <div
             className="blueprint-inspector-drawer"
             onClick={(e) => e.stopPropagation()}
+            data-lenis-prevent="true"
           >
             {/* Drawer Header */}
             <div className="drawer-header">
@@ -564,7 +582,7 @@ export default function TimelineView({
               </div>
             )}
 
-            <div className="drawer-scroll-body">
+            <div className="drawer-scroll-body" data-lenis-prevent="true">
               {/* Targets Summary */}
               {inspectedSyllabus && (
                 <div className="drawer-targets-banner">
@@ -691,6 +709,26 @@ export default function TimelineView({
               >
                 Close
               </button>
+              {onOpenCheckpoint && (
+                <button
+                  type="button"
+                  className="drawer-secondary-btn"
+                  style={{
+                    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                    borderColor: 'rgba(56, 189, 248, 0.35)',
+                    color: '#38bdf8'
+                  }}
+                  onClick={() => {
+                    const match = inspectedWeekData.week.match(/Month (\d+):\s+Week (\d+)/i);
+                    const monthKey = match ? `Month ${match[1]}` : 'Month 1';
+                    const relativeWeek = match ? `Week ${((parseInt(match[2], 10) - 1) % 4) + 1}` : 'Week 1';
+                    onOpenCheckpoint(monthKey, relativeWeek, inspectedWeekIdx + 1);
+                  }}
+                >
+                  <Icons.Target size={13} color="#38bdf8" />
+                  <span>Adaptive Checkpoint</span>
+                </button>
+              )}
               <button
                 type="button"
                 className="drawer-primary-jump-btn"

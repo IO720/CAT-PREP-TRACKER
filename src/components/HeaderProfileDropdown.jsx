@@ -9,7 +9,8 @@ export default function HeaderProfileDropdown({
   onNavigate,
   onSignOut,
   onSignIn,
-  timerState
+  timerState,
+  onOpenPatchNotes
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -174,6 +175,22 @@ export default function HeaderProfileDropdown({
                 <span className="item-sub">Cloud sync & preferences</span>
               </div>
             </button>
+
+            {onOpenPatchNotes && (
+              <button
+                type="button"
+                className="menu-nav-item"
+                onClick={() => handleAction(onOpenPatchNotes)}
+              >
+                <div className="menu-item-icon-box" style={{ background: 'rgba(56, 189, 248, 0.12)', color: 'var(--accent-color, #38bdf8)' }}>
+                  <Icons.Sparkles size={15} />
+                </div>
+                <div className="menu-item-text">
+                  <span className="item-title">Patch Notes & Updates</span>
+                  <span className="item-sub">v1.0.88 cycle & telemetry</span>
+                </div>
+              </button>
+            )}
           </div>
 
           <div className="menu-divider" />

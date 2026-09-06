@@ -51,6 +51,14 @@ export function initSmoothScroll() {
         Boolean(node.closest('.showcase-modal-box')) ||
         Boolean(node.closest('.auth-modal-box')) ||
         Boolean(node.closest('.peer-inspector-overlay')) ||
+        Boolean(node.closest('.blueprint-inspector-overlay')) ||
+        Boolean(node.closest('.blueprint-inspector-drawer')) ||
+        Boolean(node.closest('.drawer-scroll-body')) ||
+        Boolean(node.closest('[class*="drawer"]')) ||
+        Boolean(node.closest('.adaptive-checkpoint-backdrop')) ||
+        Boolean(node.closest('.adaptive-checkpoint-card')) ||
+        Boolean(node.closest('.adaptive-checkpoint-modal-backdrop')) ||
+        Boolean(node.closest('.adaptive-checkpoint-modal-card')) ||
         Boolean(node.closest('[role="dialog"]')) ||
         Boolean(node.closest('[class*="modal"]'))
       );

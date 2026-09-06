@@ -144,4 +144,103 @@ describe('EditSessionModal & WeekContributionHeatmap', () => {
     expect(screen.getAllByText(/Quotas/i).length).toBeGreaterThan(0);
     expect(screen.getByText('Mon')).toBeDefined();
   });
+
+  it('renders graduated heatmap intensity levels: level-1 (<=10 Qs), level-2 (11-15 Qs), level-3 (16-17 Qs), and level-4 (all quotas conquered)', () => {
+    const mockTrackerWithGraduatedDays = {
+      'Month 1': [
+        {
+          week: 'Week 1',
+          days: [
+            {
+              day: 'Monday',
+              quantCompleted: false,
+              quantCount: 10, // 10 questions -> level-1
+              lrdiCompleted: false,
+              lrdiCount: 0,
+              varcCompleted: false,
+              varcCount: 0,
+              studyHours: 0.5
+            },
+            {
+              day: 'Tuesday',
+              quantCompleted: false,
+              quantCount: 14, // 14 questions -> level-2 (11-15 Qs)
+              lrdiCompleted: false,
+              lrdiCount: 0,
+              varcCompleted: false,
+              varcCount: 0,
+              studyHours: 1.2
+            },
+            {
+              day: 'Wednesday',
+              quantCompleted: false,
+              quantCount: 17, // 17 questions -> level-3
+              lrdiCompleted: false,
+              lrdiCount: 0,
+              varcCompleted: false,
+              varcCount: 0,
+              studyHours: 2.6
+            },
+            {
+              day: 'Thursday',
+              quantCompleted: true,
+              quantCount: 18,
+              lrdiCompleted: true,
+              lrdiCount: 4,
+              varcCompleted: true,
+              varcCount: 4, // all quotas completed -> level-4
+              studyHours: 3.8
+            },
+            {
+              day: 'Friday',
+              quantCompleted: false,
+              quantCount: 0,
+              lrdiCompleted: false,
+              lrdiCount: 0,
+              varcCompleted: false,
+              varcCount: 0,
+              studyHours: 0
+            },
+            {
+              day: 'Saturday',
+              quantCompleted: false,
+              quantCount: 0,
+              lrdiCompleted: false,
+              lrdiCount: 0,
+              varcCompleted: false,
+              varcCount: 0,
+              studyHours: 0
+            },
+            {
+              day: 'Sunday',
+              quantCompleted: false,
+              quantCount: 0,
+              lrdiCompleted: false,
+              lrdiCount: 0,
+              varcCompleted: false,
+              varcCount: 0,
+              studyHours: 0
+            }
+          ]
+        }
+      ]
+    };
+
+    const { container } = render(
+      <WeekContributionHeatmap
+        tracker={mockTrackerWithGraduatedDays}
+        startDateStr="2026-08-31"
+        onNavigateToDay={() => {}}
+      />
+    );
+
+    // Monday has level-1
+    expect(container.querySelector('.heatmap-square.level-1')).toBeDefined();
+    // Tuesday has level-2
+    expect(container.querySelector('.heatmap-square.level-2')).toBeDefined();
+    // Wednesday has level-3
+    expect(container.querySelector('.heatmap-square.level-3')).toBeDefined();
+    // Thursday has level-4
+    expect(container.querySelector('.heatmap-square.level-4')).toBeDefined();
+  });
 });

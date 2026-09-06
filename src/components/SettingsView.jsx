@@ -9,6 +9,7 @@ import {
 import AvatarRenderer from './AvatarRenderer';
 import { Icons } from './AspirantIcons';
 import { THEMES } from './ThemeSelectorDropdown';
+import ThemedDatePicker from './ThemedDatePicker';
 import { isThemeUnlocked, redeemThemeCode, PREMIUM_THEME_IDS } from '../utils/themeRedemption';
 import { 
   AnimatedSparkleIcon, 
@@ -43,7 +44,8 @@ export default function SettingsView({
   onThemeUnlocked = () => {},
   targetExam = 'cat',
   onSelectTargetExam = () => {},
-  onOpenOnboarding = () => {}
+  onOpenOnboarding = () => {},
+  onOpenPatchNotes = () => {}
 }) {
   // Navigation Category Tab ('themes' | 'typography' | 'schedule' | 'cloud' | 'exam')
   const [activeTab, setActiveTab] = useState('themes');
@@ -355,6 +357,24 @@ export default function SettingsView({
               <span className="telemetry-val">Local Offline</span>
             </div>
           )}
+          <button
+            type="button"
+            className="settings-telemetry-chip patch-hub-chip"
+            onClick={onOpenPatchNotes}
+            title="Inspect What's New & System Updates Hub"
+            style={{ 
+              cursor: 'pointer', 
+              background: 'rgba(56, 189, 248, 0.12)', 
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              borderRadius: '8px',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <span className="telemetry-lbl" style={{ color: 'var(--accent-color, #38bdf8)' }}>PATCH</span>
+            <span className="telemetry-val" style={{ color: '#ffffff', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              v1.0.88 // NOTES
+            </span>
+          </button>
         </div>
       </div>
 
@@ -731,15 +751,10 @@ export default function SettingsView({
               <div className="schedule-input-row">
                 <div className="schedule-field-group">
                   <label>Prep Start Date</label>
-                  <div className="schedule-input-wrap">
-                    <Icons.Calendar size={15} className="schedule-cal-icon" />
-                    <input 
-                      type="date" 
-                      value={startDate || ""}
-                      onChange={(e) => onUpdateStartDate && onUpdateStartDate(e.target.value)}
-                      className="schedule-date-input"
-                    />
-                  </div>
+                  <ThemedDatePicker 
+                    value={startDate || ""}
+                    onChange={(newDate) => onUpdateStartDate && onUpdateStartDate(newDate)}
+                  />
                 </div>
 
                 <div className="schedule-telemetry-pills">
@@ -1029,6 +1044,32 @@ export default function SettingsView({
                   <span>Reset Progress</span>
                 </button>
               </div>
+            </div>
+
+            {/* Release Notes & System Updates Hub Banner */}
+            <div className="settings-patch-notes-banner">
+              <div className="patch-banner-left">
+                <div className="patch-banner-icon">
+                  <AnimatedRadarBeaconIcon size={22} color="var(--accent-color, #38bdf8)" />
+                </div>
+                <div>
+                  <div className="patch-banner-title">
+                    <span>System Patch Notes & Update Cycle Hub</span>
+                    <span className="patch-banner-version-pill">v1.0.88</span>
+                  </div>
+                  <div className="patch-banner-desc">
+                    Inspect chronological patch history, security hardening audits, live cloud sync latency benchmarks, and recent engine deployments.
+                  </div>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                className="patch-banner-cta-btn"
+                onClick={onOpenPatchNotes}
+              >
+                <Icons.Sparkles size={14} />
+                <span>Open Patch Notes Hub</span>
+              </button>
             </div>
           </div>
 

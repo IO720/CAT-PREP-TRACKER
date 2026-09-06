@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * CosmeticFrameSvg - Vector SVG Overlays for Unlockable Avatar Frames
- * Renders high-tier gamer cosmetics (Valorant / Apex / Steam style)
+ * Renders high-tier collectible cosmetics with cyber and animated flair
  * Zero raw emojis used - 100% vector SVG artwork.
  */
 export default function CosmeticFrameSvg({ frameId = 'default' }) {
