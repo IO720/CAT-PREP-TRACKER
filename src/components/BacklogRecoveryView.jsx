@@ -314,21 +314,20 @@ export default function BacklogRecoveryView({
               <div className="recovery-card-actions">
                 <button
                   type="button"
-                  className="recovery-timer-shortcut-btn"
-                  style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.35)' }}
+                  className="recovery-action-btn ghost"
                   onClick={() => onNavigateToDaily && onNavigateToDaily(bottleneckMonth, bottleneckWeek, 'Monday')}
                   title="Jump straight to these drills in Daily Tracker"
                 >
-                  <Icons.ArrowRight size={14} />
+                  <Icons.ArrowRight size={13} />
                   <span>Go to Drills</span>
                 </button>
                 <button
                   type="button"
-                  className="recovery-timer-shortcut-btn"
+                  className="recovery-action-btn primary"
                   onClick={onNavigateToTimer}
                   title="Launch focus timer for this backlog topic"
                 >
-                  <Icons.Timer size={14} />
+                  <Icons.Timer size={13} />
                   <span>Start Focus Session</span>
                 </button>
               </div>
@@ -350,41 +349,46 @@ export default function BacklogRecoveryView({
                   <div className="station-stepper-row">
                     <button
                       type="button"
-                      className="station-stepper-btn"
+                      className="station-stepper-btn dec"
                       onClick={() => handleIncrementDrill('quant', -5)}
                       title="Decrease 5 questions"
+                      aria-label="-5 Qs"
                     >
                       -5
                     </button>
                     <button
                       type="button"
-                      className="station-stepper-btn"
+                      className="station-stepper-btn dec"
                       onClick={() => handleIncrementDrill('quant', -1)}
                       title="Decrease 1 question"
+                      aria-label="-1 Q"
                     >
                       -1
                     </button>
                     <button
                       type="button"
-                      className="station-stepper-btn add"
+                      className="station-stepper-btn inc"
                       onClick={() => handleIncrementDrill('quant', 1)}
                       title="Solve 1 question"
+                      aria-label="+1 Q"
                     >
-                      +1 Q
+                      +1
                     </button>
                     <button
                       type="button"
-                      className="station-stepper-btn add primary"
+                      className="station-stepper-btn inc highlight"
                       onClick={() => handleIncrementDrill('quant', 5)}
                       title="Solve 5 questions"
+                      aria-label="+5 Qs"
                     >
-                      +5 Qs
+                      +5
                     </button>
                     <button
                       type="button"
-                      className="station-stepper-btn add boost"
+                      className="station-stepper-btn inc boost"
                       onClick={() => handleIncrementDrill('quant', 10)}
                       title="Solve 10 questions"
+                      aria-label="+10 Qs"
                     >
                       +10
                     </button>
@@ -406,22 +410,28 @@ export default function BacklogRecoveryView({
                   <div className="station-stepper-row">
                     <button
                       type="button"
-                      className="station-stepper-btn"
+                      className="station-stepper-btn dec"
                       onClick={() => handleIncrementDrill('lrdi', -1)}
+                      title="Decrease 1 set"
+                      aria-label="-1 Set"
                     >
                       -1
                     </button>
                     <button
                       type="button"
-                      className="station-stepper-btn add primary"
+                      className="station-stepper-btn inc highlight"
                       onClick={() => handleIncrementDrill('lrdi', 1)}
+                      title="Solve 1 set"
+                      aria-label="+1 Set"
                     >
                       +1 Set
                     </button>
                     <button
                       type="button"
-                      className="station-stepper-btn add boost"
+                      className="station-stepper-btn inc boost"
                       onClick={() => handleIncrementDrill('lrdi', 2)}
+                      title="Solve 2 sets"
+                      aria-label="+2 Sets"
                     >
                       +2 Sets
                     </button>
@@ -432,7 +442,7 @@ export default function BacklogRecoveryView({
               {/* VARC Station */}
               <div className="recovery-station-card varc">
                 <div className="recovery-station-header">
-                  <span className="station-name">VARC Comprehension</span>
+                  <span className="station-name">VARC Reading</span>
                   <span className="station-deficit">-{bottleneckWeekData?.deficitVarc || 4} RCs</span>
                 </div>
                 <div className="recovery-station-body">
@@ -443,22 +453,28 @@ export default function BacklogRecoveryView({
                   <div className="station-stepper-row">
                     <button
                       type="button"
-                      className="station-stepper-btn"
+                      className="station-stepper-btn dec"
                       onClick={() => handleIncrementDrill('varc', -1)}
+                      title="Decrease 1 RC"
+                      aria-label="-1 RC"
                     >
                       -1
                     </button>
                     <button
                       type="button"
-                      className="station-stepper-btn add primary"
+                      className="station-stepper-btn inc highlight"
                       onClick={() => handleIncrementDrill('varc', 1)}
+                      title="Solve 1 RC"
+                      aria-label="+1 RC"
                     >
                       +1 RC
                     </button>
                     <button
                       type="button"
-                      className="station-stepper-btn add boost"
+                      className="station-stepper-btn inc boost"
                       onClick={() => handleIncrementDrill('varc', 2)}
+                      title="Solve 2 RCs"
+                      aria-label="+2 RCs"
                     >
                       +2 RCs
                     </button>
